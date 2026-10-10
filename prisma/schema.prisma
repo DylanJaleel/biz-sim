@@ -31,10 +31,23 @@ enum OrderStatus {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  createdAt DateTime @default(now())
-  company   Company?
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String?
+  image         String?
+  createdAt     DateTime  @default(now())
+  company       Company?
+}
+
+// Required by the Auth.js email (magic link) provider. Sessions are JWT-based,
+// so no Session/Account tables are needed.
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
 }
 
 model Company {

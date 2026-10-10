@@ -15,30 +15,30 @@ export function OrderPoolCard({ orders }: { orders: GeneratedOrder[] }) {
         {orders.map((order, index) => (
           <li
             key={index}
-            className="flex items-center justify-between rounded-xl border border-black/10 p-3 dark:border-white/10"
+            className="rounded-xl border border-black/10 p-3 dark:border-white/10"
           >
-            <div>
-              <div className="font-medium text-zinc-900 dark:text-zinc-50">
-                {ORDER_TYPE_LABELS[order.type]}
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="font-medium text-zinc-900 dark:text-zinc-50">
+                  {ORDER_TYPE_LABELS[order.type]}
+                </div>
+                <div className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+                  Material {formatCurrency(order.materialNeed)} · Frist {order.deadlineWeeks}{" "}
+                  {order.deadlineWeeks === 1 ? "Woche" : "Wochen"}
+                </div>
               </div>
-              <div className="text-xs text-zinc-500 dark:text-zinc-400">
-                Material: {formatCurrency(order.materialNeed)} · Frist: {order.deadlineWeeks}{" "}
-                {order.deadlineWeeks === 1 ? "Woche" : "Wochen"}
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="font-semibold text-emerald-600 dark:text-emerald-400">
+              <div className="shrink-0 text-lg font-semibold text-emerald-600 dark:text-emerald-400">
                 {formatCurrency(order.payout)}
               </div>
-              <button
-                type="button"
-                disabled
-                title="Annahme-Logik folgt, sobald Spielstand & Kapazität angebunden sind"
-                className="mt-1 rounded-full border border-black/10 px-3 py-1 text-xs text-zinc-400 dark:border-white/10"
-              >
-                Annehmen
-              </button>
             </div>
+            <button
+              type="button"
+              disabled
+              title="Annahme-Logik folgt in Phase 3"
+              className="mt-3 h-11 w-full rounded-xl border border-black/10 text-sm font-medium text-zinc-400 dark:border-white/10"
+            >
+              Annehmen
+            </button>
           </li>
         ))}
       </ul>

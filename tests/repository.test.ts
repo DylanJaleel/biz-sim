@@ -3,7 +3,8 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { PGlite } from "@electric-sql/pglite";
 import { PGLiteSocketServer } from "@electric-sql/pglite-socket";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { Prisma } from "@prisma/client";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 const TEST_PORT = 55_433;
 const DATABASE_URL = `postgresql://postgres:postgres@127.0.0.1:${TEST_PORT}/postgres?sslmode=disable`;
@@ -31,8 +32,8 @@ afterAll(async () => {
 });
 
 const { getDb } = await import("../lib/db");
-const { DEMO_USER_EMAIL, STARTING_CASH } = await import("../lib/config");
-const { closeRound, getDemoCompanyId, getLatestRoundSummary, loadCompanyState } = await import(
+const { STARTING_CASH } = await import("../lib/config");
+const { closeRound, ensureCompanyForUser, getLatestRoundSummary, loadCompanyState } = await import(
   "../lib/repository/company"
 );
 
@@ -60,14 +61,32 @@ async function createCompany(email: string) {
   });
 }
 
-describe("getDemoCompanyId", () => {
-  it("throws a helpful error when no demo company exists yet", async () => {
-    await expect(getDemoCompanyId()).rejects.toThrow(/npm run db:seed/);
+describe("ensureCompanyForUser", () => {
+  it("creates a company with the configured starting cash and loan on first call", async () => {
+    const db = getDb();
+    const user = await db.user.create({ data: { email: "first-login@example.com" } });
+
+    const companyId = await ensureCompanyForUser(user.id);
+
+    const company = await db.company.findUniqueOrThrow({
+      where: { id: companyId },
+      include: { loan: true },
+    });
+    expect(Number(company.cash)).toBe(STARTING_CASH);
+    expect(company.weekNumber).toBe(1);
+    expect(Number(company.loan?.principal)).toBe(15_000);
+    expect(Number(company.loan?.remainingBalance)).toBe(15_000);
   });
 
-  it("resolves the seeded demo company's id", async () => {
-    const company = await createCompany(DEMO_USER_EMAIL);
-    await expect(getDemoCompanyId()).resolves.toBe(company.id);
+  it("returns the existing company on repeated calls", async () => {
+    const db = getDb();
+    const user = await db.user.create({ data: { email: "repeat@example.com" } });
+
+    const first = await ensureCompanyForUser(user.id);
+    const second = await ensureCompanyForUser(user.id);
+
+    expect(second).toBe(first);
+    expect(await db.company.count({ where: { userId: user.id } })).toBe(1);
   });
 });
 
@@ -126,5 +145,32 @@ describe("loadCompanyState / closeRound", () => {
       where: { companyId, weekOffered: 1, status: "ACCEPTED" },
     });
     expect(acceptedCount).toBe(1);
+  });
+});
+
+// Last on purpose: the spies below replace company.findUnique/create on the shared
+// client for the rest of the file.
+describe("ensureCompanyForUser race", () => {
+  it("recovers when a concurrent first login created the company in between", async () => {
+    const db = getDb();
+    const user = await db.user.create({ data: { email: "race@example.com" } });
+    const winner = await ensureCompanyForUser(user.id);
+
+    // Simulate losing the race: the existence check misses the row the other
+    // request just inserted, and create() reports the unique userId violation.
+    // The once-mocks are consumed by this call; the spies then delegate to the
+    // real methods. (The error is mocked rather than provoked: PGlite's socket server can't
+    // recover from real database-level errors, which would crash the engine.)
+    vi.spyOn(db.company, "findUnique").mockResolvedValueOnce(null);
+    vi.spyOn(db.company, "create").mockRejectedValueOnce(
+      new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+        code: "P2002",
+        clientVersion: "test",
+      }),
+    );
+    const loser = await ensureCompanyForUser(user.id);
+
+    expect(loser).toBe(winner);
+    expect(await db.company.count({ where: { userId: user.id } })).toBe(1);
   });
 });

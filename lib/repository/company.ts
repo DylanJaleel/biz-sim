@@ -1,7 +1,8 @@
-import { DEMO_USER_EMAIL, GAME_LENGTH_WEEKS } from "../config";
+import { Prisma } from "@prisma/client";
+import { GAME_LENGTH_WEEKS, STARTING_CASH } from "../config";
 import { getDb } from "../db";
 import { maybeGenerateRandomEvent } from "../events";
-import type { LoanState } from "../loan";
+import { createLoan, type LoanState } from "../loan";
 import { generateOrderPool, type GeneratedOrder } from "../orders";
 import { createSeededRandom } from "../rng";
 import { resolveRound, type RoundSummary } from "../round";
@@ -23,23 +24,47 @@ export interface CompanyState {
 }
 
 /**
- * Stand-in for session-based lookup until Phase 2 wires up Auth.js. Looks up
- * the company created by `npm run db:seed`.
+ * Returns the user's company id, creating the company (starting cash + loan
+ * from lib/config.ts) on first call. Safe to call on every request: a
+ * concurrent first-login race resolves via the unique userId constraint.
  */
-export async function getDemoCompanyId(): Promise<string> {
+export async function ensureCompanyForUser(userId: string): Promise<string> {
   const db = getDb();
-  const company = await db.company.findFirst({
-    where: { user: { email: DEMO_USER_EMAIL } },
-    select: { id: true },
-  });
 
-  if (!company) {
-    throw new Error(
-      `No demo company found for ${DEMO_USER_EMAIL}. Run "npm run db:seed" first.`,
-    );
+  const existing = await db.company.findUnique({ where: { userId }, select: { id: true } });
+  if (existing) return existing.id;
+
+  const loan = createLoan();
+
+  try {
+    const company = await db.company.create({
+      data: {
+        userId,
+        name: "Mein Handwerksbetrieb",
+        cash: STARTING_CASH,
+        stage: 1,
+        weekNumber: 1,
+        reputation: 50,
+        status: "ACTIVE",
+        loan: {
+          create: {
+            principal: loan.principal,
+            interestRate: loan.annualInterestRate,
+            weeklyRate: loan.annualInterestRate / 52,
+            remainingBalance: loan.remainingBalance,
+          },
+        },
+      },
+      select: { id: true },
+    });
+    return company.id;
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      const raced = await db.company.findUniqueOrThrow({ where: { userId }, select: { id: true } });
+      return raced.id;
+    }
+    throw error;
   }
-
-  return company.id;
 }
 
 async function ensureCurrentWeekOrders(companyId: string, weekNumber: number) {

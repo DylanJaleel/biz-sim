@@ -12,14 +12,10 @@ function SkeletonCard({ className = "" }: { className?: string }) {
 export function DashboardSkeleton() {
   return (
     <>
-      <SkeletonCard />
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <SkeletonCard className="h-64" />
-        <div className="flex flex-col gap-6">
-          <SkeletonCard className="h-40" />
-          <SkeletonCard className="h-32" />
-        </div>
-      </div>
+      <div className="h-12 animate-pulse rounded-xl bg-zinc-200 dark:bg-zinc-800" />
+      <SkeletonCard className="h-40" />
+      <SkeletonCard className="h-64" />
+      <SkeletonCard className="h-40" />
     </>
   );
 }

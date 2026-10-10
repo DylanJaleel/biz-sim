@@ -22,8 +22,15 @@ export function WeeklyBalanceCard({ summary }: { summary: RoundSummary }) {
       {summary.rentCost > 0 && <Line label="Lagermiete" value={-summary.rentCost} />}
       <Line label="Kredittilgung" value={-summary.loanPrincipalPayment} />
       <Line label="Kreditzinsen" value={-summary.loanInterestPayment} />
-      <hr className="my-2 border-black/10 dark:border-white/10" />
-      <Line label="Ergebnis" value={summary.netResult} emphasize />
+      <div
+        className={`-mx-2 mt-3 rounded-xl px-2 py-1 ${
+          summary.netResult < 0
+            ? "bg-red-50 dark:bg-red-500/10"
+            : "bg-emerald-50 dark:bg-emerald-500/10"
+        }`}
+      >
+        <Line label="Nettogewinn" value={summary.netResult} emphasize />
+      </div>
     </Card>
   );
 }

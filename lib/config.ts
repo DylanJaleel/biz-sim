@@ -5,13 +5,6 @@
  * never hardcode these numbers elsewhere.
  */
 
-/**
- * Temporary stand-in for a logged-in user (Phase 2 of the implementation
- * plan replaces this with real Auth.js sessions). `scripts/seed.ts` creates
- * this account and its company; the repository layer reads it back.
- */
-export const DEMO_USER_EMAIL = "demo@biz-sim.local";
-
 export const GAME_LENGTH_WEEKS = 52;
 export const MILESTONE_INTERVAL_WEEKS = 13;
 
