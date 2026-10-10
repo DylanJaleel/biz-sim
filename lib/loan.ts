@@ -1,5 +1,7 @@
 import { LOAN_ANNUAL_INTEREST_RATE, LOAN_PRINCIPAL, LOAN_TERM_WEEKS } from "./config";
 
+const HALF_CENT = 0.005;
+
 export interface LoanState {
   principal: number;
   annualInterestRate: number;
@@ -33,9 +35,14 @@ export function calculateWeeklyLoanCharge(loan: LoanState): WeeklyLoanCharge {
 
   const weeklyInterestRate = loan.annualInterestRate / 52;
   const scheduledPrincipalPayment = loan.principal / loan.termWeeks;
-  const principalPayment = Math.min(scheduledPrincipalPayment, loan.remainingBalance);
+  // Floating-point drift after many equal installments must not leave a
+  // fraction of a cent outstanding: pay the rest off in the final installment.
+  const principalPayment =
+    loan.remainingBalance - scheduledPrincipalPayment < HALF_CENT
+      ? loan.remainingBalance
+      : scheduledPrincipalPayment;
   const interestPayment = loan.remainingBalance * weeklyInterestRate;
-  const remainingBalanceAfter = Math.max(loan.remainingBalance - principalPayment, 0);
+  const remainingBalanceAfter = loan.remainingBalance - principalPayment;
 
   return {
     principalPayment,

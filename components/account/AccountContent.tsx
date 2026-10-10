@@ -1,3 +1,4 @@
+import { ResetGameCard } from "@/components/account/ResetGameCard";
 import { Card } from "@/components/ui/Card";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { requireUser } from "@/lib/session";
@@ -13,6 +14,8 @@ export async function AccountContent() {
       <Card title="Angemeldet als">
         <p className="break-all text-base font-medium text-zinc-900 dark:text-zinc-50">{user.email}</p>
       </Card>
+
+      <ResetGameCard />
 
       <form action={signOutAction}>
         <button

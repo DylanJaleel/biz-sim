@@ -16,9 +16,13 @@ export const LOAN_TERM_WEEKS = 52;
 
 export const TARGET_CUMULATIVE_PROFIT = 10_000;
 
-// Stage unlock thresholds (available cash)
-export const STAGE_2_CASH_THRESHOLD = 3_000;
-export const STAGE_3_CASH_THRESHOLD = 8_000;
+// Stage unlock thresholds (available cash). Must stay above STARTING_CASH so
+// every game starts at stage 1; a reached stage is never taken away again.
+export const STAGE_2_CASH_THRESHOLD = 8_000;
+export const STAGE_3_CASH_THRESHOLD = 15_000;
+
+// Stage 1: solo craftsman can carry out this many orders per week
+export const SOLO_ORDER_CAPACITY_PER_WEEK = 2;
 
 // Stage 2: Geselle (journeyman employee)
 export const EMPLOYEE_WEEKLY_WAGE = 450;
@@ -47,3 +51,9 @@ export const INSOLVENCY_MISSED_MILESTONES_IN_A_ROW = 2;
 export const RANDOM_EVENT_PROBABILITY_PER_WEEK = 1 / 5;
 export const MATERIAL_PRICE_SPIKE_MULTIPLIER = 1.5;
 export const EMPLOYEE_SICK_PRODUCTIVITY_PENALTY = 0.5;
+
+// Login rate limits (magic link requests), see lib/rate-limit.ts
+export const LOGIN_EMAIL_LIMIT = 3;
+export const LOGIN_EMAIL_WINDOW_SECONDS = 15 * 60;
+export const LOGIN_IP_LIMIT = 10;
+export const LOGIN_IP_WINDOW_SECONDS = 60 * 60;

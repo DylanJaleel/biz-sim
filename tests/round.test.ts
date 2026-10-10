@@ -8,6 +8,7 @@ describe("resolveRound", () => {
 
     const summary = resolveRound({
       weekNumber: 1,
+      cashBefore: 5_000,
       acceptedOrders: [
         { payout: 1_000, materialNeed: 300 },
         { payout: 500, materialNeed: 150 },
@@ -28,6 +29,8 @@ describe("resolveRound", () => {
     expect(summary.totalExpenses).toBeCloseTo(450 + expectedLoanPrincipal + expectedLoanInterest, 5);
     expect(summary.netResult).toBeCloseTo(1_500 - (450 + expectedLoanPrincipal + expectedLoanInterest), 5);
     expect(summary.loanAfter.remainingBalance).toBeCloseTo(15_000 - expectedLoanPrincipal, 5);
+    expect(summary.cashBefore).toBe(5_000);
+    expect(summary.cashAfter).toBeCloseTo(5_000 + summary.netResult, 5);
   });
 
   it("applies a material price spike event on top of material cost", () => {
@@ -35,6 +38,7 @@ describe("resolveRound", () => {
 
     const summary = resolveRound({
       weekNumber: 2,
+      cashBefore: 5_000,
       acceptedOrders: [{ payout: 1_000, materialNeed: 400 }],
       employeeWageTotal: 450,
       warehouseRent: 150,
@@ -57,6 +61,7 @@ describe("resolveRound", () => {
 
     const summary = resolveRound({
       weekNumber: 3,
+      cashBefore: 5_000,
       acceptedOrders: [],
       employeeWageTotal: 450,
       warehouseRent: 150,

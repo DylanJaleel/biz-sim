@@ -24,6 +24,16 @@ describe("loan amortization", () => {
     expect(loan.remainingBalance).toBeCloseTo(0, 5);
   });
 
+  it("reaches exactly zero after the loan term despite floating-point drift", () => {
+    for (const principal of [15_000, 10_000, 12_345.67, 7_777]) {
+      let loan = createLoan(principal, 0.06, 52);
+      for (let week = 0; week < 52; week++) {
+        loan = { ...loan, remainingBalance: calculateWeeklyLoanCharge(loan).remainingBalanceAfter };
+      }
+      expect(loan.remainingBalance).toBe(0);
+    }
+  });
+
   it("never charges a payment once the loan is paid off", () => {
     const loan = createLoan(15_000, 0.06, 52);
     const paidOff = { ...loan, remainingBalance: 0 };

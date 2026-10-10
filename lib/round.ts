@@ -8,6 +8,7 @@ export interface AcceptedOrder {
 
 export interface RoundInput {
   weekNumber: number;
+  cashBefore: number;
   acceptedOrders: AcceptedOrder[];
   employeeWageTotal: number;
   warehouseRent: number;
@@ -26,6 +27,8 @@ export interface RoundSummary {
   eventDescription: string | null;
   totalExpenses: number;
   netResult: number;
+  cashBefore: number;
+  cashAfter: number;
   loanAfter: LoanState;
 }
 
@@ -41,6 +44,8 @@ export function resolveRound(input: RoundInput): RoundSummary {
   const totalExpenses =
     materialCost + input.employeeWageTotal + input.warehouseRent + loanCharge.totalPayment;
 
+  const netResult = revenue - totalExpenses;
+
   return {
     weekNumber: input.weekNumber,
     revenue,
@@ -51,7 +56,9 @@ export function resolveRound(input: RoundInput): RoundSummary {
     loanInterestPayment: loanCharge.interestPayment,
     eventDescription: input.event?.description ?? null,
     totalExpenses,
-    netResult: revenue - totalExpenses,
+    netResult,
+    cashBefore: input.cashBefore,
+    cashAfter: input.cashBefore + netResult,
     loanAfter: { ...input.loan, remainingBalance: loanCharge.remainingBalanceAfter },
   };
 }

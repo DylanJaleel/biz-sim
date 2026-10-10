@@ -11,3 +11,8 @@ export function getUnlockedStage(availableCash: number): CompanyStage {
   if (availableCash >= STAGE_2_CASH_THRESHOLD) return 2;
   return 1;
 }
+
+/** Unlocks stick: a stage once reached is never taken away when cash drops again. */
+export function advanceStage(currentStage: CompanyStage, availableCash: number): CompanyStage {
+  return Math.max(currentStage, getUnlockedStage(availableCash)) as CompanyStage;
+}

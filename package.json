@@ -2,16 +2,22 @@
   "name": "biz-sim",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "dev": "DATABASE_URL=\"postgresql://postgres:postgres@127.0.0.1:5433/postgres?sslmode=disable\" pglite-server --db=./.pglite-data --port=5433 --max-connections=5 --run \"next dev\"",
     "build": "next build",
+    "vercel-build": "node scripts/vercel-build.mjs",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
     "prisma:generate": "prisma generate",
     "postinstall": "prisma generate",
-    "db:push": "DATABASE_URL=\"postgresql://postgres:postgres@127.0.0.1:5433/postgres?sslmode=disable\" pglite-server --db=./.pglite-data --port=5433 --max-connections=5 --run \"prisma db push\"",
+    "db:migrate": "DATABASE_URL=\"postgresql://postgres:postgres@127.0.0.1:5433/postgres?sslmode=disable\" pglite-server --db=./.pglite-data --port=5433 --max-connections=5 --run \"prisma migrate deploy\"",
+    "db:migration": "node scripts/create-migration.mjs",
+    "db:deploy": "prisma migrate deploy",
     "db:studio": "DATABASE_URL=\"postgresql://postgres:postgres@127.0.0.1:5433/postgres?sslmode=disable\" pglite-server --db=./.pglite-data --port=5433 --max-connections=5 --run \"prisma studio\""
   },
   "dependencies": {

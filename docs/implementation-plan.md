@@ -1,6 +1,6 @@
 # Implementierungsplan – Business Simulator MVP
 
-Dieser Plan setzt [`business-sim-game-design.md`](./business-sim-game-design.md) um. Er ist in Phasen gegliedert; jede Phase ist für sich abschließbar und testbar. Phase 0, 1 und 2 sind umgesetzt.
+Dieser Plan setzt [`business-sim-game-design.md`](./business-sim-game-design.md) um. Er ist in Phasen gegliedert; jede Phase ist für sich abschließbar und testbar. Phase 0–3 sind umgesetzt, der Stand ist für Vercel vorbereitet ([`deployment-vercel.md`](./deployment-vercel.md)).
 
 ## Phase 0 – Fundament (dieser PR)
 
@@ -20,7 +20,7 @@ Offene Punkte aus Abschnitt 8 der Spec, die in dieser Phase entschieden wurden:
 
 Noch offen (siehe Abschnitt 8): genaue Mengenrabatt-Formel fürs Lager → Phase 4.
 
-**Balancing-Auffälligkeit (für den ersten Playtest):** Startkapital 5.000 € liegt über der Stufe-2-Schwelle (3.000 €), die Stufe-„Geselle" ist damit ab Woche 1 freigeschaltet und das Dashboard zeigt „Stufe 2". Das folgt direkt aus den Platzhalterwerten in `lib/config.ts` (Spec 4.3) — entweder Schwelle anheben (z. B. 8.000 € / 15.000 €) oder die Freischaltung an das *Kapital nach Kredittilgung/Gewinn* koppeln. Entscheidung vor Phase 4.
+**Entschieden (Phase 3):** Das Spiel startet immer auf Stufe 1. Die Schwellen wurden dafür auf 8.000 € / 15.000 € angehoben und freigeschaltete Stufen bleiben erhalten (siehe Phase 3).
 
 ## Phase 1 – Persistenz (DB-Anbindung, umgesetzt)
 
@@ -28,10 +28,10 @@ Noch offen (siehe Abschnitt 8): genaue Mengenrabatt-Formel fürs Lager → Phase
 
 Umgesetzt:
 - `lib/db.ts` — Prisma-Client-Singleton. **Keine** Driver-Adapter-Abhängigkeit: `provider = "postgresql"` im Schema reicht, weil PGlite lokal über einen echten Postgres-Wire-Protocol-Socket angesprochen wird (siehe unten) — das hält lokal und produktiv denselben Codepfad. Der Client wird lazy erzeugt (`getDb()`), damit allein das Importieren des Moduls (z. B. beim `next build`) nie `DATABASE_URL` braucht.
-- **Lokale DB:** `@electric-sql/pglite` + `@electric-sql/pglite-socket` (offizielle Pakete, kein Community-Adapter nötig). Das `pglite-server`-CLI aus `pglite-socket` startet PGlite und exponiert es als Postgres-Server auf `127.0.0.1:5433`; `npm run dev` / `db:push` / `db:studio` wrappen den jeweiligen Befehl darüber (`package.json`). Zwei Stolpersteine, die beim Einrichten aufgetreten sind und die man beim Ändern dieser Scripts im Kopf behalten sollte:
+- **Lokale DB:** `@electric-sql/pglite` + `@electric-sql/pglite-socket` (offizielle Pakete, kein Community-Adapter nötig). Das `pglite-server`-CLI aus `pglite-socket` startet PGlite und exponiert es als Postgres-Server auf `127.0.0.1:5433`; `npm run dev` / `db:migrate` / `db:studio` wrappen den jeweiligen Befehl darüber (`package.json`). Zwei Stolpersteine, die beim Einrichten aufgetreten sind und die man beim Ändern dieser Scripts im Kopf behalten sollte:
   - **`?sslmode=disable` ist Pflicht** in der `DATABASE_URL` — `pglite-socket` unterstützt kein TLS; ohne den Parameter verhandelt Prismas Postgres-Connector eine SSL-Session, die nie beantwortet wird, und der Aufruf hängt. Die Scripts setzen `DATABASE_URL` deshalb selbst, nicht über die eingebaute `--include-database-url`-Flag (die hängt den Parameter nicht an).
   - **`--max-connections` hochsetzen** (Scripts nutzen `5`): `pglite-socket` erlaubt standardmäßig nur eine gleichzeitige Verbindung; Prisma öffnet beim Schreiben regelmäßig mehrere, was sonst mit `P1017`/`P1001` fehlschlägt.
-- **Kein `prisma migrate dev`:** PGlite unterstützt die Shadow-Database/Advisory-Lock-Mechanik des Migrate-Workflows nicht zuverlässig (reproduzierbar mit `P1017`). Stattdessen `prisma db push` für Schema-Sync — für die MVP-Phase mit noch instabilem Schema die pragmatischere Wahl. Sobald das Schema sich stabilisiert (vor dem ersten Produktiv-Release gegen echtes Postgres), sollte das auf versionierte Migrationen umgestellt werden (`prisma migrate dev` gegen eine echte Postgres-Instanz, nicht gegen PGlite).
+- **Kein `prisma migrate dev`:** PGlite stellt die Shadow-Database nicht zuverlässig bereit (reproduzierbar mit `P1017`). Phase 1 nutzte deshalb vorübergehend `prisma db push`. **Seit Phase 3 gilt ein einheitlicher Weg:** versionierte Migrationen in `prisma/migrations/`, angewendet mit `prisma migrate deploy` (das funktioniert auch gegen PGlite) — lokal (`npm run db:migrate`), in den Tests (`tests/helpers/test-db.ts`) und auf Vercel. Neue Migrationen erzeugt `npm run db:migration -- name` (`scripts/create-migration.mjs`: frische In-Memory-PGlite, vorhandene Migrationen anwenden, Differenz zum Schema schreiben).
 - Das ursprüngliche Seed-Skript wurde in Phase 2 durch `ensureCompanyForUser` (Firma beim ersten Login) ersetzt.
 - `lib/repository/company.ts` — Datenzugriffsschicht: `loadCompanyState` (Company+Loan+aktueller Auftragspool, generiert den Pool einer Woche bei Bedarf lazy), `getLatestRoundSummary`, `closeRound` (wertet angenommene Aufträge über `resolveRound` aus `lib/round.ts` aus, würfelt ein Zufallsereignis, persistiert `Round`/`GameEvent` atomar in einer `$transaction`, aktualisiert `Company`/`Loan`, verfällt nicht angenommene Aufträge, erzeugt den Pool der nächsten Woche). Die UI zum Annehmen von Aufträgen fehlt noch (Phase 3) — `closeRound` wertet schon jetzt aus, was zufällig als `ACCEPTED` markiert ist.
 - `app/page.tsx` + `components/dashboard/Dashboard.tsx` — die Seite ist jetzt ein statischer Rahmen mit einer `<Suspense>`-umschlossenen async Server-Komponente, die `loadCompanyState` aufruft. Das ist unter **Cache Components** (in Next 16 per Default aktiv, siehe `next.config.ts`) nötig: ungecachte, pro Request unterschiedliche Daten (hier: DB-Lesen) dürfen nicht direkt in der obersten Seitenkomponente gelesen werden, sonst schlägt die Instant-Navigation-Validierung fehl. Mit dem Suspense-Pattern rendert `next build` die Seite korrekt als Partial Prerender (statische Hülle + dynamisch gestreamter Dashboard-Teil) — bestätigt im Build-Output (`◐ (Partial Prerender)`).
@@ -72,19 +72,35 @@ Umgesetzt:
 - Manuell per Playwright (iPhone-13-Viewport) verifiziert: unauth → Redirect auf `/login`; Link anfordern → Check-Email; Link öffnen → Dashboard; Link-Wiederverwendung → `?error=Verification`; Abmelden → alle geschützten Seiten leiten wieder um.
 
 Bekannte Einschränkungen / Folgearbeit:
-- **Kein Rate-Limit** für Link-Anforderungen (Auth.js bringt keins mit): Vor dem Produktiv-Start pro E-Mail/IP drosseln, sonst lässt sich das Resend-Kontingent (3.000/Monat) leerlaufen.
+- ~~Kein Rate-Limit für Link-Anforderungen~~ — in Phase 3 umgesetzt (siehe dort).
 - **Veraltetes JWT bei gelöschtem User:** `ensureCompanyForUser` würde an der Fremdschlüssel-Constraint scheitern (500 statt Redirect). Relevant erst, wenn Accounts gelöscht werden können.
 - **PGlite-Testgrenze:** Der PGlite-Socket-Server erholt sich nicht von echten DB-Fehlern (z. B. Unique-Verletzung) — die Rust-Engine paniciert danach. Tests dürfen solche Fehler daher nicht provozieren, sondern mocken (siehe Race-Test in `tests/repository.test.ts`).
 
-## Phase 3 – Interaktive Spielschleife
+## Phase 3 – Interaktive Spielschleife (umgesetzt)
 
-**Ziel:** Aus dem lesenden Dashboard wird die echte Spielschleife aus Abschnitt 3.1. Die Persistenz-Logik (`resolveRound`, `closeRound`, Pool-Generierung) steht bereits aus Phase 1 — diese Phase ist primär UI + die fehlende "Annehmen/Ablehnen"-Mutation.
+**Ziel:** Aus dem lesenden Dashboard wird die echte Spielschleife aus Abschnitt 3.1.
 
-1. `app/actions/orders.ts` — Server Actions `acceptOrder`/`rejectOrder` (setzen `Order.status`), prüfen Kapazität (Solo-Zeit bzw. Geselle-Faktor, `lib/capacity.ts` aus Phase 4) vor der Annahme; danach `updateTag`/`revalidatePath`, damit die Seite den neuen Stand sofort zeigt (siehe Cache-Components-Hinweis in Phase 1 — Server Actions laufen immer zur Request-Zeit, aber die gecachte Seite muss explizit invalidiert werden).
-2. `app/actions/round.ts` — dünner Wrapper um das bestehende `closeRound` aus `lib/repository/company.ts`, der nach Abschluss `updateTag`/`revalidatePath` aufruft.
-3. `components/dashboard/OrderPoolCard.tsx` — "Annehmen"-Button aktivieren, an `acceptOrder` binden, Kapazitätsanzeige ergänzen.
-4. `components/dashboard/RoundCloseButton.tsx` — löst die `closeRound`-Action aus, zeigt Ladezustand über `useActionState`/`useTransition`; Ergebnis als Wochenzusammenfassungs-Bottom-Sheet (siehe Mobile-first-Abschnitt). Der Button sitzt in der Daumenzone (fixiert über der Tab-Bar).
-5. `tests/repository.test.ts` um einen Accept-Flow erweitern (Order annehmen → `closeRound` → Bilanz enthält den Auftrag); Playwright-Smoke-Test für Klick → neue Bilanz sichtbar.
+Spielregeln, wie sie jetzt implementiert sind:
+- **Kapazität:** `SOLO_ORDER_CAPACITY_PER_WEEK = 2` angenommene Aufträge pro Woche. Annehmen, Ablehnen (endgültig) und Zurückziehen (Auftrag zurück in den Pool) sind bis zum Wochenabschluss möglich.
+- **Fristen mit Übertrag:** Ein Auftrag aus Woche *w* mit Frist *d* ist in den Wochen *w … w+d−1* annehmbar (`lib/orders.ts#isOrderOpen`), danach wird er `EXPIRED`. Angenommene Aufträge werden beim Wochenabschluss ausgezahlt und `COMPLETED` (nie doppelt bezahlt). Der Pool wird dadurch größer als 3–6 Aufträge; Sortierung: dringendste zuerst, dann höchster Gewinn.
+- **Stufe:** startet immer bei 1 (`STAGE_2_CASH_THRESHOLD = 8.000`, `STAGE_3 = 15.000`, beide über `STARTING_CASH`) und wird in `Company.stage` gespeichert; eine erreichte Stufe geht nicht mehr verloren (`advanceStage`).
+- **Spielende:** Insolvenz nach `INSOLVENCY_NEGATIVE_CASH_WEEKS = 2` Wochen mit negativem Kapital am Wochenende; nach Woche 52 `WON` (Kredit exakt 0 und Gewinn ≥ Ziel) oder `FAILED`. `CompanyStatus` hat dafür den neuen Wert `FAILED`. Danach sind alle Aktionen gesperrt (`GAME_OVER`); das Dashboard zeigt die Ergebnis-Karte mit „Neues Spiel starten“ (`restartGame` löscht das Spiel per Cascade). Zurücksetzen geht auch jederzeit im Tab „Konto“ (zweistufig bestätigt).
+- **Kredit-Endstand:** `calculateWeeklyLoanCharge` zahlt in der letzten Rate den Rest vollständig, damit Gleitkomma-Drift nicht den Sieg verhindert (getestet).
+
+Technik:
+- `lib/repository/company.ts`: `acceptOrder`/`rejectOrder`/`withdrawOrder`/`closeRound(companyId, expectedWeek)`. Jede Mutation läuft in einer Transaktion mit `SELECT … FOR UPDATE` auf der Firma. `expectedWeek` macht den Wochenabschluss idempotent: ein Doppeltipp oder ein veralteter Tab bekommt `STALE_WEEK`, statt eine Woche zu überspringen. Regelverletzungen sind `GameActionError`s mit deutscher Meldung.
+- `app/(app)/actions.ts`: Server Actions lesen die Session erneut (`requireCompanyId`), leiten die Firma daraus ab (der Client sendet nur Auftrags-IDs) und rufen `revalidatePath("/", "layout")` auf, damit die Seite sich in derselben Roundtrip aktualisiert.
+- UI (mobil): `OrderCard` (Gewinn zuerst, Frist-Badge, Ablehnen/Annehmen, „Kapazität voll“), `WeekPlanCard` (Auslastungsbalken, geplante Aufträge, erwartetes Ergebnis nach Kreditrate), `RoundCloseBar` (sticky über der Tab-Bar), `WeekSummarySheet` (natives `<dialog>` als Bottom-Sheet: Bilanz, Kapitalverlauf, Warnungen, Spielende-Hinweis), `GameResultCard`.
+- Tests: Repository-Integrationstests (Kapazität, Fremd-Aufträge, Fristen, Doppelabschluss, Stufe, Insolvenz, Sieg/Niederlage, Neustart) gegen PGlite mit den echten Migrationen; reine Logik in `tests/outcome.test.ts`.
+
+Sicherheit/Betrieb in dieser Phase:
+- **Login-Rate-Limit** (`lib/rate-limit.ts`): DB-basierter Fixed-Window-Zähler (ein atomarer Upsert, damit es über serverlose Instanzen hinweg exakt zählt): 3 Links pro E-Mail/15 min, 10 pro IP/h (`lib/config.ts`). Der Auth.js-Endpunkt hat bewusst **keinen POST** mehr (`app/api/auth/[...nextauth]/route.ts` exportiert nur `GET`), sonst ließe sich das Limit über `/api/auth/signin/resend` umgehen.
+- `/api/health` (Deployment-Check), `scripts/vercel-build.mjs` (Migrationen nur in Production), `lib/mail.ts` (Resend-Versand, getestet inkl. Fehlerfällen). Details: `docs/deployment-vercel.md`.
+
+Bewusst offen / Beobachtungen aus dem ersten Durchspielen:
+- **Balancing:** Mit zwei Aufträgen pro Woche liegt der Gewinn bei grob +1.200–2.300 € pro Woche; das Ziel „10.000 € Gewinn + Kredit getilgt“ ist damit schon nach ca. 6–9 Wochen erreicht und praktisch nicht mehr zu verfehlen. Hebel für den Playtest (nur Konstanten in `lib/config.ts`): Kapazität auf 1, Zielgewinn deutlich höher, feste Wochenkosten (Betriebskosten, ähnlich Miete/Wartung in den Referenz-Screenshots), Aufträge mit schlechter Marge/Risiko.
+- **Meilensteine** (Phase 5) gibt es noch nicht als Konsequenz; nur der Fortschrittsbalken im Dashboard.
+- `cumulativeProfit` wird weiter als `cash − STARTING_CASH` angenähert (`lib/outcome.ts#approximateCumulativeProfit`), korrekt solange nur Wochenabschlüsse das Kapital ändern; mit Personalkauf/Lagerkauf (Phase 4) ersetzen.
 
 ## Phase 4 – Stufen 2 & 3 (Geselle, Lager)
 
@@ -96,23 +112,22 @@ Bekannte Einschränkungen / Folgearbeit:
 4. **Mengenrabatt-Formel (offener Punkt aus Spec Abschnitt 8), Vorschlag:** gestaffelter Rabatt auf `materialNeed`, wenn Material aus dem Lager statt ad hoc bestellt wird — z. B. 10 % Rabatt bis 50 % Lagerauslastung, 20 % darüber, gedeckelt durch `WAREHOUSE_CAPACITY_KG`. Als `WAREHOUSE_BULK_DISCOUNT_TIERS` in `lib/config.ts` ablegen und in `lib/warehouse.ts` als reine Funktion `applyBulkDiscount(materialNeed, warehouseUtilization)` testen.
 5. `components/dashboard/EmployeeCard.tsx`, `components/dashboard/WarehouseCard.tsx`.
 
-## Phase 5 – Meilensteine, Insolvenz, Sieg
+## Phase 5 – Meilensteine (Rest)
 
-**Ziel:** Sichtbare Konsequenzen aus Abschnitt 3.1 Schritt 5 und 4.4.
+**Ziel:** Die zwischenzeitlichen Meilenstein-Checks aus Abschnitt 3.1 Schritt 5. Insolvenz durch negatives Kapital, Sieg/Niederlage nach Woche 52 und die Abschluss-Screens sind bereits in Phase 3 umgesetzt (`lib/outcome.ts`, `GameResultCard`).
 
-1. `lib/milestones.ts` erweitern: `generateMilestoneSchedule(gameLengthWeeks, interval)` erzeugt die 4 Meilenstein-Termine (Woche 13/26/39/52) mit pro-rata-Ziel.
-2. In `closeRound` (Phase 3): nach Rundenabschluss prüfen, ob `weekNumber` ein Meilenstein-Termin ist → `checkMilestone` aufrufen, `Milestone.achieved` setzen, bei Verfehlen Zähler für `checkGameOver` hochzählen.
-3. `app/actions/round.ts`: `checkGameOver` nach jeder Runde aufrufen, `Company.status` auf `insolvent`/`won` setzen, wenn zutreffend.
-4. `app/game-over/page.tsx`, `app/won/page.tsx` — Abschluss-Screens.
-5. `components/dashboard/MilestoneCard.tsx`: echten Status statt Demo-Werten anzeigen (Fortschritt, Countdown bis nächster Check).
+1. `lib/milestones.ts`: `generateMilestoneSchedule(gameLengthWeeks, interval)` erzeugt die Meilenstein-Termine (Woche 13/26/39/52) mit pro-rata-Ziel; Zeilen in `Milestone` beim Spielstart anlegen.
+2. In `closeRound`: an einem Termin `checkMilestone` aufrufen, `Milestone.achieved`/`checkedAt` setzen, den Zähler „verpasste Meilensteine in Folge“ aus den `Milestone`-Zeilen bestimmen und an `evaluateRoundOutcome` (heute fest `consecutiveMissedMilestones: 0`) übergeben.
+3. Warnung im Wochen-Sheet bei verpasstem Meilenstein (`lib/warnings.ts`), als Modal/Hinweis in der Art der „Vermieter“-Nachricht der Referenz-Screenshots.
+4. `MilestoneCard`: echten Status statt Näherung zeigen (Countdown bis zum nächsten Check).
 
-## Phase 6 – Deployment, Politur
+## Phase 6 – Betrieb und Politur
 
-1. Optional: Seed-Skript für Playtests (Firma mit ein paar vorgespielten Runden), falls manuelles Durchklicken zu lange dauert.
-2. Vercel-Projekt anlegen, `DATABASE_URL` (Vercel Postgres oder Supabase Free Tier), `RESEND_API_KEY`, `AUTH_SECRET` als Env-Vars setzen.
-3. `README.md` um Setup-/Deploy-Schritte ergänzen (lokal: PGlite, produktiv: Postgres).
-4. Playtesting-Runde gegen die Balancing-Werte aus `lib/config.ts`, danach gezielt anpassen (keine Logik-Änderungen nötig, nur Konstanten).
-5. Accessibility-/Responsive-Check des Dashboards (Mobilansicht).
+1. **Vercel-Deployment:** Code ist vorbereitet, es fehlt die Einrichtung durch den Projekteigentümer (Datenbank, Resend-Domain, Env-Variablen): siehe `docs/deployment-vercel.md`.
+2. Playtesting-Runde gegen die Balancing-Werte (siehe Phase 3, „Bewusst offen“); danach gezielt anpassen.
+3. Optional: Seed-/Debug-Hilfen für Playtests (z. B. Spielstand vorspulen).
+4. Monitoring: Uptime-Check auf `/api/health`, Fehlerberichte (z. B. Vercel-Logs/Sentry).
+5. Accessibility-Durchgang (Fokus-Reihenfolge im Sheet, Kontraste im Dark Mode, Screenreader-Labels der Buttons).
 
 ## Nicht in diesem MVP-Plan (siehe Spec Abschnitt 4.2 / 3.3 / 3.4)
 
