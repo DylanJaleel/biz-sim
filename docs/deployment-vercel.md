@@ -67,7 +67,7 @@ DATABASE_URL="<preview-db-url>" npm run db:deploy
 
 1. `https://<deine-domain>/api/health` muss `200` mit `"ok": true` liefern. Bei `503` zeigt `checks`, was fehlt (`databaseUrl`, `authSecret`, `emailProvider`, `database`). Es werden nie Werte ausgegeben.
 2. Auf dem Handy `/login` öffnen, E-Mail eingeben, Link aus der Mail öffnen.
-3. Zwei Aufträge annehmen, Woche abschließen, Zusammenfassung prüfen.
+3. Aufträge annehmen, im Tab „Betrieb“ eine Investition prüfen, Woche abschließen, Zusammenfassung ansehen.
 4. Kontrolle des Limits: Vierter Link für dieselbe Adresse innerhalb von 15 Minuten muss „Zu viele Anfragen" zeigen.
 
 ## Schema ändern
@@ -95,6 +95,6 @@ Das Skript wendet die vorhandenen Migrationen auf eine frische In-Memory-DB an u
 
 ## Bekannte Grenzen dieses Stands
 
-- Das Balancing ist ungetestet (siehe `docs/implementation-plan.md`): Das Gewinnziel dürfte zu leicht zu erreichen sein.
+- Das Balancing ist per Simulation kalibriert (`docs/game-economy-design.md`), aber noch nicht mit echten Spielern getestet. Alle Zahlen stehen in `lib/config.ts`.
 - Es gibt noch kein Monitoring/Alerting. `/api/health` ist als Ziel für einen Uptime-Check gedacht.
 - Rate-Limit pro E-Mail (3/15 min) und IP (10/h) steht in `lib/config.ts`.
