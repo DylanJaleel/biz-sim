@@ -1,0 +1,134 @@
+// Prisma schema for Business Simulator MVP.
+// Mirrors the entity sketch in docs/business-sim-game-design.md section 5.
+// Provider stays "postgresql": local dev talks to PGlite via a Postgres-wire
+// driver adapter, production talks to a managed Postgres (see docs/implementation-plan.md).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CompanyStatus {
+  ACTIVE
+  INSOLVENT
+  WON
+}
+
+enum RoundStatus {
+  OPEN
+  RESOLVED
+}
+
+enum OrderStatus {
+  AVAILABLE
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+  company   Company?
+}
+
+model Company {
+  id         String        @id @default(cuid())
+  userId     String        @unique
+  user       User          @relation(fields: [userId], references: [id])
+  name       String
+  cash       Decimal       @default(0)
+  stage      Int           @default(1)
+  weekNumber Int           @default(0)
+  reputation Int           @default(50)
+  status     CompanyStatus @default(ACTIVE)
+  createdAt  DateTime      @default(now())
+
+  loan       Loan?
+  warehouse  Warehouse?
+  milestones Milestone[]
+  rounds     Round[]
+  orders     Order[]
+  employees  Employee[]
+  events     GameEvent[]
+}
+
+model Loan {
+  id               String  @id @default(cuid())
+  companyId        String  @unique
+  company          Company @relation(fields: [companyId], references: [id])
+  principal        Decimal
+  interestRate     Decimal
+  weeklyRate       Decimal
+  remainingBalance Decimal
+}
+
+model Milestone {
+  id                     String    @id @default(cuid())
+  companyId              String
+  company                Company   @relation(fields: [companyId], references: [id])
+  weekDue                Int
+  targetCumulativeProfit Decimal
+  achieved               Boolean   @default(false)
+  checkedAt              DateTime?
+
+  @@index([companyId])
+}
+
+model Round {
+  id          String      @id @default(cuid())
+  companyId   String
+  company     Company     @relation(fields: [companyId], references: [id])
+  weekNumber  Int
+  status      RoundStatus @default(OPEN)
+  summaryJson Json?
+
+  @@unique([companyId, weekNumber])
+}
+
+model Order {
+  id            String      @id @default(cuid())
+  companyId     String
+  company       Company     @relation(fields: [companyId], references: [id])
+  weekOffered   Int
+  type          String
+  materialNeed  Decimal
+  deadlineWeeks Int
+  payout        Decimal
+  status        OrderStatus @default(AVAILABLE)
+
+  @@index([companyId, weekOffered])
+}
+
+model Employee {
+  id                 String  @id @default(cuid())
+  companyId          String
+  company            Company @relation(fields: [companyId], references: [id])
+  role               String  @default("geselle")
+  weeklyWage         Decimal
+  productivityFactor Decimal
+  hiredWeek          Int
+}
+
+model Warehouse {
+  id           String  @id @default(cuid())
+  companyId    String  @unique
+  company      Company @relation(fields: [companyId], references: [id])
+  capacity     Decimal
+  weeklyRent   Decimal
+  currentStock Decimal @default(0)
+}
+
+model GameEvent {
+  id         String  @id @default(cuid())
+  companyId  String
+  company    Company @relation(fields: [companyId], references: [id])
+  weekNumber Int
+  type       String
+  effectJson Json
+}
