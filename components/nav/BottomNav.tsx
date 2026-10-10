@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BankIcon, HomeIcon, UserIcon } from "@/components/ui/icons";
+import { BankIcon, HomeIcon, UserIcon, WrenchIcon } from "@/components/ui/icons";
 
 const TABS = [
   { href: "/", label: "Übersicht", Icon: HomeIcon },
+  { href: "/betrieb", label: "Betrieb", Icon: WrenchIcon },
   { href: "/bank", label: "Bank", Icon: BankIcon },
   { href: "/konto", label: "Konto", Icon: UserIcon },
 ] as const;
@@ -18,7 +19,7 @@ export function BottomNav() {
       aria-label="Hauptnavigation"
       className="fixed inset-x-0 bottom-0 z-40 border-t border-black/10 bg-white/90 pb-[env(safe-area-inset-bottom)] backdrop-blur dark:border-white/10 dark:bg-zinc-950/90"
     >
-      <ul className="mx-auto grid max-w-lg grid-cols-3 lg:max-w-md">
+      <ul className="mx-auto grid max-w-lg grid-cols-4 lg:max-w-md">
         {TABS.map(({ href, label, Icon }) => {
           const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
           return (

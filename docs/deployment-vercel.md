@@ -55,6 +55,8 @@ Unter *Settings → Environment Variables*:
 
 Push auf den Production-Branch (bzw. *Deploy* im Dashboard). Der Build wendet zuerst ausstehende Migrationen an (nur `VERCEL_ENV=production`) und baut dann die App. Schlägt die Migration fehl, bricht der Build ab, ein halb migrierter Stand geht nicht live.
 
+> **Achtung, Wirtschaftsmodell v2:** Die Migration `economy_v2` löscht bestehende Spielstände (`DELETE FROM "Company"`), weil sich das Modell grundlegend geändert hat (Stunden statt Auftragszahl, keine Stufen/Meilensteine). Benutzerkonten bleiben bestehen; beim nächsten Besuch startet jeder mit einer frischen Firma. Auf einer frisch angelegten Datenbank hat das keine Folgen.
+
 **Preview-Deployments** migrieren absichtlich nicht, damit ein Branch nie die Produktionsdatenbank anfasst. Für Previews: eigene Datenbank (bei Neon z. B. ein Branch) in den Preview-Variablen eintragen und einmal manuell migrieren:
 
 ```bash

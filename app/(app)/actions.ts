@@ -3,26 +3,25 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { ActionResult } from "@/lib/action-result";
-import { GAME_LENGTH_WEEKS } from "@/lib/config";
+import type { WeekSummary } from "@/lib/economy";
+import type { InvestmentKind } from "@/lib/investments";
 import type { GameStatus } from "@/lib/outcome";
 import {
   acceptOrder,
   closeRound,
+  fireEmployee,
   GameActionError,
+  invest,
   rejectOrder,
   restartGame,
   withdrawOrder,
 } from "@/lib/repository/company";
-import type { RoundSummary } from "@/lib/round";
 import { requireCompanyId } from "@/lib/session";
-import type { CompanyStage } from "@/lib/stage";
 import { buildWeekWarnings, type WeekWarning } from "@/lib/warnings";
 
 export interface WeekSummaryView {
-  summary: RoundSummary;
+  summary: WeekSummary;
   status: GameStatus;
-  stageBefore: CompanyStage;
-  stageAfter: CompanyStage;
   warnings: WeekWarning[];
 }
 
@@ -77,8 +76,28 @@ export async function withdrawOrderAction(orderId: string): Promise<ActionResult
   });
 }
 
+const INVESTMENT_KINDS: readonly InvestmentKind[] = ["hire", "vehicle", "tools", "workshop"];
+
+export async function investAction(kind: InvestmentKind): Promise<ActionResult> {
+  if (!INVESTMENT_KINDS.includes(kind)) return { ok: false, error: "Ungültige Investition." };
+  return guarded(async (companyId) => {
+    await invest(companyId, kind);
+    return null;
+  });
+}
+
+export async function fireEmployeeAction(employeeId: string): Promise<ActionResult> {
+  if (typeof employeeId !== "string" || employeeId.length === 0 || employeeId.length > 64) {
+    return { ok: false, error: "Ungültiger Mitarbeiter." };
+  }
+  return guarded(async (companyId) => {
+    await fireEmployee(companyId, employeeId);
+    return null;
+  });
+}
+
 export async function closeRoundAction(expectedWeek: number): Promise<ActionResult<WeekSummaryView>> {
-  if (!Number.isInteger(expectedWeek) || expectedWeek < 1 || expectedWeek > GAME_LENGTH_WEEKS) {
+  if (!Number.isInteger(expectedWeek) || expectedWeek < 1) {
     return { ok: false, error: "Ungültige Woche." };
   }
   return guarded(async (companyId) => {

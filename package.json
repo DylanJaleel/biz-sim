@@ -6,12 +6,13 @@
     "node": "22.x"
   },
   "scripts": {
-    "dev": "DATABASE_URL=\"postgresql://postgres:postgres@127.0.0.1:5433/postgres?sslmode=disable\" pglite-server --db=./.pglite-data --port=5433 --max-connections=5 --run \"next dev\"",
+    "dev": "DATABASE_URL=\"postgresql://postgres:postgres@127.0.0.1:5433/postgres?sslmode=disable&connection_limit=3\" pglite-server --db=./.pglite-data --port=5433 --max-connections=5 --run \"next dev\"",
     "build": "next build",
     "vercel-build": "node scripts/vercel-build.mjs",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
+    "simulate": "tsx scripts/simulate-economy.ts",
     "test:watch": "vitest",
     "prisma:generate": "prisma generate",
     "postinstall": "prisma generate",

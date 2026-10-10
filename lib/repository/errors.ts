@@ -3,8 +3,11 @@ export type GameActionErrorCode =
   | "STALE_WEEK"
   | "ORDER_NOT_FOUND"
   | "ORDER_UNAVAILABLE"
-  | "CAPACITY_REACHED"
-  | "NOT_ACCEPTED";
+  | "TOOL_LEVEL_TOO_LOW"
+  | "NOT_ENOUGH_HOURS"
+  | "NOT_ACCEPTED"
+  | "INVESTMENT_REFUSED"
+  | "EMPLOYEE_NOT_FOUND";
 
 /** Expected, player-facing rule violations (as opposed to bugs/infrastructure errors). */
 export class GameActionError extends Error {

@@ -1,13 +1,14 @@
 # Business Simulator
 
-Rundenbasiertes Browser-Strategiespiel: Spieler gründen mit wenig Eigenkapital + Bankkredit eine Handwerksfirma und müssen innerhalb von 52 Wochen den Kredit tilgen und einen Mindestgewinn erreichen, während operative Komplexität (Personal, Lagerhaltung) mit dem Firmenwachstum freigeschaltet wird.
+Rundenbasiertes Browser-Strategiespiel: Spieler gründen mit wenig Eigenkapital + Bankkredit eine Handwerksfirma. Es gibt keine Ziellinie – die Aufträge tragen den Betrieb gerade so, der Gewinn fließt in Wachstum (Mitarbeiter, Werkzeugqualität, Fahrzeuge, größere Werkstatt, später ein zweiter Standort). Wer zu schnell wächst oder schlampig plant, geht insolvent.
 
 Vollständige Konzept- und MVP-Spec: [`docs/business-sim-game-design.md`](./docs/business-sim-game-design.md).
+Wirtschaftsmodell: [`docs/game-economy-design.md`](./docs/game-economy-design.md).
 Phasenplan für die weitere Umsetzung: [`docs/implementation-plan.md`](./docs/implementation-plan.md).
 
 ## Aktueller Stand
 
-Phase 0–3 des Implementierungsplans sind umgesetzt: getestete Spiellogik, Datenbank, **Login per Magic Link** (mit Rate-Limit) und die **spielbare Wochenschleife**: Aufträge annehmen/ablehnen/zurückziehen (Kapazität 2 pro Woche, Fristen mit Übertrag), Woche abschließen mit Zusammenfassungs-Sheet, Spielende (Insolvenz / Sieg / Ziel verfehlt) und Neustart. Die Oberfläche ist mobile-first. Start ist immer Stufe 1. Noch **nicht** vorhanden: Personal und Lager (Phase 4), Meilenstein-Konsequenzen (Phase 5).
+Phase 0–4 des Implementierungsplans sind umgesetzt: getestete Spiellogik, Datenbank, **Login per Magic Link** (mit Rate-Limit) und die **spielbare, offene Wochenschleife**: Aufträge nach Stunden-Kapazität annehmen, Team einstellen/kündigen, Fahrzeuge kaufen, Werkzeug und Werkstatt ausbauen, Woche abschließen mit Bilanz-Sheet, Insolvenz und Neustart. Die Oberfläche ist mobile-first (Tabs: Übersicht, Betrieb, Bank, Konto). Das Wirtschaftsmodell ist in [`docs/game-economy-design.md`](./docs/game-economy-design.md) hergeleitet und per Simulation abgesichert. Noch **nicht** vorhanden: zweiter Standort, Lager, Marketing, Steuern (Roadmap im Design-Dokument).
 
 Auf Vercel deployen: [`docs/deployment-vercel.md`](./docs/deployment-vercel.md).
 
@@ -21,16 +22,16 @@ Auf Vercel deployen: [`docs/deployment-vercel.md`](./docs/deployment-vercel.md).
 ## Projektstruktur
 
 ```
-app/               Next.js App Router: `(app)/` = eingeloggter Bereich mit Tab-Bar (Übersicht, Bank, Konto), `login/`, `api/auth/`
+app/               Next.js App Router: `(app)/` = eingeloggter Bereich mit Tab-Bar (Übersicht, Betrieb, Bank, Konto), `login/`, `api/auth/`
 auth.ts            Auth.js-Konfiguration (Magic Link, Dev-Fallback ohne Resend-Key)
 proxy.ts           Optimistischer Redirect auf /login (echte Prüfung in lib/session.ts)
-components/        UI-Komponenten (Cards, Auftragspool, Wochenbilanz, Fortschrittsbalken)
-lib/               Spiellogik — reine, testbare Funktionen (Rundenberechnung, Kredit, Zufallsereignisse, Meilensteine)
+components/        UI-Komponenten (Cards, Auftragsmarkt, Betrieb/Investitionen, Wochenbilanz)
+lib/               Spiellogik — reine, testbare Funktionen (economy: Wochenberechnung/Markt/Kosten, investments, loan, outcome, simulation)
 lib/repository/    Datenzugriffsschicht (Company/Loan/Order laden & Runden persistieren)
 prisma/            Schema + versionierte Migrationen (gleiche SQL-Dateien lokal, in Tests und auf Vercel)
 scripts/           create-migration.mjs (Migrationen ohne Shadow-DB), vercel-build.mjs
 tests/             Vitest-Tests, lib/-Logik + Repository-Integrationstest
-docs/              Spec + Implementierungsplan
+docs/              Spec, Wirtschafts-Design, Implementierungsplan
 ```
 
 ## Entwicklung
@@ -40,7 +41,8 @@ npm install
 cp .env.example .env.local   # dann AUTH_SECRET setzen: openssl rand -base64 32
 npm run db:migrate  # versionierte Migrationen auf die lokale PGlite-DB anwenden
 npm run dev      # startet die lokale PGlite-DB + Dev-Server auf http://localhost:3000
-npm test         # Vitest-Suite (lib/, DB-Integrationstests gegen PGlite)
+npm test         # Vitest-Suite (lib/, Balance-Simulation, DB-Integrationstests gegen PGlite)
+npm run simulate # Balance-Report: Skript-Spieler × 200 Zufallsverläufe
 npm run db:migration -- name   # neue Migration aus Änderungen an schema.prisma erzeugen
 npm run lint     # ESLint
 npm run build    # Produktions-Build (inkl. Typecheck)

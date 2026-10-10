@@ -80,12 +80,10 @@ Bekannte Einschränkungen / Folgearbeit:
 
 **Ziel:** Aus dem lesenden Dashboard wird die echte Spielschleife aus Abschnitt 3.1.
 
-Spielregeln, wie sie jetzt implementiert sind:
-- **Kapazität:** `SOLO_ORDER_CAPACITY_PER_WEEK = 2` angenommene Aufträge pro Woche. Annehmen, Ablehnen (endgültig) und Zurückziehen (Auftrag zurück in den Pool) sind bis zum Wochenabschluss möglich.
-- **Fristen mit Übertrag:** Ein Auftrag aus Woche *w* mit Frist *d* ist in den Wochen *w … w+d−1* annehmbar (`lib/orders.ts#isOrderOpen`), danach wird er `EXPIRED`. Angenommene Aufträge werden beim Wochenabschluss ausgezahlt und `COMPLETED` (nie doppelt bezahlt). Der Pool wird dadurch größer als 3–6 Aufträge; Sortierung: dringendste zuerst, dann höchster Gewinn.
-- **Stufe:** startet immer bei 1 (`STAGE_2_CASH_THRESHOLD = 8.000`, `STAGE_3 = 15.000`, beide über `STARTING_CASH`) und wird in `Company.stage` gespeichert; eine erreichte Stufe geht nicht mehr verloren (`advanceStage`).
-- **Spielende:** Insolvenz nach `INSOLVENCY_NEGATIVE_CASH_WEEKS = 2` Wochen mit negativem Kapital am Wochenende; nach Woche 52 `WON` (Kredit exakt 0 und Gewinn ≥ Ziel) oder `FAILED`. `CompanyStatus` hat dafür den neuen Wert `FAILED`. Danach sind alle Aktionen gesperrt (`GAME_OVER`); das Dashboard zeigt die Ergebnis-Karte mit „Neues Spiel starten“ (`restartGame` löscht das Spiel per Cascade). Zurücksetzen geht auch jederzeit im Tab „Konto“ (zweistufig bestätigt).
-- **Kredit-Endstand:** `calculateWeeklyLoanCharge` zahlt in der letzten Rate den Rest vollständig, damit Gleitkomma-Drift nicht den Sieg verhindert (getestet).
+Die in dieser Phase zuerst umgesetzten Regeln (2 Aufträge pro Woche, Stufen nach Kapital, Sieg/Niederlage nach 52 Wochen) waren im Playtest **zu einfach** und sind durch das Wirtschaftsmodell v2 (Phase 4) ersetzt worden. Erhalten geblieben sind:
+- **Fristen mit Übertrag:** Ein Auftrag aus Woche *w* mit Frist *d* ist in den Wochen *w … w+d−1* annehmbar (`lib/orders.ts#isOrderOpen`), danach wird er `EXPIRED`. Angenommene Aufträge werden beim Wochenabschluss ausgezahlt und `COMPLETED` (nie doppelt bezahlt). Annehmen, Ablehnen (endgültig) und Zurückziehen sind bis zum Wochenabschluss möglich.
+- **Spielende:** nur noch Insolvenz; danach sind alle Aktionen gesperrt (`GAME_OVER`), die Ergebnis-Karte bietet „Neues Spiel starten“ (`restartGame` löscht das Spiel per Cascade). Zurücksetzen geht auch jederzeit im Tab „Konto“.
+- **Kredit-Endstand:** `calculateWeeklyLoanCharge` zahlt in der letzten Rate den Rest vollständig (Gleitkomma-Drift, getestet).
 
 Technik:
 - `lib/repository/company.ts`: `acceptOrder`/`rejectOrder`/`withdrawOrder`/`closeRound(companyId, expectedWeek)`. Jede Mutation läuft in einer Transaktion mit `SELECT … FOR UPDATE` auf der Firma. `expectedWeek` macht den Wochenabschluss idempotent: ein Doppeltipp oder ein veralteter Tab bekommt `STALE_WEEK`, statt eine Woche zu überspringen. Regelverletzungen sind `GameActionError`s mit deutscher Meldung.
@@ -97,29 +95,25 @@ Sicherheit/Betrieb in dieser Phase:
 - **Login-Rate-Limit** (`lib/rate-limit.ts`): DB-basierter Fixed-Window-Zähler (ein atomarer Upsert, damit es über serverlose Instanzen hinweg exakt zählt): 3 Links pro E-Mail/15 min, 10 pro IP/h (`lib/config.ts`). Der Auth.js-Endpunkt hat bewusst **keinen POST** mehr (`app/api/auth/[...nextauth]/route.ts` exportiert nur `GET`), sonst ließe sich das Limit über `/api/auth/signin/resend` umgehen.
 - `/api/health` (Deployment-Check), `scripts/vercel-build.mjs` (Migrationen nur in Production), `lib/mail.ts` (Resend-Versand, getestet inkl. Fehlerfällen). Details: `docs/deployment-vercel.md`.
 
-Bewusst offen / Beobachtungen aus dem ersten Durchspielen:
-- **Balancing:** Mit zwei Aufträgen pro Woche liegt der Gewinn bei grob +1.200–2.300 € pro Woche; das Ziel „10.000 € Gewinn + Kredit getilgt“ ist damit schon nach ca. 6–9 Wochen erreicht und praktisch nicht mehr zu verfehlen. Hebel für den Playtest (nur Konstanten in `lib/config.ts`): Kapazität auf 1, Zielgewinn deutlich höher, feste Wochenkosten (Betriebskosten, ähnlich Miete/Wartung in den Referenz-Screenshots), Aufträge mit schlechter Marge/Risiko.
-- **Meilensteine** (Phase 5) gibt es noch nicht als Konsequenz; nur der Fortschrittsbalken im Dashboard.
-- `cumulativeProfit` wird weiter als `cash − STARTING_CASH` angenähert (`lib/outcome.ts#approximateCumulativeProfit`), korrekt solange nur Wochenabschlüsse das Kapital ändern; mit Personalkauf/Lagerkauf (Phase 4) ersetzen.
+## Phase 4 – Wirtschaftsmodell v2 (umgesetzt)
 
-## Phase 4 – Stufen 2 & 3 (Geselle, Lager)
+**Ziel:** Aus dem „Gewinnziel in 52 Wochen“ wird ein offenes Spiel: Aufträge tragen den Betrieb, der Gewinn wird in Wachstum investiert (Personal, Werkzeug, Fahrzeuge, Werkstatt). Vollständige Herleitung, Zahlen und Simulationsergebnisse: [`docs/game-economy-design.md`](./game-economy-design.md).
 
-**Ziel:** Freischaltung und Mechanik aus Abschnitt 3.2 Stufen 2–3.
+- `lib/economy.ts` (rein): Stunden-Kapazität je Person, Fixkosten, Saison, Marktsegmente und Angebote, Wochenereignisse, `resolveWeek`/`previewWeek`, Firmenwert.
+- `lib/investments.ts` (rein): Regeln für Einstellen, Fahrzeug, Werkzeug, Werkstatt, Entlassen.
+- `lib/simulation.ts`, `scripts/simulate-economy.ts`, `tests/economy-balance.test.ts`: Skript-Spieler mit festen Strategien kalibrieren und bewachen die Balance.
+- Datenmodell (Migration `economy_v2`, **setzt bestehende Spielstände zurück**): `Company.weekNumber/reputation/toolLevel/workshopLevel/vehicles`, `Employee {hiredWeek, endsWeek}`, `Order {tier, laborHours}`, `LedgerEntry` für Investitionen, `GameEvent` einmalig je Woche. `Milestone`, Stufen und `FAILED`/`WON` entfallen.
+- Repository: `invest`, `fireEmployee`; `closeRound` mit Wochenbilanz inkl. Investitionen. Angebote und Wochenereignis entstehen beim Wochenstart (unter Firmen-Lock, deterministisch aus Firma+Woche gesät).
+- UI: Tab **Betrieb** (Fixkosten/Break-even, Team mit Kündigen, Investitionskarten mit zweistufiger Bestätigung), Übersicht mit Stunden-Auslastung, €/Std.-Marge, gesperrten Aufträgen, Wochenereignis-Banner, neuem Wochenblatt (Gewinn, Arbeit, Kapital inkl. Investitionen); Bank mit Dispo.
+- Lokal: `connection_limit=3` in der Dev-`DATABASE_URL`, weil der PGlite-Socket nur 5 Verbindungen zulässt.
 
-1. `lib/capacity.ts` — Kapazitätsberechnung (Solo-Basiswert, `+ EMPLOYEE_CAPACITY_FACTOR` je Geselle), nutzt `getUnlockedStage` aus `lib/stage.ts`.
-2. `app/actions/employee.ts` — `hireEmployee`/`fireEmployee`, nur ab Stufe 2 (`STAGE_2_CASH_THRESHOLD`) erlaubt.
-3. `app/actions/warehouse.ts` — `rentWarehouse`/`cancelWarehouse`, nur ab Stufe 3 (`STAGE_3_CASH_THRESHOLD`) erlaubt.
-4. **Mengenrabatt-Formel (offener Punkt aus Spec Abschnitt 8), Vorschlag:** gestaffelter Rabatt auf `materialNeed`, wenn Material aus dem Lager statt ad hoc bestellt wird — z. B. 10 % Rabatt bis 50 % Lagerauslastung, 20 % darüber, gedeckelt durch `WAREHOUSE_CAPACITY_KG`. Als `WAREHOUSE_BULK_DISCOUNT_TIERS` in `lib/config.ts` ablegen und in `lib/warehouse.ts` als reine Funktion `applyBulkDiscount(materialNeed, warehouseUtilization)` testen.
-5. `components/dashboard/EmployeeCard.tsx`, `components/dashboard/WarehouseCard.tsx`.
+## Phase 5 – Ausbau der Wirtschaft (offen)
 
-## Phase 5 – Meilensteine (Rest)
+Reihenfolge nach Nutzen für das Spielgefühl (Details in `docs/game-economy-design.md`, Abschnitt Roadmap):
 
-**Ziel:** Die zwischenzeitlichen Meilenstein-Checks aus Abschnitt 3.1 Schritt 5. Insolvenz durch negatives Kapital, Sieg/Niederlage nach Woche 52 und die Abschluss-Screens sind bereits in Phase 3 umgesetzt (`lib/outcome.ts`, `GameResultCard`).
-
-1. `lib/milestones.ts`: `generateMilestoneSchedule(gameLengthWeeks, interval)` erzeugt die Meilenstein-Termine (Woche 13/26/39/52) mit pro-rata-Ziel; Zeilen in `Milestone` beim Spielstart anlegen.
-2. In `closeRound`: an einem Termin `checkMilestone` aufrufen, `Milestone.achieved`/`checkedAt` setzen, den Zähler „verpasste Meilensteine in Folge“ aus den `Milestone`-Zeilen bestimmen und an `evaluateRoundOutcome` (heute fest `consecutiveMissedMilestones: 0`) übergeben.
-3. Warnung im Wochen-Sheet bei verpasstem Meilenstein (`lib/warnings.ts`), als Modal/Hinweis in der Art der „Vermieter“-Nachricht der Referenz-Screenshots.
-4. `MilestoneCard`: echten Status statt Näherung zeigen (Countdown bis zum nächsten Check).
+1. **Zweiter Standort** mit Betriebsleiter, eigenem Markt und Verwaltungslast.
+2. Lager, Zahlungsziele/Forderungen, Marketing.
+3. Steuern/Jahresabschluss, Erfolge, weitere Kredite, Fahrzeugtypen.
 
 ## Phase 6 – Betrieb und Politur
 

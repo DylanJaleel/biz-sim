@@ -1,31 +1,53 @@
 import { OrderCard } from "@/components/dashboard/OrderCard";
 import { Card } from "@/components/ui/Card";
 import { ProgressBar } from "@/components/ui/ProgressBar";
-import { formatCurrency } from "@/lib/format";
+import type { WeekSummary } from "@/lib/economy";
+import { formatCurrency, formatHours, formatSignedCurrency } from "@/lib/format";
 import type { OrderRecord } from "@/lib/repository/company";
 
+function Row({ label, value, strong = false }: { label: string; value: number; strong?: boolean }) {
+  return (
+    <div
+      className={`flex justify-between ${
+        strong
+          ? `font-semibold ${value < 0 ? "text-red-600 dark:text-red-400" : "text-zinc-900 dark:text-zinc-50"}`
+          : "text-zinc-600 dark:text-zinc-400"
+      }`}
+    >
+      <dt>{label}</dt>
+      <dd className="tabular-nums">{formatSignedCurrency(value)}</dd>
+    </div>
+  );
+}
+
+/** The plan of the week: hours used, accepted jobs and what that adds up to against the fixed costs. */
 export function WeekPlanCard({
   weekNumber,
   accepted,
   capacity,
-  loanPayment,
+  preview,
 }: {
   weekNumber: number;
   accepted: OrderRecord[];
-  capacity: number;
-  loanPayment: number;
+  capacity: { total: number; used: number };
+  preview: WeekSummary;
 }) {
-  const expectedProfit = accepted.reduce((sum, order) => sum + order.payout - order.materialNeed, 0);
-  const expectedResult = expectedProfit - loanPayment;
+  const fixed = preview.items.filter((item) => item.key !== "material" && item.key !== "loanInterest" && item.key !== "repair");
+  const fixedTotal = fixed.reduce((sum, item) => sum + item.amount, 0);
+  const material = preview.items.find((item) => item.key === "material")?.amount ?? 0;
+  const other = preview.profit - preview.revenue - material - fixedTotal;
 
   return (
     <Card title={`Diese Woche · Woche ${weekNumber}`}>
-      <ProgressBar value={accepted.length} max={capacity} label={`Auslastung ${accepted.length}/${capacity} Aufträge`} />
+      <ProgressBar
+        value={capacity.used}
+        max={Math.max(capacity.total, 1)}
+        label={`Auslastung ${formatHours(capacity.used)} von ${formatHours(capacity.total)}`}
+      />
 
       {accepted.length === 0 ? (
         <p className="mt-3 text-sm text-zinc-500 dark:text-zinc-400">
-          Noch nichts geplant. Wähle bis zu {capacity} Aufträge aus dem Pool – ohne Aufträge läuft die Kreditrate
-          trotzdem weiter.
+          Noch nichts geplant. Wähle Aufträge aus dem Markt – die Fixkosten laufen auch ohne Arbeit.
         </p>
       ) : (
         <ul className="mt-3 flex flex-col gap-3">
@@ -36,21 +58,15 @@ export function WeekPlanCard({
       )}
 
       <dl className="mt-4 space-y-1 text-sm">
-        <div className="flex justify-between text-zinc-600 dark:text-zinc-400">
-          <dt>Gewinn aus Aufträgen</dt>
-          <dd>{formatCurrency(expectedProfit)}</dd>
-        </div>
-        <div className="flex justify-between text-zinc-600 dark:text-zinc-400">
-          <dt>Kreditrate</dt>
-          <dd>-{formatCurrency(loanPayment)}</dd>
-        </div>
-        <div
-          className={`flex justify-between font-semibold ${
-            expectedResult < 0 ? "text-red-600 dark:text-red-400" : "text-zinc-900 dark:text-zinc-50"
-          }`}
-        >
-          <dt>Erwartetes Ergebnis</dt>
-          <dd>{expectedResult < 0 ? `-${formatCurrency(-expectedResult)}` : formatCurrency(expectedResult)}</dd>
+        <Row label="Einnahmen" value={preview.revenue} />
+        <Row label="Material" value={material} />
+        <Row label="Fixkosten (Löhne, Miete, …)" value={fixedTotal} />
+        {Math.abs(other) > 0.5 && <Row label="Zinsen & Sonstiges" value={other} />}
+        <div className="my-1 border-t border-black/10 dark:border-white/10" />
+        <Row label="Erwarteter Gewinn" value={preview.profit} strong />
+        <div className="flex justify-between text-xs text-zinc-500 dark:text-zinc-400">
+          <dt>danach Kredittilgung</dt>
+          <dd className="tabular-nums">−{formatCurrency(preview.loanPrincipalPayment)}</dd>
         </div>
       </dl>
     </Card>

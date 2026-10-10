@@ -4,13 +4,12 @@ import { useEffect, useRef } from "react";
 import type { WeekSummaryView } from "@/app/(app)/actions";
 import { BalanceLine, BalanceLines } from "@/components/dashboard/BalanceLines";
 import { Card } from "@/components/ui/Card";
-import { GAME_LENGTH_WEEKS } from "@/lib/config";
+import { formatHours, formatPercent } from "@/lib/format";
 
-const ENDING_TEXT = {
-  INSOLVENT: { title: "Insolvenz", text: "Dein Kapital war zu lange im Minus. Das Spiel ist vorbei." },
-  WON: { title: "Geschafft!", text: "Kredit getilgt und Gewinnziel erreicht – du hast das Spiel gewonnen." },
-  FAILED: { title: "Ziel verfehlt", text: `Die ${GAME_LENGTH_WEEKS} Wochen sind um, das Ziel wurde nicht erreicht.` },
-} as const;
+const INSOLVENCY_TEXT = {
+  title: "Insolvenz",
+  text: "Dein Kapital war zu tief oder zu lange im Minus. Der Betrieb ist am Ende.",
+};
 
 /** Bottom sheet shown after closing a week. Native <dialog>: focus trap, Esc and backdrop come for free. */
 export function WeekSummarySheet({ view, onClose }: { view: WeekSummaryView; onClose: () => void }) {
@@ -27,7 +26,7 @@ export function WeekSummarySheet({ view, onClose }: { view: WeekSummaryView; onC
     };
   }, []);
 
-  const ending = status === "ACTIVE" ? null : ENDING_TEXT[status];
+  const ending = status === "ACTIVE" ? null : INSOLVENCY_TEXT;
 
   return (
     <dialog
@@ -61,9 +60,27 @@ export function WeekSummarySheet({ view, onClose }: { view: WeekSummaryView; onC
               <BalanceLines summary={summary} />
             </Card>
 
+            <Card title="Arbeit">
+              <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                {summary.completedOrders} {summary.completedOrders === 1 ? "Auftrag" : "Aufträge"} ·{" "}
+                {formatHours(summary.completedHours)} von {formatHours(summary.capacityHours)} (
+                {formatPercent(summary.utilization)} Auslastung)
+              </p>
+              <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+                Ruf {summary.reputationBefore.toFixed(1).replace(".", ",")} →{" "}
+                {summary.reputationAfter.toFixed(1).replace(".", ",")}
+              </p>
+            </Card>
+
             <Card title="Kapital">
               <BalanceLine label="Wochenstart" value={summary.cashBefore} />
-              <BalanceLine label="Ergebnis" value={summary.netResult} />
+              <BalanceLine label="Gewinn der Woche" value={summary.profit} />
+              {summary.loanPrincipalPayment > 0 && (
+                <BalanceLine label="Kredittilgung" value={-summary.loanPrincipalPayment} />
+              )}
+              {summary.investments.map((line, index) => (
+                <BalanceLine key={`${line.label}-${index}`} label={line.label} value={line.amount} />
+              ))}
               <hr className="my-1 border-black/10 dark:border-white/10" />
               <BalanceLine label="Wochenende" value={summary.cashAfter} emphasize />
             </Card>

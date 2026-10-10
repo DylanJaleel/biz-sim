@@ -12,11 +12,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// There is no way to win: a business keeps running until it goes insolvent.
 enum CompanyStatus {
   ACTIVE
   INSOLVENT
-  WON
-  FAILED
 }
 
 enum RoundStatus {
@@ -53,24 +52,26 @@ model VerificationToken {
 }
 
 model Company {
-  id         String        @id @default(cuid())
-  userId     String        @unique
-  user       User          @relation(fields: [userId], references: [id])
-  name       String
-  cash       Decimal       @default(0)
-  stage      Int           @default(1)
-  weekNumber Int           @default(0)
-  reputation Int           @default(50)
-  status     CompanyStatus @default(ACTIVE)
-  createdAt  DateTime      @default(now())
+  id            String        @id @default(cuid())
+  userId        String        @unique
+  user          User          @relation(fields: [userId], references: [id])
+  name          String
+  cash          Decimal       @default(0)
+  weekNumber    Int           @default(1)
+  reputation    Float         @default(40)
+  toolLevel     Int           @default(1)
+  workshopLevel Int           @default(1)
+  vehicles      Int           @default(1)
+  status        CompanyStatus @default(ACTIVE)
+  createdAt     DateTime      @default(now())
 
-  loan       Loan?
-  warehouse  Warehouse?
-  milestones Milestone[]
-  rounds     Round[]
-  orders     Order[]
-  employees  Employee[]
-  events     GameEvent[]
+  loan      Loan?
+  warehouse Warehouse?
+  rounds    Round[]
+  orders    Order[]
+  employees Employee[]
+  events    GameEvent[]
+  ledger    LedgerEntry[]
 }
 
 model Loan {
@@ -81,18 +82,6 @@ model Loan {
   interestRate     Decimal
   weeklyRate       Decimal
   remainingBalance Decimal
-}
-
-model Milestone {
-  id                     String    @id @default(cuid())
-  companyId              String
-  company                Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  weekDue                Int
-  targetCumulativeProfit Decimal
-  achieved               Boolean   @default(false)
-  checkedAt              DateTime?
-
-  @@index([companyId])
 }
 
 model Round {
@@ -112,6 +101,10 @@ model Order {
   company       Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
   weekOffered   Int
   type          String
+  /// Job grade 1..3: the tool level needed to take the job.
+  tier          Int         @default(1)
+  /// Billable hours the job needs.
+  laborHours    Int
   materialNeed  Decimal
   deadlineWeeks Int
   payout        Decimal
@@ -121,13 +114,14 @@ model Order {
 }
 
 model Employee {
-  id                 String  @id @default(cuid())
-  companyId          String
-  company            Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  role               String  @default("geselle")
-  weeklyWage         Decimal
-  productivityFactor Decimal
-  hiredWeek          Int
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  role      String  @default("geselle")
+  /// First week the employee works (hired in week w starts in w+1).
+  hiredWeek Int
+  /// First week the employee no longer works (notice period); null = open-ended.
+  endsWeek  Int?
 }
 
 model Warehouse {
@@ -146,6 +140,22 @@ model GameEvent {
   weekNumber Int
   type       String
   effectJson Json
+
+  @@unique([companyId, weekNumber])
+}
+
+// Cash movements outside the weekly operations (hiring fee, purchases, upgrades).
+// Amounts are negative for money that left the account; the week summary lists them.
+model LedgerEntry {
+  id         String   @id @default(cuid())
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  weekNumber Int
+  label      String
+  amount     Decimal
+  createdAt  DateTime @default(now())
+
+  @@index([companyId, weekNumber])
 }
 
 // Fixed-window counters for abuse protection (see lib/rate-limit.ts). Lives in

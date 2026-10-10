@@ -47,3 +47,12 @@ export function UserIcon(props: SVGProps<SVGSVGElement>) {
     </Icon>
   );
 }
+
+export function WrenchIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M14.5 6.5a4 4 0 0 0 4.9 4.9l-9.6 9.6a2.1 2.1 0 0 1-3-3l9.6-9.6a4 4 0 0 0-1.9-1.9Z" />
+      <path d="m14.5 6.5 2.2-2.2 3 3-2.2 2.2" />
+    </Icon>
+  );
+}

@@ -1,18 +1,14 @@
 import { CompanyOverviewCard } from "@/components/dashboard/CompanyOverviewCard";
 import { EventBanner } from "@/components/dashboard/EventBanner";
 import { GameResultCard } from "@/components/dashboard/GameResultCard";
-import { MilestoneCard } from "@/components/dashboard/MilestoneCard";
-import { NoRoundYetCard } from "@/components/dashboard/NoRoundYetCard";
 import { OrderPoolCard } from "@/components/dashboard/OrderPoolCard";
 import { RoundCloseBar } from "@/components/dashboard/RoundCloseBar";
 import { WeekPlanCard } from "@/components/dashboard/WeekPlanCard";
 import { WeeklyBalanceCard } from "@/components/dashboard/WeeklyBalanceCard";
 import { Chip } from "@/components/ui/Chip";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { MILESTONE_INTERVAL_WEEKS, TARGET_CUMULATIVE_PROFIT } from "@/lib/config";
-import { calculateWeeklyLoanCharge } from "@/lib/loan";
-import { checkMilestone, nextMilestoneWeek } from "@/lib/milestones";
-import { approximateCumulativeProfit } from "@/lib/outcome";
+import { OVERDRAFT_LIMIT } from "@/lib/config";
+import { businessSizeLabel, headcount } from "@/lib/economy";
 import { ensureCompanyForUser, getLatestRoundSummary, loadCompanyState } from "@/lib/repository/company";
 import { requireUser } from "@/lib/session";
 
@@ -30,11 +26,12 @@ export async function Dashboard() {
   ]);
 
   const displayName = user.name ?? user.email?.split("@")[0] ?? "Unternehmer";
+  const people = headcount(state.business, state.weekNumber);
   const header = (
     <PageHeader
       title={`Hallo, ${displayName}`}
-      subtitle="Dein Betrieb auf einen Blick"
-      trailing={<Chip>Woche {state.weekNumber}/{state.gameLengthWeeks}</Chip>}
+      subtitle={`${businessSizeLabel(people)} · Jahr ${state.year} · ${state.season.label}`}
+      trailing={<Chip>Woche {state.weekNumber}</Chip>}
     />
   );
 
@@ -43,49 +40,48 @@ export async function Dashboard() {
       <>
         {header}
         <GameResultCard
-          status={state.status}
           weekNumber={state.weekNumber}
           cash={state.cash}
           loanRemaining={state.loan.remainingBalance}
+          value={state.value}
+          headcount={people}
         />
-        {latestRound && <WeeklyBalanceCard summary={latestRound} />}
+        {latestRound && <WeeklyBalanceCard summary={latestRound} recent={state.recentRounds} />}
+        <RoundCloseBar key="round-close" weekNumber={state.weekNumber} acceptedCount={0} active={false} />
       </>
     );
   }
-
-  const milestoneWeekDue = nextMilestoneWeek(state.weekNumber, MILESTONE_INTERVAL_WEEKS);
-  const milestoneTarget = Math.round((TARGET_CUMULATIVE_PROFIT * milestoneWeekDue) / state.gameLengthWeeks);
-  const milestone = checkMilestone(approximateCumulativeProfit(state.cash), milestoneTarget);
-  const loanPayment = calculateWeeklyLoanCharge(state.loan).totalPayment;
-  const capacityLeft = state.acceptedOrders.length < state.orderCapacity;
 
   return (
     <>
       {header}
 
-      <EventBanner description={latestRound?.eventDescription ?? null} />
+      <EventBanner event={state.event} />
 
       <CompanyOverviewCard
         cash={state.cash}
-        stage={state.stage}
+        value={state.value}
+        reputation={state.business.reputation}
         loanRemaining={state.loan.remainingBalance}
-        weeksLeft={Math.max(state.gameLengthWeeks - state.weekNumber + 1, 0)}
+        overdraft={OVERDRAFT_LIMIT}
       />
 
       <WeekPlanCard
         weekNumber={state.weekNumber}
         accepted={state.acceptedOrders}
-        capacity={state.orderCapacity}
-        loanPayment={loanPayment}
+        capacity={state.capacity}
+        preview={state.preview}
       />
 
-      <OrderPoolCard orders={state.availableOrders} canAccept={capacityLeft} />
+      <OrderPoolCard
+        orders={state.availableOrders}
+        lockedOrders={state.lockedOrders}
+        freeHours={state.capacity.remaining}
+      />
 
-      {latestRound ? <WeeklyBalanceCard summary={latestRound} /> : <NoRoundYetCard />}
+      {latestRound && <WeeklyBalanceCard summary={latestRound} recent={state.recentRounds} />}
 
-      <MilestoneCard milestone={milestone} weekDue={milestoneWeekDue} />
-
-      <RoundCloseBar weekNumber={state.weekNumber} acceptedCount={state.acceptedOrders.length} />
+      <RoundCloseBar key="round-close" weekNumber={state.weekNumber} acceptedCount={state.acceptedOrders.length} />
     </>
   );
 }

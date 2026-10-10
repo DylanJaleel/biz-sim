@@ -6,9 +6,19 @@ import { WeekSummarySheet } from "@/components/dashboard/WeekSummarySheet";
 
 /**
  * Primary action of the screen. Sticks above the tab bar (thumb zone) while
- * the week is open; the result opens as a bottom sheet.
+ * the week is open; the result opens as a bottom sheet. The component stays
+ * mounted (without the button) after the business ended, so the final
+ * summary isn't torn down when the page re-renders as the insolvency screen.
  */
-export function RoundCloseBar({ weekNumber, acceptedCount }: { weekNumber: number; acceptedCount: number }) {
+export function RoundCloseBar({
+  weekNumber,
+  acceptedCount,
+  active = true,
+}: {
+  weekNumber: number;
+  acceptedCount: number;
+  active?: boolean;
+}) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<WeekSummaryView | null>(null);
@@ -26,6 +36,7 @@ export function RoundCloseBar({ weekNumber, acceptedCount }: { weekNumber: numbe
 
   return (
     <>
+      {active && (
       <div className="sticky bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-30">
         {error && (
           <p
@@ -52,6 +63,7 @@ export function RoundCloseBar({ weekNumber, acceptedCount }: { weekNumber: numbe
               : `Woche ${weekNumber} abschließen · ${acceptedCount} ${acceptedCount === 1 ? "Auftrag" : "Aufträge"}`}
         </button>
       </div>
+      )}
 
       {view && <WeekSummarySheet view={view} onClose={() => setView(null)} />}
     </>

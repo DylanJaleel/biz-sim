@@ -3,28 +3,36 @@
 import { useState, useTransition } from "react";
 import { acceptOrderAction, rejectOrderAction, withdrawOrderAction } from "@/app/(app)/actions";
 import type { ActionResult } from "@/lib/action-result";
-import { formatCurrency } from "@/lib/format";
+import { MARKET_SEGMENTS, toolConfig } from "@/lib/config";
+import { formatCurrency, formatHours } from "@/lib/format";
 import type { OrderRecord } from "@/lib/repository/company";
 
 const ORDER_TYPE_LABELS: Record<OrderRecord["type"], string> = {
   repair: "Reparatur",
-  custom: "Sonderauftrag",
+  standard: "Standardarbeit",
   installation: "Einbau",
+  custom: "Sonderanfertigung",
 };
 
 function deadlineLabel(weeks: number): string {
   return weeks <= 1 ? "Letzte Woche" : `Noch ${weeks} Wochen`;
 }
 
-/** One order as a touch-friendly card: profit first, then what it costs and how long it stays open. */
+type Mode = "available" | "accepted" | "locked";
+
+/**
+ * One order as a touch-friendly card: what it pays per hour first, then the
+ * hours it blocks, the material to advance and how long it stays open.
+ */
 export function OrderCard({
   order,
   mode,
-  canAccept = true,
+  fits = true,
 }: {
   order: OrderRecord;
-  mode: "available" | "accepted";
-  canAccept?: boolean;
+  mode: Mode;
+  /** Whether the free hours of the week are enough for this job. */
+  fits?: boolean;
 }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -37,24 +45,28 @@ export function OrderCard({
     });
   }
 
-  const profit = order.payout - order.materialNeed;
+  const margin = order.payout - order.materialNeed;
+  const segment = MARKET_SEGMENTS[order.tier - 1];
 
   return (
-    <li className="rounded-xl border border-black/10 p-3 dark:border-white/10">
+    <li className={`rounded-xl border border-black/10 p-3 dark:border-white/10 ${mode === "locked" ? "opacity-75" : ""}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="font-medium text-zinc-900 dark:text-zinc-50">{ORDER_TYPE_LABELS[order.type]}</div>
-          <div className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-            Auszahlung {formatCurrency(order.payout)} · Material {formatCurrency(order.materialNeed)}
+          <div className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">{segment.name}</div>
+          <div className="mt-1 text-xs text-zinc-600 dark:text-zinc-300">
+            {formatHours(order.hours)} · Material {formatCurrency(order.materialNeed)} · Auszahlung{" "}
+            {formatCurrency(order.payout)}
           </div>
         </div>
         <div className="shrink-0 text-right">
-          <div className="text-lg font-semibold text-emerald-600 dark:text-emerald-400">
-            +{formatCurrency(profit)}
+          <div className="text-lg font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+            {formatCurrency(order.marginPerHour)}/Std.
           </div>
-          {mode === "available" && (
+          <div className="text-xs text-zinc-500 dark:text-zinc-400">+{formatCurrency(margin)} gesamt</div>
+          {mode !== "accepted" && (
             <div
-              className={`mt-0.5 inline-block rounded-md px-1.5 py-0.5 text-[11px] font-medium ${
+              className={`mt-1 inline-block rounded-md px-1.5 py-0.5 text-[11px] font-medium ${
                 order.remainingWeeks <= 1
                   ? "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300"
                   : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
@@ -66,7 +78,7 @@ export function OrderCard({
         </div>
       </div>
 
-      {mode === "available" ? (
+      {mode === "available" && (
         <div className="mt-3 grid grid-cols-[1fr_2fr] gap-2">
           <button
             type="button"
@@ -78,14 +90,15 @@ export function OrderCard({
           </button>
           <button
             type="button"
-            disabled={pending || !canAccept}
+            disabled={pending || !fits}
             onClick={() => run(acceptOrderAction)}
             className="h-11 rounded-xl bg-blue-600 text-sm font-semibold text-white active:bg-blue-700 disabled:bg-zinc-200 disabled:text-zinc-500 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-500"
           >
-            {canAccept ? "Annehmen" : "Kapazität voll"}
+            {fits ? "Annehmen" : "Zu wenig Stunden"}
           </button>
         </div>
-      ) : (
+      )}
+      {mode === "accepted" && (
         <button
           type="button"
           disabled={pending}
@@ -94,6 +107,11 @@ export function OrderCard({
         >
           Zurückziehen
         </button>
+      )}
+      {mode === "locked" && (
+        <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+          Braucht „{toolConfig(order.tier).name}“ (Werkzeug Stufe {order.tier}).
+        </p>
       )}
 
       {error && (
