@@ -1,13 +1,8 @@
-import { CompanyOverviewCard } from "@/components/dashboard/CompanyOverviewCard";
-import { EventBanner } from "@/components/dashboard/EventBanner";
-import { MilestoneCard } from "@/components/dashboard/MilestoneCard";
-import { OrderPoolCard } from "@/components/dashboard/OrderPoolCard";
-import { WeeklyBalanceCard } from "@/components/dashboard/WeeklyBalanceCard";
-import { createDemoGameState } from "@/lib/demo";
+import { Suspense } from "react";
+import { Dashboard } from "@/components/dashboard/Dashboard";
+import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
 
 export default function DashboardPage() {
-  const state = createDemoGameState();
-
   return (
     <div className="min-h-full bg-zinc-50 dark:bg-black">
       <main className="mx-auto flex max-w-5xl flex-col gap-6 px-6 py-10">
@@ -16,28 +11,14 @@ export default function DashboardPage() {
             Business Simulator
           </h1>
           <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-            Demo-Dashboard mit Beispieldaten aus der Spiellogik (lib/) – noch ohne Login
-            oder Spielstand-Persistenz. Siehe docs/implementation-plan.md für den weiteren Fahrplan.
+            Spielstand der Demo-Firma aus der Datenbank – noch ohne Login (siehe
+            docs/implementation-plan.md Phase 2) oder interaktive Auftragsannahme (Phase 3).
           </p>
         </header>
 
-        <EventBanner event={state.lastWeekEvent} />
-
-        <CompanyOverviewCard
-          weekNumber={state.weekNumber}
-          gameLengthWeeks={state.gameLengthWeeks}
-          cash={state.cash}
-          stage={state.stage}
-          loanRemaining={state.loan.remainingBalance}
-        />
-
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <OrderPoolCard orders={state.currentOrderPool} />
-          <div className="flex flex-col gap-6">
-            <WeeklyBalanceCard summary={state.lastWeekSummary} />
-            <MilestoneCard milestone={state.milestone} weekDue={state.milestoneWeekDue} />
-          </div>
-        </div>
+        <Suspense fallback={<DashboardSkeleton />}>
+          <Dashboard />
+        </Suspense>
       </main>
     </div>
   );

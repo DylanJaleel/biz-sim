@@ -1,3 +1,8 @@
+/** The next milestone check due at or after `weekNumber` (section 4.3: every `interval` weeks). */
+export function nextMilestoneWeek(weekNumber: number, interval: number): number {
+  return Math.ceil(weekNumber / interval) * interval || interval;
+}
+
 export interface MilestoneCheckResult {
   achieved: boolean;
   cumulativeProfit: number;
