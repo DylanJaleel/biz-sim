@@ -1,5 +1,8 @@
 # Business Simulator – Konzept & MVP-Spec
 
+> **Historisch.** Beschreibt das abgelöste Handwerksspiel. Aktuell: [`boardroom-konzept.md`](./boardroom-konzept.md).
+
+
 **Status:** genehmigt, bereit für Implementierungsplanung
 **Datum:** 2026-10-10
 **Arbeitstitel Repo:** `biz-sim` (frei umbenennbar)

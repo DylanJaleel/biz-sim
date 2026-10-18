@@ -1,11 +1,11 @@
 import { Suspense } from "react";
-import { Dashboard } from "@/components/dashboard/Dashboard";
-import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
+import { Office } from "@/components/office/Office";
+import { PageSkeleton } from "@/components/shell/PageSkeleton";
 
-export default function DashboardPage() {
+export default function OfficePage() {
   return (
-    <Suspense fallback={<DashboardSkeleton />}>
-      <Dashboard />
+    <Suspense fallback={<PageSkeleton />}>
+      <Office />
     </Suspense>
   );
 }

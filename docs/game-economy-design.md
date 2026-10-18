@@ -1,5 +1,8 @@
 # Wirtschaftsmodell – Design und Balancing
 
+> **Historisch.** Beschreibt das abgelöste Handwerksspiel. Aktuell: [`boardroom-konzept.md`](./boardroom-konzept.md).
+
+
 Dieses Dokument beschreibt, wie die Wirtschaft des Spiels funktioniert und **warum** die Zahlen so gewählt sind. Alle Zahlen stehen in `lib/config.ts` (einzige Quelle); die Rechenlogik ist rein und getestet (`lib/economy.ts`, `lib/investments.ts`), die Balance wird per Simulation geprüft (`lib/simulation.ts`, `tests/economy-balance.test.ts`, `npm run simulate`).
 
 ## 1. Leitgedanken

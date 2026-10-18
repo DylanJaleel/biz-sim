@@ -45,10 +45,18 @@ Größte Risiken: Umfang, Inhaltsaufwand, Grafik für das Büro in 3. Person.
 - **Phase 3 – Aufsteigen:** Büro-Stufen mit isometrischen Illustrationen, Konzern-Pfad, Börsengang, optional KI-Gespräche.
 - **Phase 4 – Endspiel:** Family Office, Mitarbeiter, Fonds, Buyouts.
 
-## Offen (Empfehlung in Klammern)
+## Ebenfalls entschieden (Empfehlungen übernommen)
 
-- Gerät zuerst? (Desktop/Tablet zuerst, Handy vereinfacht)
-- Wo bauen? (in biz-sim, Boardroom-Komponenten übernehmen)
-- Bildsprache Büro? (2D von oben jetzt, isometrisch in Phase 3)
-- Echte Namen am Tisch? (erfundene Figuren; bekannte Blickwinkel höchstens als gekennzeichnete „Mentoren“)
-- KI-Gespräche? (Phase 1 ohne, Schnittstelle vorbereiten)
+- Desktop und Tablet zuerst; Handys nur im Querformat (Dreh-Hinweis im Hochformat).
+- Gebaut in biz-sim, Boardroom-Komponenten übernommen.
+- Büro 2D von oben, isometrisch in Phase 3.
+- Erfundene Figuren am Tisch; bekannte Blickwinkel höchstens später als gekennzeichnete „Mentoren“.
+- Phase 1 ohne KI.
+- Die runden Avatare am Halbrund-Tisch mit Linien zwischen Sprechenden und dem Live-Halbrund bleiben das zentrale Bild der Sitzung. Der 3D-Raum ist eine zusätzliche Ansicht auf großen Bildschirmen.
+
+## Umsetzung Phase 1
+
+- **Spiellogik** (`lib/game`): drei Startups (Pendelwerk, Kantinenkasse, Flottenfunk), 26 Vorlagen in drei Themen (Wachstum, Finanzen, Menschen), 17 Lernkarten, Monatssimulation mit Wachstum, Kosten, Klumpenrisiko, Notfinanzierung und Insolvenz, verzögerte und riskante Folgen von Beschlüssen, Urteil nach erwartetem Wert (halb Basisfall, halb schwacher Markt). Balancing ist per Skript-Spieler getestet: Nur zuschauen verliert Geld, gut vorbereitet schlägt Ja-Sagen deutlich.
+- **Datenmodell:** ein `Game` pro Spieler mit dem Spielstand als JSON, `revision` gegen veraltete Tabs. Die Migration `boardroom` löscht die Tabellen des Handwerksspiels.
+- **Sitzung:** Ablauf Eröffnung, Statements, dein Argument, Debatte (Reaktionen als Linien), Abstimmung, Beschluss. Die Vorschau im Browser ist identisch mit dem, was der Server danach abspielt (gleicher Zufall).
+- **Offen für Phase 2:** Finanzierungsrunden mit Verwässerung als eigene Entscheidung, Nachschuss und Mehrheit, Netzwerk, mehrere Mandate gleichzeitig mit eigenen Agenden, Exit-Verhandlungen.

@@ -1,4 +1,6 @@
-# Implementierungsplan – Business Simulator MVP
+# Implementierungsplan – Business Simulator MVP (Handwerksspiel, abgelöst)
+
+> **Historisch.** Das Handwerksspiel wurde im Oktober 2026 durch Boardroom ersetzt. Aktueller Plan und Stand: [`boardroom-konzept.md`](./boardroom-konzept.md). Die technischen Erkenntnisse unten (PGlite, Migrationen ohne Shadow-DB, Cache Components) gelten weiter.
 
 Dieser Plan setzt [`business-sim-game-design.md`](./business-sim-game-design.md) um. Er ist in Phasen gegliedert; jede Phase ist für sich abschließbar und testbar. Phase 0–3 sind umgesetzt, der Stand ist für Vercel vorbereitet ([`deployment-vercel.md`](./deployment-vercel.md)).
 

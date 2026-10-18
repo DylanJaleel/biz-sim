@@ -1,4 +1,4 @@
-const DEFAULT_FROM = "Business Simulator <onboarding@resend.dev>";
+const DEFAULT_FROM = "Boardroom <onboarding@resend.dev>";
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 
 function escapeHtml(value: string): string {
@@ -31,7 +31,7 @@ export async function sendMagicLinkEmail({ identifier, url }: { identifier: stri
     body: JSON.stringify({
       from: process.env.AUTH_EMAIL_FROM ?? DEFAULT_FROM,
       to: identifier,
-      subject: "Dein Login-Link für den Business Simulator",
+      subject: "Dein Login-Link für Boardroom",
       text: `Öffne diesen Link, um dich anzumelden:\n${url}\n\nWenn du das nicht angefordert hast, ignoriere diese E-Mail.`,
       html: `<p>Tippe auf den Button, um dich anzumelden:</p><p><a href="${escapeHtml(url)}" style="display:inline-block;padding:12px 20px;background:#2563eb;color:#fff;border-radius:10px;text-decoration:none;font-weight:600">Jetzt anmelden</a></p><p style="color:#71717a;font-size:13px">Wenn du das nicht angefordert hast, ignoriere diese E-Mail.</p>`,
     }),

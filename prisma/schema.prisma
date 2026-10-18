@@ -1,7 +1,6 @@
-// Prisma schema for Business Simulator MVP.
-// Mirrors the entity sketch in docs/business-sim-game-design.md section 5.
+// Prisma schema for Boardroom.
 // Provider stays "postgresql": local dev talks to PGlite via a Postgres-wire
-// driver adapter, production talks to a managed Postgres (see docs/implementation-plan.md).
+// socket, production talks to a managed Postgres (see docs/deployment-vercel.md).
 
 generator client {
   provider = "prisma-client-js"
@@ -12,25 +11,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// There is no way to win: a business keeps running until it goes insolvent.
-enum CompanyStatus {
-  ACTIVE
-  INSOLVENT
-}
-
-enum RoundStatus {
-  OPEN
-  RESOLVED
-}
-
-enum OrderStatus {
-  AVAILABLE
-  ACCEPTED
-  COMPLETED
-  REJECTED
-  EXPIRED
-}
-
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
@@ -38,7 +18,7 @@ model User {
   name          String?
   image         String?
   createdAt     DateTime  @default(now())
-  company       Company?
+  game          Game?
 }
 
 // Required by the Auth.js email (magic link) provider. Sessions are JWT-based,
@@ -51,111 +31,17 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-model Company {
-  id            String        @id @default(cuid())
-  userId        String        @unique
-  user          User          @relation(fields: [userId], references: [id])
-  name          String
-  cash          Decimal       @default(0)
-  weekNumber    Int           @default(1)
-  reputation    Float         @default(40)
-  toolLevel     Int           @default(1)
-  workshopLevel Int           @default(1)
-  vehicles      Int           @default(1)
-  status        CompanyStatus @default(ACTIVE)
-  createdAt     DateTime      @default(now())
-
-  loan      Loan?
-  warehouse Warehouse?
-  rounds    Round[]
-  orders    Order[]
-  employees Employee[]
-  events    GameEvent[]
-  ledger    LedgerEntry[]
-}
-
-model Loan {
-  id               String  @id @default(cuid())
-  companyId        String  @unique
-  company          Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  principal        Decimal
-  interestRate     Decimal
-  weeklyRate       Decimal
-  remainingBalance Decimal
-}
-
-model Round {
-  id          String      @id @default(cuid())
-  companyId   String
-  company     Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  weekNumber  Int
-  status      RoundStatus @default(OPEN)
-  summaryJson Json?
-
-  @@unique([companyId, weekNumber])
-}
-
-model Order {
-  id            String      @id @default(cuid())
-  companyId     String
-  company       Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  weekOffered   Int
-  type          String
-  /// Job grade 1..3: the tool level needed to take the job.
-  tier          Int         @default(1)
-  /// Billable hours the job needs.
-  laborHours    Int
-  materialNeed  Decimal
-  deadlineWeeks Int
-  payout        Decimal
-  status        OrderStatus @default(AVAILABLE)
-
-  @@index([companyId, weekOffered])
-}
-
-model Employee {
-  id        String  @id @default(cuid())
-  companyId String
-  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  role      String  @default("geselle")
-  /// First week the employee works (hired in week w starts in w+1).
-  hiredWeek Int
-  /// First week the employee no longer works (notice period); null = open-ended.
-  endsWeek  Int?
-}
-
-model Warehouse {
-  id           String  @id @default(cuid())
-  companyId    String  @unique
-  company      Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  capacity     Decimal
-  weeklyRent   Decimal
-  currentStock Decimal @default(0)
-}
-
-model GameEvent {
-  id         String  @id @default(cuid())
-  companyId  String
-  company    Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  weekNumber Int
-  type       String
-  effectJson Json
-
-  @@unique([companyId, weekNumber])
-}
-
-// Cash movements outside the weekly operations (hiring fee, purchases, upgrades).
-// Amounts are negative for money that left the account; the week summary lists them.
-model LedgerEntry {
-  id         String   @id @default(cuid())
-  companyId  String
-  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  weekNumber Int
-  label      String
-  amount     Decimal
-  createdAt  DateTime @default(now())
-
-  @@index([companyId, weekNumber])
+// One game per player. The whole game is a JSON document produced by the pure
+// engine in lib/game; `revision` guards against stale tabs and double taps.
+model Game {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  state     Json
+  month     Int      @default(1)
+  revision  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // Fixed-window counters for abuse protection (see lib/rate-limit.ts). Lives in

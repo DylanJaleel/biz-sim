@@ -1,0 +1,12 @@
+import type { Template } from "../templates";
+import { FINANCE_TEMPLATES } from "./finance";
+import { GROWTH_TEMPLATES } from "./growth";
+import { PEOPLE_TEMPLATES } from "./people";
+
+export const TEMPLATES: Template[] = [...GROWTH_TEMPLATES, ...FINANCE_TEMPLATES, ...PEOPLE_TEMPLATES];
+
+export function templateOf(id: string): Template {
+  const t = TEMPLATES.find((x) => x.id === id);
+  if (!t) throw new Error(`Unknown template ${id}`);
+  return t;
+}

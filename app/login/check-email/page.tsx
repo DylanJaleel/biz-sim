@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-export const metadata: Metadata = { title: "E-Mail prüfen · Business Simulator" };
+export const metadata: Metadata = { title: "E-Mail prüfen · Boardroom" };
 
 export default function CheckEmailPage() {
   return (

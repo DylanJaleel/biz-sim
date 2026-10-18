@@ -1,7 +1,6 @@
 import "server-only";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { ensureCompanyForUser } from "@/lib/repository/company";
 
 /**
  * Data-access-layer entry point: every page/action that touches player data
@@ -13,9 +12,4 @@ export async function requireUser() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
   return session.user;
-}
-
-export async function requireCompanyId(): Promise<string> {
-  const user = await requireUser();
-  return ensureCompanyForUser(user.id);
 }

@@ -34,7 +34,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={pending}
-        className="mt-1 h-12 rounded-xl bg-blue-600 text-base font-semibold text-white transition-colors active:bg-blue-700 disabled:opacity-60"
+        className="mt-1 h-12 rounded-xl bg-[#2342f5] text-base font-semibold text-white transition-colors active:bg-[#1a33c9] disabled:opacity-60"
       >
         {pending ? "Wird gesendet…" : "Login-Link senden"}
       </button>
