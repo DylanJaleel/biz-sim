@@ -41,10 +41,10 @@ export function dayRate(reputation: number): number {
 }
 
 /** This month's offers: two simple ones at the start, three later, drawn from what fits the reputation. */
-export function drawGigs(month: number, reputation: number, random: () => number, nextId: () => string): Gig[] {
+export function drawGigs(month: number, reputation: number, random: () => number, nextId: () => string, extra = 0): Gig[] {
   const pool = GIGS.filter((g) => g.fromMonth <= month && g.minReputation <= reputation);
   // Early months stay simple; later the offers vary in number and size.
-  const count = month <= 2 ? 2 : random() < 0.35 ? 3 : 2;
+  const count = (month <= 2 ? 2 : random() < 0.35 ? 3 : 2) + extra;
   const picked: GigDef[] = [];
   while (picked.length < count && picked.length < pool.length) {
     const g = pool[Math.floor(random() * pool.length) % pool.length]!;

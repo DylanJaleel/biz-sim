@@ -1,14 +1,15 @@
-import { playerAmount, postMoney, stakeAfter } from "./captable";
+import { playerAmount, postMoney, stakeAfter, syndicateAmount, waterfall } from "./captable";
 import { outcomeViews, type OutcomeView } from "./cfo";
-import { INTRO_COOLDOWN, LEAD_REPUTATION, RING_REPUTATION, WARMTH_INTRO_MIN } from "./config";
+import { INTRO_COOLDOWN, LEAD_REPUTATION, RING_REPUTATION, SYNDICATE_REPUTATION, WARMTH_INTRO_MIN } from "./config";
 import { CONTACTS, RING_LABEL, ringOpen, type ContactDef, type Ring } from "./network";
 import { templateOf } from "./content";
-import { daysLeft, itemOf, previewMeeting, startupOf } from "./engine";
+import { daysLeft, itemOf, previewMeeting, startupOf, syndicateBlocker } from "./engine";
 import { lessonOf } from "./lessons";
+import { officeOf } from "./office";
 import type { MeetingEvent } from "./meeting";
 import { monthlyCashFlow, runwayMonths } from "./sim";
 import { fill, valueOf as valuationOf } from "./templates";
-import type { BoardItem, BoardMember, GameState, Holder, Interest, ItemStatus, MeetingDecision, Round, RoundTake, ShareOffer, Startup, Vote } from "./types";
+import type { BoardItem, BoardMember, ExitOffer, GameState, Holder, Interest, ItemStatus, MeetingDecision, Payout, Round, RoundTake, ShareOffer, Startup, Vote } from "./types";
 
 // Was eine Seite vom Spielstand braucht, als einfache Daten für den Browser.
 
@@ -16,6 +17,8 @@ export interface MeetingView {
   itemId: string;
   startupId: string;
   startupName: string;
+  /** A supervisory board meeting in the corporation. */
+  corporate: boolean;
   board: BoardMember[];
   title: string;
   motion: string;
@@ -57,6 +60,7 @@ export function meetingView(state: GameState, itemId: string): MeetingView {
     itemId,
     startupId: s.id,
     startupName: s.name,
+    corporate: Boolean(s.corporate),
     board: s.board,
     title: fill(t.title, s),
     motion: fill(t.motion, s),
@@ -107,6 +111,18 @@ export function deskView(state: GameState, lessonsTotal: number): DeskView {
       tone: "urgent",
     });
   }
+  for (const e of state.exits.filter((x) => x.status === "open")) {
+    const s = startupOf(state, e.startupId);
+    tasks.push({
+      text: `${e.buyer} will ${s.name} für ${e.price.toLocaleString("de-DE")} € kaufen. Die Gesellschafter entscheiden bis Monatsende.`,
+      href: `/verkauf/${e.id}`,
+      tone: "urgent",
+    });
+  }
+  if (state.corporateSeat === "offered") {
+    const m = state.mails.find((x) => x.action === "corporate");
+    tasks.push({ text: "Die Nordhafen AG bietet dir einen Sitz im Aufsichtsrat an.", href: m ? `/post?mail=${m.id}` : "/post", tone: "normal" });
+  }
   for (const o of state.shareOffers.filter((x) => x.status === "open")) {
     const s = startupOf(state, o.startupId);
     tasks.push({
@@ -120,7 +136,7 @@ export function deskView(state: GameState, lessonsTotal: number): DeskView {
     const t = templateOf(item.templateId);
     const prep = item.cfo || item.asked.length > 0 || item.pretalks.length > 0;
     tasks.push({
-      text: `${s.name}: „${fill(t.title, s)}“ liegt vor. ${prep ? "Wenn du so weit bist, berufe die Sitzung ein." : "Bereite dich vor, bevor der Beirat tagt."}`,
+      text: `${s.name}: „${fill(t.title, s)}“ liegt vor. ${prep ? "Wenn du so weit bist, berufe die Sitzung ein." : `Bereite dich vor, bevor der ${s.corporate ? "Aufsichtsrat" : "Beirat"} tagt.`}`,
       href: `/firma/${s.id}`,
       tone: t.urgent ? "urgent" : "normal",
     });
@@ -146,7 +162,7 @@ export function deskView(state: GameState, lessonsTotal: number): DeskView {
     daysLeft: daysLeft(state),
     unread,
     offers: offered.length,
-    mandates: active.map((s) => ({ id: s.id, name: s.name, value: (s.stake / 100) * valuationOf(s), open: open.some((i) => i.startupId === s.id) })),
+    mandates: active.filter((s) => !s.corporate).map((s) => ({ id: s.id, name: s.name, value: (s.stake / 100) * valuationOf(s), open: open.some((i) => i.startupId === s.id) })),
     openItems: open.map((i) => {
       const s = startupOf(state, i.startupId);
       return { id: i.id, startupId: s.id, startupName: s.name, title: fill(templateOf(i.templateId).title, s) };
@@ -202,6 +218,9 @@ export interface CompanyView {
   round: Round | null;
   rounds: Round[];
   offers: ShareOffer[];
+  exits: ExitOffer[];
+  /** An analyst in the office prepares CFO talks and questions. */
+  analyst: boolean;
 }
 
 function leaningOf(stance: number): Vote | "open" {
@@ -268,6 +287,8 @@ export function companyView(state: GameState, startupId: string): CompanyView {
     round: state.rounds.find((r) => r.startupId === s.id && r.status === "open") ?? null,
     rounds: state.rounds.filter((r) => r.startupId === s.id && r.amount > 0 && r.status !== "open").sort((a, b) => b.month - a.month),
     offers: state.shareOffers.filter((o) => o.startupId === s.id && o.status === "open"),
+    exits: state.exits.filter((e) => e.startupId === s.id),
+    analyst: officeOf(state).analyst,
   };
 }
 
@@ -284,6 +305,8 @@ export interface RoundOption {
   valueAfter: number;
   allowed: boolean;
   reason?: string;
+  /** Money the syndicate brings on top (syndicate option only). */
+  syndicate?: number;
 }
 
 export interface RoundView {
@@ -305,6 +328,7 @@ const TAKE_LABEL: Record<RoundTake, string> = {
   half: "Halb pro rata",
   prorata: "Pro rata",
   lead: "Runde anführen",
+  syndicate: "Mit Syndikat anführen",
 };
 
 export function roundView(state: GameState, roundId: string): RoundView | null {
@@ -313,13 +337,15 @@ export function roundView(state: GameState, roundId: string): RoundView | null {
   const s = startupOf(state, round.startupId);
   const stake = round.status === "open" ? s.stake : (round.stakeBefore ?? s.stake);
   const post = postMoney(round);
-  const options: RoundOption[] = (["none", "half", "prorata", "lead"] as const).map((take) => {
+  const options: RoundOption[] = (["none", "half", "prorata", "lead", "syndicate"] as const).map((take) => {
     const amount = playerAmount(round, stake, take);
     const after = stakeAfter(round, stake, take);
     let reason: string | undefined;
     if (take === "lead" && state.reputation < LEAD_REPUTATION) reason = `Ab ${LEAD_REPUTATION} Ruf`;
+    else if (take === "syndicate" && syndicateBlocker(state)) reason = state.reputation < SYNDICATE_REPUTATION ? `Ab ${SYNDICATE_REPUTATION} Ruf` : "Angel-Club zu kühl";
     else if (amount > state.cash) reason = "Zu wenig Kapital";
-    return { take, label: TAKE_LABEL[take], amount, stakeAfter: after, valueAfter: (post * after) / 100, allowed: !reason, reason };
+    const syndicate = take === "syndicate" ? syndicateAmount(round, stake) : undefined;
+    return { take, label: TAKE_LABEL[take], amount, stakeAfter: after, valueAfter: (post * after) / 100, allowed: !reason, reason, syndicate };
   });
   return {
     round,
@@ -332,6 +358,38 @@ export function roundView(state: GameState, roundId: string): RoundView | null {
     options,
     cash: state.cash,
     reputation: state.reputation,
+    daysLeft: daysLeft(state),
+  };
+}
+
+export interface ExitView {
+  offer: ExitOffer;
+  startupId: string;
+  startupName: string;
+  stake: number;
+  /** Today's value of the whole company. */
+  value: number;
+  holders: Holder[];
+  /** Who gets what at the offered price (or what was paid). */
+  payouts: Payout[];
+  carry: number;
+  daysLeft: number;
+}
+
+export function exitView(state: GameState, exitId: string): ExitView | null {
+  const offer = state.exits.find((e) => e.id === exitId);
+  if (!offer) return null;
+  const s = startupOf(state, offer.startupId);
+  const split = offer.payouts ? { payouts: offer.payouts, carry: offer.carry ?? 0 } : waterfall(s, offer.price);
+  return {
+    offer,
+    startupId: s.id,
+    startupName: s.name,
+    stake: s.stake,
+    value: valuationOf(s),
+    holders: s.capTable,
+    payouts: split.payouts,
+    carry: split.carry,
     daysLeft: daysLeft(state),
   };
 }
@@ -363,7 +421,7 @@ export function networkView(state: GameState): NetworkView {
   return {
     contacts,
     reputation: state.reputation,
-    mandates: state.startups.filter((s) => s.status === "active").map((s) => ({ id: s.id, name: s.name })),
+    mandates: state.startups.filter((s) => s.status === "active" && !s.corporate).map((s) => ({ id: s.id, name: s.name })),
     daysLeft: daysLeft(state),
     rings: ([1, 2, 3] as const).map((ring) => ({ ring, label: RING_LABEL[ring], open: ringOpen(state, ring), needs: RING_REPUTATION[ring] })),
   };

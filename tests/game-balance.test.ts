@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { analystBot, consultantBot, passiveBot, runBot, yesBot, type Bot } from "../lib/game/bots";
+import { analystBot, consultantBot, passiveBot, proBot, runBot, yesBot, type Bot } from "../lib/game/bots";
 import { START_CASH } from "../lib/game/config";
 
 // Skript-Spieler über 24 Monate. Sie halten fest, wofür das Spiel steht:
@@ -24,6 +24,7 @@ describe("game balance", () => {
   const yes = play(yesBot("pendelwerk"));
   const analyst = play(analystBot("pendelwerk"));
   const consultant = play(consultantBot());
+  const pro = play(proBot("pendelwerk"));
 
   it("only watching a risky startup loses money", () => {
     expect(passive.value).toBeLessThan(START_CASH);
@@ -40,6 +41,11 @@ describe("game balance", () => {
   it("consulting pays the bills but does not replace investing well", () => {
     expect(consultant.value).toBeGreaterThan(START_CASH);
     expect(consultant.value).toBeLessThan(analyst.value * 0.75);
+  });
+
+  it("exits, syndicates and offices reward skill but print no money", () => {
+    expect(pro.value).toBeGreaterThan(analyst.value);
+    expect(pro.value).toBeLessThan(analyst.value * 1.5);
   });
 
   it("startups can fail, but most survive two years", () => {

@@ -40,6 +40,23 @@ export const DAY_RATE_BASE = 500;
 export const DAY_RATE_PER_REPUTATION = 10;
 export const TRADE_FEE = 0.001;
 
+// Phase 3: exits, syndicate, offices, corporate board
+/** Share of a syndicate's gain the lead keeps. */
+export const CARRY = 0.2;
+export const SYNDICATE_REPUTATION = 45;
+export const SYNDICATE_WARMTH = 40;
+export const EXIT_CHANCE = 0.025;
+export const EXIT_MIN_VALUE = 2_000_000;
+export const EXIT_MIN_AGE = 8;
+/** Negotiating: the buyer pays this much more, or walks away. */
+export const NEGOTIATE_GAIN = 0.15;
+export const NEGOTIATE_CHANCE = 0.55;
+export const CORPORATE_REPUTATION = 65;
+export const CORPORATE_FEE = 4_000;
+export const NEWS_FROM_MONTH = 3;
+/** Syndicate partners cool off a little each time they are asked for money. */
+export const SYNDICATE_WARMTH_COST = 15;
+
 export const ACTION_DAYS = {
   dd: 3,
   invest: 1,
@@ -54,6 +71,9 @@ export const ACTION_DAYS = {
   askShares: 2,
   meetContact: 1,
   introContact: 1,
+  exit: 2,
+  negotiate: 1,
+  joinCorporate: 1,
 } as const;
 
 // Company model

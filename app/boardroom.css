@@ -1442,3 +1442,175 @@
   background: var(--accent-soft);
   box-shadow: inset 0 0 0 1px var(--accent);
 }
+
+/* Phase 3: Verkauf und Wasserfall */
+.waterfall {
+  margin-top: 16px;
+}
+
+.waterfall__list {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.waterfall__list li {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1.3fr) minmax(60px, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.waterfall__list .gv__avatar {
+  width: 32px;
+  height: 32px;
+  font-size: 11px;
+}
+
+.waterfall__list li.is-you .gv__avatar {
+  background: var(--ink);
+  color: var(--bg);
+}
+
+.waterfall__name {
+  display: grid;
+  min-width: 0;
+  font-weight: 600;
+}
+
+.waterfall__name small {
+  overflow: hidden;
+  color: var(--muted);
+  font-weight: 400;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.waterfall__bar {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--line);
+}
+
+.waterfall__bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--member);
+}
+
+.waterfall__list b {
+  font-variant-numeric: tabular-nums;
+}
+
+.exit__buttons {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0 6px;
+}
+
+.tag--kind-exit {
+  background: var(--agree-soft);
+  color: var(--agree);
+}
+
+/* Büro-Stufen: der Schreibtisch wächst mit */
+.desk__surface.desk__surface--l1 {
+  background:
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.03) 0 1px, transparent 1px 19px),
+    linear-gradient(135deg, #e4e1da, #d3cfc6 60%, #c8c3b8);
+}
+
+.desk__surface.desk__surface--l2 {
+  background:
+    repeating-linear-gradient(97deg, rgba(255, 255, 255, 0.04) 0 2px, transparent 2px 13px),
+    repeating-linear-gradient(93deg, rgba(0, 0, 0, 0.05) 0 1px, transparent 1px 21px),
+    linear-gradient(135deg, #8a5f3f, #74492d 60%, #643d25);
+}
+
+.desk__surface.desk__surface--l3 {
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.06), transparent 50%),
+    linear-gradient(135deg, #3c4450, #2f3640 60%, #262c34);
+}
+
+.desk__surface.desk__surface--l4 {
+  background:
+    linear-gradient(115deg, transparent 0 40%, rgba(255, 255, 255, 0.05) 40% 41%, transparent 41% 70%, rgba(255, 255, 255, 0.04) 70% 70.6%, transparent 70.6%),
+    radial-gradient(circle at 70% 30%, rgba(255, 255, 255, 0.08), transparent 55%),
+    linear-gradient(135deg, #1f2124, #16181a 60%, #0f1012);
+}
+
+.plant {
+  left: 89%;
+  top: 31%;
+  width: 9%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 50%, #5a3a24 0 22%, transparent 23%),
+    conic-gradient(from 10deg, #2f8f4e 0 12%, #3fae62 12% 24%, #2a7d44 24% 37%, #46b86a 37% 50%, #2f8f4e 50% 63%, #3fae62 63% 76%, #2a7d44 76% 88%, #46b86a 88%);
+  -webkit-mask: radial-gradient(circle, #000 66%, transparent 67%);
+  mask: radial-gradient(circle, #000 66%, transparent 67%);
+}
+
+.nameplate {
+  left: 40%;
+  top: 2.5%;
+  max-width: 30%;
+  overflow: hidden;
+  padding: 0.5cqw 1.2cqw;
+  border-radius: 0.4cqw;
+  background: linear-gradient(180deg, #d9b45f, #b48a36);
+  color: #2a1d06;
+  font-size: max(9px, 1.15cqw);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.office-level__now {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  margin: 4px 0 8px;
+}
+
+.office-level__now span {
+  color: var(--muted);
+}
+
+.office-level__next p {
+  margin: 0 0 6px;
+}
+
+.office-level .action + .action {
+  margin-left: 6px;
+}
+
+.news {
+  margin-top: 28px;
+}
+
+.news__list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.news__item {
+  display: grid;
+  gap: 2px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+}

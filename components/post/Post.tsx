@@ -1,6 +1,7 @@
 import { currentGame } from "@/lib/current-game";
 import { monthLabel } from "@/lib/game/config";
 import { monthlyCashFlow, runwayMonths, valuation } from "@/lib/game/sim";
+import { officeOf } from "@/lib/game/office";
 import { definitionOf } from "@/lib/game/startups";
 import { Inbox, type DealView, type MailView } from "./Inbox";
 
@@ -8,6 +9,7 @@ export async function Post({ searchParams }: { searchParams: Promise<Record<stri
   const params = await searchParams;
   const { state, revision } = await currentGame();
   const firma = typeof params.firma === "string" ? params.firma : undefined;
+  const wanted = typeof params.mail === "string" ? params.mail : undefined;
 
   const mails: MailView[] = state.mails.map((m) => ({ ...m, when: monthLabel(m.month) }));
   const deals: Record<string, DealView> = {};
@@ -33,7 +35,8 @@ export async function Post({ searchParams }: { searchParams: Promise<Record<stri
       board: s.board.map((b) => `${b.name} (${b.title})`),
     };
   }
-  const initial = (firma && mails.find((m) => m.startupId === firma && m.kind === "deal")?.id) ?? mails[0]?.id ?? null;
+  const initial =
+    (wanted && mails.find((m) => m.id === wanted)?.id) ?? (firma && mails.find((m) => m.startupId === firma && m.kind === "deal")?.id) ?? mails[0]?.id ?? null;
 
   return (
     <div className="page post">
@@ -41,7 +44,16 @@ export async function Post({ searchParams }: { searchParams: Promise<Record<stri
         <p className="eyebrow">Post</p>
         <h1 className="page__title">Posteingang</h1>
       </header>
-      <Inbox key={initial ?? "empty"} mails={mails} deals={deals} initial={initial} revision={revision} cash={state.cash} />
+      <Inbox
+        key={initial ?? "empty"}
+        mails={mails}
+        deals={deals}
+        initial={initial}
+        revision={revision}
+        cash={state.cash}
+        ddDays={officeOf(state).ddDays}
+        corporateSeat={state.corporateSeat}
+      />
     </div>
   );
 }

@@ -43,7 +43,9 @@ export interface OutcomeOutlook {
  * would plan it: certain effects as given, risky effects as the
  * probability-weighted mix of both branches.
  */
-export function outlook(t: Template, s: Startup): Record<Vote, OutcomeOutlook> {
+export function outlook(t: Template, input: Startup): Record<Vote, OutcomeOutlook> {
+  // A supervisory board member holds no shares but judges by the value of the whole company.
+  const s = input.corporate && input.stake === 0 ? { ...input, stake: 1 } : input;
   const result = {} as Record<Vote, OutcomeOutlook>;
   for (const v of VOTES) {
     const resolved = t.outcomes[v].resolve(s);

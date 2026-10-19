@@ -1,4 +1,5 @@
-import { DAYS_PER_MONTH, monthLabel, monthName } from "@/lib/game/config";
+import { monthLabel, monthName } from "@/lib/game/config";
+import { monthDays } from "@/lib/game/office";
 import { daysLeft, openItems, portfolioValue } from "@/lib/game/engine";
 import { holdingsValue } from "@/lib/game/market";
 import { currentGame } from "@/lib/current-game";
@@ -9,6 +10,7 @@ import { NavLinks } from "./NavLinks";
 export async function TopBar() {
   const { state, revision } = await currentGame();
   const free = daysLeft(state);
+  const total = monthDays(state);
   const unread = state.mails.filter((m) => !m.read).length;
   const open = openItems(state).map((i) => {
     const s = state.startups.find((x) => x.id === i.startupId);
@@ -35,9 +37,9 @@ export async function TopBar() {
           <dt>Tage frei</dt>
           <dd>
             <span className="days" aria-hidden="true">
-              <i style={{ width: `${(free / DAYS_PER_MONTH) * 100}%` }} />
+              <i style={{ width: `${(free / total) * 100}%` }} />
             </span>
-            {free} / {DAYS_PER_MONTH}
+            {free} / {total}
           </dd>
         </div>
         <div>

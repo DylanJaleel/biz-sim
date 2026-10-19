@@ -22,6 +22,16 @@ export const ROLE: Record<SpeakerId, string> = {
   you: "Du",
 };
 
+/** In a corporation the seats stand for other roles. */
+const CORPORATE_ROLE: Record<SpeakerId, string> = {
+  ceo: "Vorstand",
+  cto: "Finanzen",
+  vc: "Großaktionär",
+  indep: "Unabhängig",
+  angel: "Belegschaft",
+  you: "Du",
+};
+
 /** Seat colours, tuned to read on light and dark surfaces alike. */
 const COLOR: Record<SpeakerId, string> = {
   ceo: "#2342f5",
@@ -57,12 +67,13 @@ function initialsOf(name: string): string {
 
 export type People = Record<SpeakerId, Person>;
 
-export function peopleOf(board: BoardMember[]): People {
+export function peopleOf(board: BoardMember[], corporate = false): People {
+  const roles = corporate ? CORPORATE_ROLE : ROLE;
   const people = {
-    you: { id: "you", name: "Du", full: "Du", title: "Business Angel", role: ROLE.you, initials: "Du", color: COLOR.you },
+    you: { id: "you", name: "Du", full: "Du", title: corporate ? "Aufsichtsrat" : "Business Angel", role: roles.you, initials: "Du", color: COLOR.you },
   } as People;
   for (const m of board) {
-    people[m.seat] = { id: m.seat, name: m.short, full: m.name, title: m.title, role: ROLE[m.seat], initials: initialsOf(m.name), color: COLOR[m.seat] };
+    people[m.seat] = { id: m.seat, name: m.short, full: m.name, title: m.title, role: roles[m.seat], initials: initialsOf(m.name), color: COLOR[m.seat] };
   }
   return people;
 }

@@ -69,4 +69,16 @@ Größte Risiken: Umfang, Inhaltsaufwand, Grafik für das Büro in 3. Person.
 - **Netzwerk** (`lib/game/network.ts`): 11 Kontakte in drei Ringen mit Wärme, Abkühlung und Pause nach einem Gefallen.
 - **Karriere** (`lib/game/career.ts`) und drei weitere Startups.
 - Spielstände von Phase 1 werden beim Laden auf Version 2 gehoben (`upgradeState`).
-- **Offen für Phase 3:** Exit-Verhandlungen in der Gesellschafterversammlung, Liquidationspräferenzen, Büro-Stufen, Konzern-Pfad, mehrere offene Vorlagen pro Firma.
+- **Phase 3** hat Exit-Verhandlungen, Liquidationspräferenzen, Büro-Stufen und den Konzern-Pfad gebracht (siehe unten).
+
+## Umsetzung Phase 3
+
+- **Exits** (`planExits`, `settleExit` in `engine.ts`): Chance 2,5 % pro Monat und Firma (Wert ≥ 2 Mio. €, ≥ 8 Monate dabei, keine laufende Runde), mal (1 + 0,6 × Marktklima), × 1,4 bei starkem Wachstum. Preis 0,8–1,5 × Wert. Gründer stimmen ab 1,25 × Wert zu oder wenn das Geld unter 3 Monate reicht; Fonds ab 1,1 × Wert oder 1,5 × ihrer Präferenz; Angels ab 1,1 ×. Nachverhandeln: 55 % Grundchance (+ Ruf, + 10 % ab 25 % Anteil) auf +15 %, sonst zieht der Käufer zurück. Die alte Beiratsvorlage „Übernahmeangebot“ bleibt und zahlt jetzt ebenfalls über den Wasserfall.
+- **Wasserfall** (`waterfall` in `captable.ts`): 1× nicht partizipierende Präferenz, iterativ (wer mit seinem Anteil weniger bekäme, nimmt sein Geld zurück). Bestehende Fonds im Cap Table bekommen beim Angebot eine Präferenz in Höhe ihres Anteils am heutigen Wert, neue Runden tragen ihr Geld als Präferenz ein, auch deines.
+- **Syndikat:** Rundenoption `syndicate` (ab 45 Ruf, Angel-Club gekannt und ≥ 40 Wärme, kostet 15 Wärme). Das Syndikat ist ein eigener Gesellschafter mit Präferenz und Einstand, stimmt wie der Spieler; Carry 20 % auf den Gewinn beim Verkauf.
+- **Büros** (`office.ts`): fünf Stufen mit Miete, Ruf- und Vermögensgrenze, Extra-Aufträgen, kürzerer Prüfung, Analyst (CFO-Gespräch und Rückfragen ohne Tage), Extra-Tagen. Umziehen kostet eine Monatsmiete, kleiner ziehen ist jederzeit möglich.
+- **Konzern** (`corporate.ts`): Nordhafen AG als Firma mit `corporate: true`, ohne Anteile, mit eigenen sechs Vorlagen (nur dort), Sitzung im Monat nach dem Einstieg und dann quartalsweise, Kreditlinie statt Insolvenz. Das CFO-Urteil rechnet mit 1 % der Firma, damit Entscheidungen ohne eigene Anteile bewertet werden können.
+- **Nachrichten** (`news.ts`): 17 Ereignisse nach Branche oder Einzelfirma; ab Monat 3 mit 40 % Chance, ab Monat 9 mit 60 % (davon 30 % doppelt), kein Ereignis zweimal in acht Monaten. Positive und negative Wirkungen sind so abgestimmt, dass der Median-Wert der Skript-Spieler gegenüber Phase 2 kaum steigt.
+- **Balance** (100 Seeds, 24 Monate, Pendelwerk): passiv 81 T€, Ja-Sager 255 T€, Zufall 145 T€, Analyst 422 T€, Profi 510 T€, nur Beratung 171 T€. Der Profi erreicht im Median das eigene Büro mit Assistenz; zwei Drittel bekommen den Aufsichtsrat, wenn sie konsequent stark entscheiden.
+- **Offen für Phase 4:** Family Office mit Team, eigener Fonds, Buyouts, Börsengang, isometrische Büros, mehrere offene Vorlagen pro Firma.
+

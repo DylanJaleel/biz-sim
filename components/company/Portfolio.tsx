@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { currentGame } from "@/lib/current-game";
+import { CORPORATE_FEE } from "@/lib/game/config";
 import { openItems } from "@/lib/game/engine";
 import { runwayMonths, valuation } from "@/lib/game/sim";
 import { eur, pct, runwayText } from "@/components/game/format";
@@ -7,7 +8,8 @@ import { PHASE_LABEL } from "./labels";
 
 export async function Portfolio() {
   const { state } = await currentGame();
-  const active = state.startups.filter((s) => s.status === "active");
+  const active = state.startups.filter((s) => s.status === "active" && !s.corporate);
+  const corporate = state.startups.filter((s) => s.status === "active" && s.corporate);
   const closed = state.startups.filter((s) => s.status === "dead" || s.status === "exited" || s.status === "sold");
   const offered = state.startups.filter((s) => s.status === "offered");
   const open = new Set(openItems(state).map((i) => i.startupId));
@@ -22,7 +24,7 @@ export async function Portfolio() {
 
       {active.length === 0 && (
         <div className="panel">
-          <p className="panel__title">Noch kein Mandat</p>
+          <p className="panel__title">Noch keine Beteiligung</p>
           <p>
             {offered.length > 0 ? "In deiner Post liegen Angebote. Prüfe sie und steig ein." : "Gerade liegt kein Angebot vor. Schließe den Monat ab, dann melden sich neue Gründungen."}
           </p>
@@ -71,6 +73,40 @@ export async function Portfolio() {
           );
         })}
       </div>
+
+      {corporate.map((s) => (
+        <section key={s.id} className="page__section">
+          <h2 className="section-title">Aufsichtsrat</h2>
+          <Link href={`/firma/${s.id}`} className="company-card">
+            <span className="company-card__head">
+              <span>
+                <b className="company-card__name">{s.name}</b>
+                <span className="company-card__tag">{s.tagline}</span>
+              </span>
+              <span className="pill">Mandat</span>
+            </span>
+            <span className="kpis kpis--compact">
+              <span>
+                <small>Umsatz/Monat</small>
+                <b>{eur(s.metrics.revenue)}</b>
+              </span>
+              <span>
+                <small>Wachstum</small>
+                <b>{pct(s.metrics.growth)}</b>
+              </span>
+              <span>
+                <small>Firmenwert</small>
+                <b>{eur(valuation(s.metrics))}</b>
+              </span>
+              <span>
+                <small>Vergütung</small>
+                <b>{eur(CORPORATE_FEE)} / Monat</b>
+              </span>
+            </span>
+            {open.has(s.id) && <span className="company-card__alert">Der Aufsichtsrat tagt diesen Monat</span>}
+          </Link>
+        </section>
+      ))}
 
       {closed.length > 0 && (
         <section className="page__section">

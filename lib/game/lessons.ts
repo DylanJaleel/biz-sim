@@ -234,6 +234,42 @@ export const LESSONS: Lesson[] = [
     example: "50.000 € in Dividenden-Aktien mit 3,2 % Rendite bringen 1.600 € im Jahr, also 400 € pro Quartal.",
     inGame: "Tagesgeld und Anleihen zahlen monatlich, Dividenden-Aktien jedes Quartal, der Tech-Index gar nicht.",
   },
+  {
+    id: "liquidationspraeferenz",
+    title: "Liquidationspräferenz",
+    summary:
+      "Investoren, die in einer Runde Geld geben, bekommen beim Verkauf der Firma zuerst ihr Geld zurück. Erst danach wird der Rest nach Anteilen verteilt. Bei einer einfachen, nicht partizipierenden Präferenz wählt der Investor das Bessere: Geld zurück oder seinen Anteil am Kaufpreis.",
+    rule: "Erlös = max(eingezahltes Geld, Anteil × Restkaufpreis)",
+    example: "Ein Fonds hat 1 Mio. € für 20 % gegeben. Bei 3 Mio. € Kaufpreis nimmt er 1 Mio. € zurück statt 600.000 €; die anderen teilen 2 Mio. €.",
+    inGame: "Bei jedem Verkauf zeigt die Gesellschafterversammlung den Wasserfall: wer zuerst bezahlt wird und was für dich übrig bleibt.",
+  },
+  {
+    id: "carry",
+    title: "Syndikat und Carry",
+    summary:
+      "Wer ein Syndikat anführt, bündelt das Geld anderer Angels und investiert es gemeinsam. Dafür bekommt er einen Anteil am Gewinn des Syndikats, den Carry. Verliert das Syndikat Geld, gibt es keinen Carry.",
+    rule: "Carry = 20 % × (Erlös des Syndikats − eingezahltes Geld)",
+    example: "Das Syndikat gibt 200.000 € und erhält beim Verkauf 600.000 €. Der Gewinn beträgt 400.000 €, dein Carry 80.000 €.",
+    inGame: "Ab 45 Ruf und mit einem warmen Draht zum Angel-Club kannst du Runden mit einem Syndikat anführen.",
+  },
+  {
+    id: "aufsichtsrat",
+    title: "Aufsichtsrat",
+    summary:
+      "Der Aufsichtsrat bestellt und kontrolliert den Vorstand einer Aktiengesellschaft. In großen deutschen Firmen sitzen dort auch Vertreter der Belegschaft. Er führt nicht selbst, aber er entscheidet über große Investitionen, Zukäufe und die Vergütung des Vorstands.",
+    rule: "Der Vorstand führt, der Aufsichtsrat kontrolliert.",
+    example: "Der Vorstand will ein Werk verlagern. Der Aufsichtsrat wägt Marge gegen Streikrisiko ab und stimmt mit Auflagen zu.",
+    inGame: "Mit hohem Ruf bietet dir die Nordhafen AG ein Mandat an: feste Vergütung, eine Sitzung pro Quartal, keine Anteile.",
+  },
+  {
+    id: "kapitalallokation",
+    title: "Kapitalallokation",
+    summary:
+      "Jeder Euro Gewinn kann ausgeschüttet, investiert, für Zukäufe genutzt oder zur Schuldentilgung verwendet werden. Gute Kapitalallokation gibt Geld dorthin, wo es am meisten verdient, und schüttet aus, wenn es nichts Besseres gibt.",
+    rule: "Investieren lohnt, wenn die erwartete Rendite höher ist als das, was die Eigentümer anderswo bekämen.",
+    example: "Ein Programm verspricht 12 % Rendite, erfahrungsgemäß werden es 8 %. Bekommen Aktionäre am Markt 6 %, lohnt es sich knapp.",
+    inGame: "Im Aufsichtsrat und bei deinem eigenen Geld: Börse, Startups und Büro konkurrieren um dasselbe Kapital.",
+  },
 ];
 
 /** Order in which "Weiterbildung" unlocks cards. */
@@ -264,6 +300,10 @@ export const CURRICULUM = [
   "liquiditaet",
   "diversifikation",
   "dividendenrendite",
+  "liquidationspraeferenz",
+  "carry",
+  "aufsichtsrat",
+  "kapitalallokation",
 ];
 
 export function lessonOf(id: string): Lesson {

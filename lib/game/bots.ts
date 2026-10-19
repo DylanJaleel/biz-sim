@@ -1,6 +1,8 @@
 import { templateOf } from "./content";
-import { applyAction, daysLeft, GameRuleError, newGame, openItems, portfolioValue, previewMeeting, randomFor, startupOf } from "./engine";
+import { applyAction, daysLeft, GameRuleError, netWorth, newGame, openItems, portfolioValue, previewMeeting, randomFor, startupOf } from "./engine";
 import { holdingsValue } from "./market";
+import { OFFICES } from "./office";
+import { valuation } from "./sim";
 import { bestVote, outlook, VOTES } from "./judge";
 import type { GameAction, GameState, Vote } from "./types";
 
@@ -113,6 +115,35 @@ export const analystBot = (prefer?: string): Bot => ({
   },
 });
 
+/**
+ * The analyst plus everything Phase 3 offers: weighs sale offers, leads with
+ * a syndicate, keeps the angel club warm, moves into a better office when it
+ * can afford a year of rent, and takes the corporate seat.
+ */
+export const proBot = (prefer?: string): Bot => {
+  const base = analystBot(prefer);
+  return {
+    name: "Profi",
+    pick: base.pick,
+    month: (s, random) => {
+      const actions: GameAction[] = [];
+      for (const e of s.exits.filter((x) => x.status === "open")) {
+        const value = valuation(startupOf(s, e.startupId).metrics);
+        if (e.price >= value * 1.25) actions.push({ type: "exit", exitId: e.id, choice: "accept" });
+        else if (e.price >= value && e.choice !== "negotiate") actions.push({ type: "exit", exitId: e.id, choice: "negotiate" }, { type: "exit", exitId: e.id, choice: "accept" });
+        else actions.push({ type: "exit", exitId: e.id, choice: "reject" });
+      }
+      if (s.corporateSeat === "offered") actions.push({ type: "joinCorporate", accept: true });
+      const next = OFFICES[s.office + 1];
+      if (next && s.reputation >= next.reputation && netWorth(s) >= next.worth && s.cash > next.rent * 12) actions.push({ type: "moveOffice", level: next.level });
+      const club = s.contacts.find((c) => c.id === "angels");
+      if (s.reputation >= 35 && club && club.warmth < 60) actions.push({ type: "meetContact", contactId: "angels" });
+      for (const round of s.rounds.filter((r) => r.status === "open")) actions.push({ type: "round", roundId: round.id, take: "syndicate", vote: "go" });
+      return [...actions, ...base.month(s, random)];
+    },
+  };
+};
+
 function target(v: Vote): number {
   return v === "go" ? 0.85 : v === "conditions" ? 0.1 : -0.85;
 }
@@ -127,6 +158,9 @@ export interface BotRun {
   dead: number;
   exited: number;
   sold: number;
+  office: number;
+  corporate: boolean;
+  ledRounds: number;
   judgments: Record<"strong" | "fair" | "weak", number>;
 }
 
@@ -156,6 +190,9 @@ export function runBot(bot: Bot, seed: number, months: number): BotRun {
     dead: state.startups.filter((s) => s.status === "dead").length,
     exited: state.startups.filter((s) => s.status === "exited").length,
     sold: state.startups.filter((s) => s.status === "sold").length,
+    office: state.office,
+    corporate: state.corporateSeat === "joined",
+    ledRounds: state.ledRounds,
     judgments,
   };
 }

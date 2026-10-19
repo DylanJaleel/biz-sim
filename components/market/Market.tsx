@@ -1,4 +1,5 @@
 import { currentGame } from "@/lib/current-game";
+import { monthLabel } from "@/lib/game/config";
 import { ASSETS, holdingsValue, REGIME_LABEL } from "@/lib/game/market";
 import { eur } from "@/components/game/format";
 import { AssetCard } from "./AssetCard";
@@ -43,6 +44,24 @@ export async function Market() {
           />
         ))}
       </div>
+      {state.news.length > 0 && (
+        <section className="page__section news" aria-labelledby="news-title">
+          <h2 id="news-title" className="section-title">
+            Wirtschaftsblatt
+          </h2>
+          <ul className="news__list">
+            {state.news.slice(0, 6).map((n, i) => (
+              <li key={`${n.month}-${i}`} className="news__item">
+                <span className="decision__month">{monthLabel(n.month)}</span>
+                <b>{n.title}</b>
+                <span className="muted">
+                  {n.text} Betrifft: {n.startupIds.map((id) => state.startups.find((s) => s.id === id)?.name ?? id).join(", ")}.
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   );
 }

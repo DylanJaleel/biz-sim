@@ -1,7 +1,7 @@
 // Balance-Report für das Boardroom-Spiel: Skript-Spieler × Startups × Seeds.
 //   npm run simulate            (100 seeds, 24 Monate)
 //   npm run simulate -- 200 36
-import { analystBot, consultantBot, passiveBot, randomBot, runBot, yesBot, type Bot } from "../lib/game/bots";
+import { analystBot, consultantBot, passiveBot, proBot, randomBot, runBot, yesBot, type Bot } from "../lib/game/bots";
 
 const seeds = Number(process.argv[2] ?? 100);
 const months = Number(process.argv[3] ?? 24);
@@ -15,7 +15,7 @@ console.log(`${seeds} Spiele à ${months} Monate (Start: 150 T€)\n`);
 for (const prefer of ["pendelwerk", "kantinenkasse"]) {
   console.log(`Startup: ${prefer}`);
   console.log("Spieler".padEnd(12) + "Wert (Median)   Insolvenz  Verkauf   Reputation  stark/fair/schwach");
-  const bots: Bot[] = [passiveBot(prefer), yesBot(prefer), randomBot(prefer), analystBot(prefer), consultantBot()];
+  const bots: Bot[] = [passiveBot(prefer), yesBot(prefer), randomBot(prefer), analystBot(prefer), proBot(prefer), consultantBot()];
   for (const bot of bots) {
     const runs = Array.from({ length: seeds }, (_, i) => runBot(bot, i + 1, months));
     const j = runs.reduce((acc, r) => ({ strong: acc.strong + r.judgments.strong, fair: acc.fair + r.judgments.fair, weak: acc.weak + r.judgments.weak }), { strong: 0, fair: 0, weak: 0 });
@@ -31,3 +31,10 @@ for (const prefer of ["pendelwerk", "kantinenkasse"]) {
   }
   console.log("");
 }
+
+// Phase 3 im Detail: Wohin kommt der Profi?
+const pro = Array.from({ length: seeds }, (_, i) => runBot(proBot("pendelwerk"), i + 1, months));
+const share = (f: (r: (typeof pro)[number]) => boolean) => `${Math.round((pro.filter(f).length / seeds) * 100)} %`;
+console.log(
+  `Profi (pendelwerk): Büro-Stufe Median ${median(pro.map((r) => r.office))}, Aufsichtsrat ${share((r) => r.corporate)}, Runde angeführt ${share((r) => r.ledRounds > 0)}, Verkauf ${share((r) => r.exited > 0)}`,
+);

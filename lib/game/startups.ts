@@ -335,7 +335,8 @@ export function offerStartup(def: StartupDefinition, month: number): Startup {
     metrics,
     phase: phaseOf(metrics),
     stake: 0,
-    capTable: def.capTable.map((h) => ({ ...h })),
+    // Earlier funds put in money with a 1x preference, roughly at today's price.
+    capTable: def.capTable.map((h) => (h.kind === "vc" ? { ...h, pref: Math.round((value * h.pct) / 100 / 1000) * 1000 } : { ...h })),
     joined: 0,
     offer: { ticket, stake: def.stake, expires: month + 2, ddDone: false },
     flags: [],

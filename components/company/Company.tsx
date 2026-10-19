@@ -13,7 +13,11 @@ import { ForecastTool } from "./ForecastTool";
 import { LEANING_LABEL, PHASE_LABEL } from "./labels";
 import { Sparkline } from "./Sparkline";
 
-const JUDGMENT_LABEL = { strong: "stark", fair: "vertretbar", weak: "schwach" } as const;
+const JUDGMENT_LABEL = {
+  strong: "stark",
+  fair: "vertretbar",
+  weak: "schwach",
+} as const;
 
 export async function Company({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -23,9 +27,12 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
   const view = companyView(state, id);
   const s = view.startup;
   const m = s.metrics;
-  const people = peopleOf(s.board);
+  const people = peopleOf(s.board, Boolean(s.corporate));
   const active = s.status === "active";
   const item = view.item;
+  const corporate = Boolean(s.corporate);
+  const board = corporate ? "Aufsichtsrat" : "Beirat";
+  const prepDays = (days: number) => (view.analyst ? 0 : days);
 
   return (
     <div className="page company">
@@ -49,6 +56,9 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
         {s.status === "dead" && <p className="notice notice--bad">Insolvent. Dein Anteil ist verloren. Was hätte man früher sehen können?</p>}
         {s.status === "sold" && <p className="notice notice--bad">Deinen Anteil musstest du mit Abschlag verkaufen, um flüssig zu bleiben.</p>}
         {s.status === "exited" && <p className="notice notice--good">Verkauft für {eur(s.exitValue ?? 0)}. Dein Erlös ist in deinem Privatkapital.</p>}
+        {corporate && (
+          <p className="notice">Du sitzt im Aufsichtsrat: keine Anteile, feste Vergütung, eine Sitzung pro Quartal. Du kontrollierst den Vorstand, du führst nicht selbst.</p>
+        )}
       </header>
 
       <section className="kpis" aria-label="Kennzahlen">
@@ -68,11 +78,9 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
           <span>Runway {runwayText(view.runway)}</span>
         </div>
         <div>
-          <small>Bewertung</small>
+          <small>{corporate ? "Firmenwert" : "Bewertung"}</small>
           <b>{eur(view.valuation)}</b>
-          <span>
-            Dein Anteil {s.stake.toLocaleString("de-DE", { maximumFractionDigits: 1 })} % = {eur(view.stakeValue)}
-          </span>
+          <span>{corporate ? "Mandat ohne Anteile" : `Dein Anteil ${s.stake.toLocaleString("de-DE", { maximumFractionDigits: 1 })} % = ${eur(view.stakeValue)}`}</span>
         </div>
         <div>
           <small>Team</small>
@@ -80,7 +88,7 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
           <span>Stimmung {Math.round(m.morale)}</span>
         </div>
         <div>
-          <small>Vertrauen der Gründung</small>
+          <small>{corporate ? "Vertrauen des Vorstands" : "Vertrauen der Gründung"}</small>
           <b>{Math.round(m.trust)}</b>
           <span className="meter" aria-hidden="true">
             <i style={{ width: `${m.trust}%` }} />
@@ -92,7 +100,10 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
         <div className="company__main">
           {item ? (
             <section className={`panel item${item.urgent ? " item--urgent" : ""}`} aria-labelledby="item-title">
-              <p className="eyebrow">Vorlage für den Beirat{item.urgent ? " · dringend" : ""}</p>
+              <p className="eyebrow">
+                Vorlage für den {board}
+                {item.urgent ? " · dringend" : ""}
+              </p>
               <h2 id="item-title" className="panel__title panel__title--serif">
                 {item.title}
               </h2>
@@ -108,7 +119,7 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
                 ))}
               </div>
 
-              <h3 className="item__h">Rückfragen an die Gründung</h3>
+              <h3 className="item__h">Rückfragen an {corporate ? "den Vorstand" : "die Gründung"}</h3>
               <ul className="qa">
                 {item.questions.map((q) => (
                   <li key={q.id}>
@@ -116,7 +127,16 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
                     {q.a ? (
                       <p className="qa__a">{q.a}</p>
                     ) : (
-                      <ActionButton action={{ type: "question", itemId: item.id, questionId: q.id }} revision={revision} days={ACTION_DAYS.question} size="sm">
+                      <ActionButton
+                        action={{
+                          type: "question",
+                          itemId: item.id,
+                          questionId: q.id,
+                        }}
+                        revision={revision}
+                        days={prepDays(ACTION_DAYS.question)}
+                        size="sm"
+                      >
                         Fragen
                       </ActionButton>
                     )}
@@ -131,7 +151,7 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
                     <span role="columnheader">Option</span>
                     <span role="columnheader">Kasse danach</span>
                     <span role="columnheader">Runway</span>
-                    <span role="columnheader">Wert deines Anteils in 12 Monaten</span>
+                    <span role="columnheader">{corporate ? "Wert von 1 % der Firma in 12 Monaten" : "Wert deines Anteils in 12 Monaten"}</span>
                   </div>
                   {item.outcomes.map((o) => (
                     <div role="row" key={o.vote} className={`cfo-table__row cfo-table__row--${o.vote}`}>
@@ -154,8 +174,11 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
                 </div>
               ) : (
                 <div className="item__row">
-                  <p className="muted">Der CFO rechnet jede Option durch: Kasse, Runway und was dein Anteil in einem Jahr wert sein dürfte.</p>
-                  <ActionButton action={{ type: "cfo", itemId: item.id }} revision={revision} days={ACTION_DAYS.cfo} size="sm">
+                  <p className="muted">
+                    {view.analyst ? "Dein Analyst" : "Der CFO"} rechnet jede Option durch: Kasse, Runway und was {corporate ? "die Firma" : "dein Anteil"} in einem Jahr wert sein
+                    dürfte.
+                  </p>
+                  <ActionButton action={{ type: "cfo", itemId: item.id }} revision={revision} days={prepDays(ACTION_DAYS.cfo)} size="sm">
                     Durchrechnen lassen
                   </ActionButton>
                 </div>
@@ -165,7 +188,7 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
                 <p className="muted">
                   {view.daysLeft >= ACTION_DAYS.meeting
                     ? `Die Sitzung kostet ${ACTION_DAYS.meeting} Tag. Danach ist die Vorlage entschieden. Gelernt wird: ${item.lesson}.`
-                    : "Kein Tag mehr frei. Schließe den Monat ab, sonst entscheidet die Gründung allein."}
+                    : `Kein Tag mehr frei. Schließe den Monat ab, sonst entscheidet ${corporate ? "der Vorstand" : "die Gründung"} allein.`}
                 </p>
                 {view.daysLeft >= ACTION_DAYS.meeting && (
                   <Link className="btn btn--primary btn--lg" href={`/sitzung/${item.id}`}>
@@ -177,9 +200,13 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
           ) : (
             active && (
               <section className="panel">
-                <p className="eyebrow">Beirat</p>
+                <p className="eyebrow">{board}</p>
                 <p className="panel__title">Keine offene Vorlage</p>
-                <p className="muted">Neue Themen kommen mit dem nächsten Monat. Du kannst die Zeit nutzen, um mit der Gründung zu sprechen.</p>
+                <p className="muted">
+                  {corporate
+                    ? "Der Aufsichtsrat tagt einmal im Quartal. Bis dahin führt der Vorstand."
+                    : "Neue Themen kommen mit dem nächsten Monat. Du kannst die Zeit nutzen, um mit der Gründung zu sprechen."}
+                </p>
               </section>
             )
           )}
@@ -192,73 +219,105 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
               </div>
               {active && (
                 <ActionButton action={{ type: "founderCall", startupId: s.id }} revision={revision} days={ACTION_DAYS.founderCall} size="sm" disabled={view.calledThisMonth}>
-                  {view.calledThisMonth ? "Diesen Monat gesprochen" : "Gründung anrufen"}
+                  {view.calledThisMonth ? "Diesen Monat gesprochen" : corporate ? "Vorstand anrufen" : "Gründung anrufen"}
                 </ActionButton>
               )}
             </div>
             <Sparkline history={s.history} current={m.revenue} />
           </section>
 
-          <section className="panel" id="anteile" aria-labelledby="shares-title">
-            <div className="panel__row">
-              <div>
-                <p className="eyebrow">Gesellschafter</p>
-                <h2 id="shares-title" className="panel__title">
-                  Wem {s.name} gehört
-                </h2>
+          {!corporate && (
+            <section className="panel" id="anteile" aria-labelledby="shares-title">
+              <div className="panel__row">
+                <div>
+                  <p className="eyebrow">Gesellschafter</p>
+                  <h2 id="shares-title" className="panel__title">
+                    Wem {s.name} gehört
+                  </h2>
+                </div>
+                {active && (
+                  <ActionButton action={{ type: "askShares", startupId: s.id }} revision={revision} days={ACTION_DAYS.askShares} size="sm" disabled={view.askedThisMonth}>
+                    {view.askedThisMonth ? "Diesen Monat gefragt" : "Anteile anfragen"}
+                  </ActionButton>
+                )}
               </div>
-              {active && (
-                <ActionButton action={{ type: "askShares", startupId: s.id }} revision={revision} days={ACTION_DAYS.askShares} size="sm" disabled={view.askedThisMonth}>
-                  {view.askedThisMonth ? "Diesen Monat gefragt" : "Anteile anfragen"}
-                </ActionButton>
-              )}
-            </div>
-            <CapTableBar holders={s.capTable} stake={s.stake} />
-            {view.round && (
-              <Link href={`/gv/${view.round.id}`} className="banner">
-                <span>
-                  <b>{view.round.label} läuft:</b> {eur(view.round.amount)} von {view.round.lead}. Die Gesellschafterversammlung entscheidet bis Monatsende.
-                </span>
-                <span className="banner__cta">Zur Versammlung</span>
-              </Link>
-            )}
-            {view.offers.map((o) => (
-              <div key={o.id} className="offer">
-                <span>
-                  <b>{o.sellerName}</b> verkauft {fmtPct(o.pct)} für {eur(o.price)}
-                  <small className="muted"> · gilt bis Ende nächsten Monats</small>
-                </span>
-                <ActionButton action={{ type: "buyShares", offerId: o.id }} revision={revision} days={ACTION_DAYS.buyShares} size="sm" variant="primary">
-                  Kaufen
-                </ActionButton>
-              </div>
-            ))}
-            {view.rounds.length > 0 && (
-              <ul className="rounds">
-                {view.rounds.map((r) => (
-                  <li key={r.id}>
-                    <Link href={`/gv/${r.id}`}>
-                      <span className="decision__month">{monthLabel(r.month)}</span>
-                      <span>
-                        {r.label} · {eur(r.amount)}
-                      </span>
-                      <span className={`tag tag--${r.status === "closed" ? "go" : "no"}`}>{r.status === "closed" ? "angenommen" : "abgelehnt"}</span>
-                      {r.stakeBefore !== undefined && r.stakeAfter !== undefined && (
-                        <span className="muted small">
-                          {fmtPct(r.stakeBefore)} → {fmtPct(r.stakeAfter)}
-                        </span>
-                      )}
-                    </Link>
-                  </li>
+              <CapTableBar holders={s.capTable} stake={s.stake} />
+              {view.exits
+                .filter((e) => e.status === "open")
+                .map((e) => (
+                  <Link key={e.id} href={`/verkauf/${e.id}`} className="banner">
+                    <span>
+                      <b>Kaufangebot:</b> {e.buyer} bietet {eur(e.price)} für die ganze Firma. Die Gesellschafter entscheiden bis Monatsende.
+                    </span>
+                    <span className="banner__cta">Zum Verkauf</span>
+                  </Link>
                 ))}
-              </ul>
-            )}
-            <p className="muted small">
-              Über 50 % machen dich zum Mehrheitsgesellschafter. Anteile bekommst du in Runden, als Leistungsanteile für gute Beiratsarbeit oder durch Kauf von anderen Gesellschaftern.
-            </p>
-          </section>
+              {view.round && (
+                <Link href={`/gv/${view.round.id}`} className="banner">
+                  <span>
+                    <b>{view.round.label} läuft:</b> {eur(view.round.amount)} von {view.round.lead}. Die Gesellschafterversammlung entscheidet bis Monatsende.
+                  </span>
+                  <span className="banner__cta">Zur Versammlung</span>
+                </Link>
+              )}
+              {view.offers.map((o) => (
+                <div key={o.id} className="offer">
+                  <span>
+                    <b>{o.sellerName}</b> verkauft {fmtPct(o.pct)} für {eur(o.price)}
+                    <small className="muted"> · gilt bis Ende nächsten Monats</small>
+                  </span>
+                  <ActionButton action={{ type: "buyShares", offerId: o.id }} revision={revision} days={ACTION_DAYS.buyShares} size="sm" variant="primary">
+                    Kaufen
+                  </ActionButton>
+                </div>
+              ))}
+              {view.rounds.length > 0 && (
+                <ul className="rounds">
+                  {view.rounds.map((r) => (
+                    <li key={r.id}>
+                      <Link href={`/gv/${r.id}`}>
+                        <span className="decision__month">{monthLabel(r.month)}</span>
+                        <span>
+                          {r.label} · {eur(r.amount)}
+                        </span>
+                        <span className={`tag tag--${r.status === "closed" ? "go" : "no"}`}>{r.status === "closed" ? "angenommen" : "abgelehnt"}</span>
+                        {r.stakeBefore !== undefined && r.stakeAfter !== undefined && (
+                          <span className="muted small">
+                            {fmtPct(r.stakeBefore)} → {fmtPct(r.stakeAfter)}
+                          </span>
+                        )}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className="muted small">
+                Über 50 % machen dich zum Mehrheitsgesellschafter. Anteile bekommst du in Runden, als Leistungsanteile für gute Beiratsarbeit oder durch Kauf von anderen
+                Gesellschaftern.
+              </p>
+              {view.exits.some((e) => e.status !== "open") && (
+                <ul className="rounds">
+                  {view.exits
+                    .filter((e) => e.status !== "open")
+                    .map((e) => (
+                      <li key={e.id}>
+                        <Link href={`/verkauf/${e.id}`}>
+                          <span className="decision__month">{monthLabel(e.month)}</span>
+                          <span>
+                            Kaufangebot {e.buyer} · {eur(e.price)}
+                          </span>
+                          <span className={`tag tag--${e.status === "accepted" ? "go" : "no"}`}>
+                            {e.status === "accepted" ? "verkauft" : e.status === "withdrawn" ? "zurückgezogen" : "abgelehnt"}
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                </ul>
+              )}
+            </section>
+          )}
 
-          {active && <ForecastTool startup={s} />}
+          {active && !corporate && <ForecastTool startup={s} />}
 
           {view.past.length > 0 && (
             <section className="panel">
@@ -290,7 +349,7 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
 
         <aside className="company__side">
           <section className="panel" aria-labelledby="board-title">
-            <p className="eyebrow">Beirat</p>
+            <p className="eyebrow">{board}</p>
             <h2 id="board-title" className="panel__title">
               Wer am Tisch sitzt
             </h2>
@@ -314,7 +373,17 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
                         </span>
                       ) : (
                         item && (
-                          <ActionButton action={{ type: "pretalk", itemId: item.id, seat: b.seat }} revision={revision} days={ACTION_DAYS.pretalk} size="sm" variant="ghost">
+                          <ActionButton
+                            action={{
+                              type: "pretalk",
+                              itemId: item.id,
+                              seat: b.seat,
+                            }}
+                            revision={revision}
+                            days={ACTION_DAYS.pretalk}
+                            size="sm"
+                            variant="ghost"
+                          >
                             Vorgespräch
                           </ActionButton>
                         )

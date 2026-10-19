@@ -129,6 +129,7 @@ export function ReportDialog({ report, onClose }: { report: MonthReport; onClose
             ["Beiratsvergütung", report.income.boardFees],
             ["Zinsen und Dividenden", report.income.payouts],
             ["Lebenshaltung", report.income.living],
+            ["Büromiete", report.income.rent ?? 0],
             ["Dispozinsen", report.income.interest],
           ]
             .filter(([, v]) => v !== 0)
@@ -160,7 +161,15 @@ export function ReportDialog({ report, onClose }: { report: MonthReport; onClose
               Bewertung <Change before={line.valuationBefore} after={line.valuation} />
             </span>
             <span>
-              Dein Anteil <b>{line.stake.toLocaleString("de-DE", { maximumFractionDigits: 1 })} %</b>
+              {line.corporate ? (
+                <>
+                  Rolle <b>Aufsichtsrat</b>
+                </>
+              ) : (
+                <>
+                  Dein Anteil <b>{line.stake.toLocaleString("de-DE", { maximumFractionDigits: 1 })} %</b>
+                </>
+              )}
             </span>
           </div>
           {line.events.length > 0 && (

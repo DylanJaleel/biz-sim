@@ -1,5 +1,7 @@
 import { currentGame } from "@/lib/current-game";
-import { ACTION_DAYS, DAYS_PER_MONTH, monthLabel } from "@/lib/game/config";
+import { ACTION_DAYS, monthLabel } from "@/lib/game/config";
+import { daysLeft } from "@/lib/game/engine";
+import { monthDays, officeOf } from "@/lib/game/office";
 import type { ActionKind } from "@/lib/game/types";
 import { eur, signed } from "@/components/game/format";
 import { GigList } from "@/components/game/GigList";
@@ -20,13 +22,20 @@ const KIND_LABEL: Partial<Record<ActionKind, string>> = {
   meetContact: "Kontakt treffen",
   introContact: "Kontakt einbringen",
   gig: "Auftrag",
+  exit: "Verkauf",
+  negotiate: "Verhandlung",
+  joinCorporate: "Aufsichtsrat",
 };
 
 const WEEKDAYS = ["Mo", "Di", "Mi", "Do", "Fr"];
 
+const dayText = (n: number) => (n === 0 ? "Analyst" : n === 1 ? "1 Tag" : `${n} Tage`);
+
 export async function Calendar() {
   const { state, revision } = await currentGame();
-  const days = Array.from({ length: DAYS_PER_MONTH }, (_, i) => {
+  const total = monthDays(state);
+  const office = officeOf(state);
+  const days = Array.from({ length: total }, (_, i) => {
     const day = i + 1;
     const entry = state.calendar.find((c) => day >= c.day && day < c.day + c.days);
     return { day, entry, start: entry?.day === day };
@@ -39,7 +48,7 @@ export async function Calendar() {
         <p className="eyebrow">Kalender</p>
         <h1 className="page__title">{monthLabel(state.month)}</h1>
         <p className="page__lead">
-          Ein Monat hat {DAYS_PER_MONTH} Arbeitstage. Jede Handlung belegt Tage. Was du nicht schaffst, entscheiden andere.
+          Ein Monat hat {total} Arbeitstage{office.extraDays > 0 ? `, dank ${office.name}` : ""}. Jede Handlung belegt Tage. Was du nicht schaffst, entscheiden andere.
         </p>
       </header>
 
@@ -64,7 +73,7 @@ export async function Calendar() {
 
       <section className="page__section">
         <h2 className="section-title">Bezahlte Aufträge</h2>
-        <GigList gigs={state.gigs.filter((g) => g.month === state.month)} revision={revision} reputation={state.reputation} daysLeft={DAYS_PER_MONTH - state.daysUsed} />
+        <GigList gigs={state.gigs.filter((g) => g.month === state.month)} revision={revision} reputation={state.reputation} daysLeft={daysLeft(state)} />
       </section>
 
       <section className="page__section">
@@ -73,7 +82,7 @@ export async function Calendar() {
           {(Object.keys(ACTION_DAYS) as (keyof typeof ACTION_DAYS)[]).map((k) => (
             <li key={k}>
               <span className={`cal__swatch cal__day--${k}`} aria-hidden="true" />
-              {KIND_LABEL[k]} <b>{ACTION_DAYS[k] === 1 ? "1 Tag" : `${ACTION_DAYS[k]} Tage`}</b>
+              {KIND_LABEL[k]} <b>{dayText(k === "dd" ? office.ddDays : office.analyst && (k === "cfo" || k === "question") ? 0 : ACTION_DAYS[k])}</b>
             </li>
           ))}
         </ul>

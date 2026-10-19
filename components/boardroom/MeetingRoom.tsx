@@ -44,7 +44,7 @@ export function MeetingRoom({ view, revision }: { view: MeetingView; revision: n
   const [result, setResult] = useState<MeetingPlayback | null>(null);
   const { play, pending, error } = usePlay(revision);
 
-  const people = useMemo(() => peopleOf(view.board), [view.board]);
+  const people = useMemo(() => peopleOf(view.board, view.corporate), [view.board, view.corporate]);
   const seats = useMemo(() => seatedOf(view.board), [view.board]);
 
   const events = useMemo(() => {
@@ -77,7 +77,7 @@ export function MeetingRoom({ view, revision }: { view: MeetingView; revision: n
           <span aria-hidden="true">/</span>
           <Link href={`/firma/${view.startupId}`}>{view.startupName}</Link>
           <span aria-hidden="true">/</span>
-          <span>Beiratssitzung</span>
+          <span>{view.corporate ? "Aufsichtsratssitzung" : "Beiratssitzung"}</span>
         </nav>
         <h1 className="room__title">{view.title}</h1>
         <p className="room__motion">{view.motion}</p>
@@ -86,7 +86,7 @@ export function MeetingRoom({ view, revision }: { view: MeetingView; revision: n
 
       <div className="room__body">
         <div className="room__stage">
-          <BoardStage seats={seats} people={people} room={room} label={`Beirat von ${view.startupName} mit ${seats.length} Mitgliedern und dir am Pult`} />
+          <BoardStage seats={seats} people={people} room={room} label={`${view.corporate ? "Aufsichtsrat" : "Beirat"} von ${view.startupName} mit ${seats.length} Mitgliedern und dir am Pult`} />
           <div className="room__bar">
             <MoodMeter mood={room.mood} />
             {live && !playback.caughtUp && (
@@ -198,9 +198,9 @@ export function MeetingRoom({ view, revision }: { view: MeetingView; revision: n
       {!live && view.status === "lapsed" && (
         <section className="panel verdict">
           <p className="eyebrow">Keine Sitzung</p>
-          <h2 className="panel__title">Der Beirat hat nicht getagt</h2>
+          <h2 className="panel__title">Der {view.corporate ? "Aufsichtsrat" : "Beirat"} hat nicht getagt</h2>
           <p>
-            Die Gründung hat allein entschieden: <b>{view.decision ? view.outcomes[view.decision.outcome].label : "–"}</b>. Das kostet Vertrauen und
+            {view.corporate ? "Der Vorstand" : "Die Gründung"} hat allein entschieden: <b>{view.decision ? view.outcomes[view.decision.outcome].label : "–"}</b>. Das kostet Vertrauen und
             Ruf.
           </p>
         </section>
@@ -213,7 +213,7 @@ export function MeetingRoom({ view, revision }: { view: MeetingView; revision: n
 
 function Verdict({ view }: { view: MeetingView }) {
   const d = view.decision!;
-  const people = peopleOf(view.board);
+  const people = peopleOf(view.board, view.corporate);
   const judgment = JUDGMENT[d.judgment];
   const max = Math.max(...VOTES.map((v) => Math.abs(d.values[v])), 1);
   return (
@@ -252,7 +252,7 @@ function Verdict({ view }: { view: MeetingView }) {
                 Ruf <b>{signed(d.reputationDelta)}</b>
               </span>
               <span>
-                Vertrauen der Gründung <b>{signed(d.trustDelta)}</b>
+                Vertrauen {view.corporate ? "des Vorstands" : "der Gründung"} <b>{signed(d.trustDelta)}</b>
               </span>
             </div>
             {view.result ? (

@@ -56,7 +56,7 @@ export interface StartupHistoryPoint {
 
 export type StartupStatus = "offered" | "declined" | "active" | "dead" | "exited" | "sold";
 
-export type HolderKind = "founder" | "cofounder" | "vc" | "angel" | "esop" | "investor" | "advisor";
+export type HolderKind = "founder" | "cofounder" | "vc" | "angel" | "esop" | "investor" | "advisor" | "syndicate";
 
 /** One line of the cap table. The player is not in the list: their share is Startup.stake. */
 export interface Holder {
@@ -65,6 +65,10 @@ export interface Holder {
   kind: HolderKind;
   /** Percent of the company (0..100). */
   pct: number;
+  /** Liquidation preference: paid back first in an exit (1× non-participating). */
+  pref?: number;
+  /** Money a syndicate put in; the player earns carry on its gains. */
+  cost?: number;
 }
 
 export interface Startup {
@@ -80,6 +84,10 @@ export interface Startup {
   stake: number;
   /** Everyone else; together with stake it adds up to 100. */
   capTable: Holder[];
+  /** Preference the player holds from money put into rounds. */
+  playerPref?: number;
+  /** A corporate supervisory board seat: no shares, a fee, quarterly meetings. */
+  corporate?: boolean;
   /** Month the player joined; 0 while only offered. */
   joined: number;
   offer?: { ticket: number; stake: number; expires: number; ddDone: boolean };
@@ -182,7 +190,7 @@ export interface CalendarEntry {
   label: string;
 }
 
-export type MailKind = "deal" | "news" | "founder" | "system" | "round" | "shares" | "network";
+export type MailKind = "deal" | "news" | "founder" | "system" | "round" | "shares" | "network" | "exit";
 
 export interface Mail {
   id: string;
@@ -194,10 +202,13 @@ export interface Mail {
   startupId?: string;
   roundId?: string;
   offerId?: string;
+  exitId?: string;
+  /** The mail carries a decision (the corporate seat). */
+  action?: "corporate";
   read: boolean;
 }
 
-export type RoundTake = "none" | "half" | "prorata" | "lead";
+export type RoundTake = "none" | "half" | "prorata" | "lead" | "syndicate";
 export type GvVote = "go" | "no";
 
 export interface GvBallot {
@@ -277,6 +288,40 @@ export interface IncomeLines {
   payouts: number;
   living: number;
   interest: number;
+  /** Office rent (from Phase 3). */
+  rent?: number;
+}
+
+export type ExitChoice = "accept" | "negotiate" | "reject";
+
+export interface Payout {
+  id: string;
+  name: string;
+  kind: HolderKind | "you";
+  pct: number;
+  pref: number;
+  amount: number;
+}
+
+/** A buyer wants the whole company; the shareholders decide. */
+export interface ExitOffer {
+  id: string;
+  startupId: string;
+  month: number;
+  buyer: string;
+  price: number;
+  status: "open" | "accepted" | "rejected" | "negotiating" | "withdrawn";
+  choice?: ExitChoice;
+  ballots?: GvBallot[];
+  payouts?: Payout[];
+  carry?: number;
+}
+
+export interface NewsItem {
+  month: number;
+  title: string;
+  text: string;
+  startupIds: string[];
 }
 
 export interface ContactState {
@@ -299,6 +344,8 @@ export interface ReportLine {
   stake: number;
   status: StartupStatus;
   events: string[];
+  /** Supervisory board seat: no stake. */
+  corporate?: boolean;
 }
 
 export interface MonthReport {
@@ -315,7 +362,7 @@ export interface MonthReport {
 }
 
 export interface GameState {
-  version: 3;
+  version: 4;
   seed: number;
   month: number;
   daysUsed: number;
@@ -336,6 +383,12 @@ export interface GameState {
   ledRounds: number;
   gigs: Gig[];
   market: MarketState;
+  /** Office level, 0 = kitchen table. */
+  office: number;
+  exits: ExitOffer[];
+  news: NewsItem[];
+  /** The supervisory board seat in the corporation. */
+  corporateSeat: "none" | "offered" | "joined" | "declined";
 }
 
 export type ActionKind =
@@ -356,7 +409,11 @@ export type ActionKind =
   | "meetContact"
   | "introContact"
   | "gig"
-  | "trade";
+  | "trade"
+  | "exit"
+  | "negotiate"
+  | "moveOffice"
+  | "joinCorporate";
 
 export type GameAction =
   | { type: "dd"; startupId: string }
@@ -376,4 +433,7 @@ export type GameAction =
   | { type: "meetContact"; contactId: string }
   | { type: "introContact"; contactId: string; startupId: string }
   | { type: "gig"; gigId: string }
-  | { type: "trade"; assetId: AssetId; amount: number };
+  | { type: "trade"; assetId: AssetId; amount: number }
+  | { type: "exit"; exitId: string; choice: ExitChoice }
+  | { type: "moveOffice"; level: number }
+  | { type: "joinCorporate"; accept: boolean };

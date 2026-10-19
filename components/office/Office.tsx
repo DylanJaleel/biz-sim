@@ -1,6 +1,9 @@
 import Link from "next/link";
-import { DAYS_PER_MONTH, monthLabel, monthName } from "@/lib/game/config";
+import { monthLabel, monthName } from "@/lib/game/config";
 import { careerOf } from "@/lib/game/career";
+import { netWorth } from "@/lib/game/engine";
+import { monthDays, OFFICES, officeOf } from "@/lib/game/office";
+import { ActionButton } from "@/components/game/ActionButton";
 import { LESSONS } from "@/lib/game/lessons";
 import { deskView } from "@/lib/game/views";
 import { currentGame } from "@/lib/current-game";
@@ -19,11 +22,15 @@ export async function Office() {
   const career = careerOf(state);
   const next = career.steps.find((step) => !step.done);
   const warm = state.contacts.filter((c) => c.met && c.warmth >= 40).length;
+  const office = officeOf(state);
+  const upgrade = OFFICES[office.level + 1];
+  const worth = netWorth(state);
+  const news = state.news.find((n) => n.month >= state.month - 1);
 
   return (
     <div className="office">
       <section className="desk" aria-label="Schreibtisch">
-        <div className="desk__surface">
+        <div className={`desk__surface desk__surface--l${office.level}`}>
           <Link href="/portfolio" className="desk__item laptop" aria-label={`Laptop: ${desk.mandates.length} Mandate`}>
             <span className="laptop__screen">
               <span className="laptop__head">Portfolio</span>
@@ -70,7 +77,7 @@ export async function Office() {
           <Link href="/kalender" className="desk__item calendar" aria-label={`Kalender: ${desk.daysLeft} Tage frei`}>
             <span className="calendar__head">{monthName(desk.month)}</span>
             <span className="calendar__num">{desk.daysLeft}</span>
-            <span className="calendar__sub">von {DAYS_PER_MONTH} Tagen frei</span>
+            <span className="calendar__sub">von {monthDays(state)} Tagen frei</span>
           </Link>
 
           <Link href="/notizbuch" className="desk__item notebook" aria-label={`Notizbuch: ${desk.lessons} von ${desk.lessonsTotal} Lernkarten`}>
@@ -89,12 +96,18 @@ export async function Office() {
             </span>
           </Link>
 
-          <Link href="/boerse" className="desk__item paper" aria-label={`Wirtschaftszeitung: ${state.market.headline}`}>
+          <Link href="/boerse" className="desk__item paper" aria-label={`Wirtschaftszeitung: ${news?.title ?? state.market.headline}`}>
             <span className="paper__mast">Wirtschaftsblatt</span>
-            <span className="paper__headline">{state.market.headline}</span>
+            <span className="paper__headline">{news?.title ?? state.market.headline}</span>
             <span className={`paper__regime paper__regime--${state.market.regime}`}>{REGIME_LABEL[state.market.regime]}</span>
           </Link>
 
+          {office.level >= 1 && <span className="desk__item plant" aria-hidden="true" />}
+          {office.level >= 2 && (
+            <span className="desk__item nameplate" aria-label={`Büro: ${office.name}`}>
+              {office.name}
+            </span>
+          )}
           <span className="desk__item cup" aria-hidden="true" />
           <span className="desk__item pen" aria-hidden="true" />
         </div>
@@ -120,6 +133,39 @@ export async function Office() {
           <p className="eyebrow">Aufträge diesen Monat</p>
           <GigList gigs={state.gigs.filter((g) => g.month === state.month)} revision={revision} reputation={state.reputation} daysLeft={desk.daysLeft} compact />
         </div>
+        <div className="career office-level" aria-label="Büro">
+          <p className="eyebrow">Büro</p>
+          <p className="office-level__now">
+            <b>{office.name}</b>
+            <span>{office.rent > 0 ? `${eur(office.rent)} Miete im Monat` : "Keine Miete"}</span>
+          </p>
+          {upgrade ? (
+            <div className="office-level__next">
+              <p>
+                Nächste Stufe: <b>{upgrade.name}</b> für {eur(upgrade.rent)} im Monat. {upgrade.perks.join(". ")}.
+              </p>
+              <p className="muted small">
+                Braucht {upgrade.reputation} Ruf (du: {state.reputation}){upgrade.worth > 0 && ` und ${eur(upgrade.worth)} Vermögen (du: ${eur(worth)})`}. Umzug kostet eine
+                Monatsmiete.
+              </p>
+              <ActionButton
+                action={{ type: "moveOffice", level: upgrade.level }}
+                revision={revision}
+                size="sm"
+                disabled={state.reputation < upgrade.reputation || worth < upgrade.worth || state.cash < upgrade.rent}
+              >
+                Umziehen
+              </ActionButton>
+            </div>
+          ) : (
+            <p className="muted small">Höher geht es nicht.</p>
+          )}
+          {office.level > 0 && (
+            <ActionButton action={{ type: "moveOffice", level: office.level - 1 }} revision={revision} size="sm" variant="ghost">
+              {`Kleiner ziehen: ${OFFICES[office.level - 1]!.name}`}
+            </ActionButton>
+          )}
+        </div>
         <div className="career" aria-label="Karriere">
           <p className="eyebrow">Karriere</p>
           <ol className="career__steps">
@@ -132,9 +178,7 @@ export async function Office() {
             ))}
           </ol>
         </div>
-        <p className="assistant__foot">
-          Jede Handlung kostet Tage. Wenn du fertig bist, schließe oben den Monat ab: Die Firmen arbeiten weiter, und der Monatsbericht kommt.
-        </p>
+        <p className="assistant__foot">Jede Handlung kostet Tage. Wenn du fertig bist, schließe oben den Monat ab: Die Firmen arbeiten weiter, und der Monatsbericht kommt.</p>
       </aside>
     </div>
   );

@@ -1,8 +1,8 @@
-import { LEAD_REPUTATION } from "./config";
+import { CORPORATE_REPUTATION, LEAD_REPUTATION } from "./config";
 import type { GameState } from "./types";
 
-// Die Karriereleiter vom Angel zum Investment-Mogul. Die ersten Stufen sind
-// spielbar, die oberen kommen in späteren Phasen.
+// Die Karriereleiter vom Angel zum Investment-Mogul. Die ersten vier Stufen
+// sind spielbar, die oberen kommen in späteren Phasen.
 
 export interface CareerStep {
   title: string;
@@ -26,7 +26,7 @@ export function careerOf(state: GameState): Career {
     { title: "Business Angel", requirement: "Bei einem Startup einsteigen", done: invested },
     { title: "Lead-Investor", requirement: `Eine Finanzierungsrunde anführen (ab ${LEAD_REPUTATION} Ruf)`, done: led },
     { title: "Mehrheitsgesellschafter", requirement: "Mehr als 50 % an einer Firma halten", done: majority },
-    { title: "Konzern-Beirat", requirement: "Aufsichtsrat in einem Konzern", done: false, later: true },
+    { title: "Konzern-Aufsichtsrat", requirement: `Ein Mandat im Aufsichtsrat eines Konzerns (ab ${CORPORATE_REPUTATION} Ruf, mit angeführter Runde oder Mehrheit)`, done: state.corporateSeat === "joined" },
     { title: "Family Office", requirement: "Eigenes Family Office mit Team", done: false, later: true },
     { title: "Investment-Mogul", requirement: "Eigene Private-Equity-Firma", done: false, later: true },
   ];

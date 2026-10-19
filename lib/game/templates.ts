@@ -55,6 +55,8 @@ export interface Template {
   /** Months since the player joined are passed in as `age`. */
   when: (s: Startup, age: number) => boolean;
   urgent?: boolean;
+  /** Only for the corporate supervisory board (and only there). */
+  corporate?: boolean;
   /** Cooldown in months; without it a template appears once per company. */
   repeatAfter?: number;
   /** How attractive approving the motion is to each interest (-1..1). */

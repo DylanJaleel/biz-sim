@@ -1,11 +1,12 @@
-import type { AssetId, GameAction, GvVote, RoundTake, SeatId, Vote } from "./types";
+import type { AssetId, ExitChoice, GameAction, GvVote, RoundTake, SeatId, Vote } from "./types";
 
 // Server actions receive whatever the browser sends. This turns it into a
 // GameAction or nothing; the engine then checks the game rules.
 
 const SEATS: readonly SeatId[] = ["ceo", "cto", "vc", "indep", "angel"];
 const VOTES: readonly Vote[] = ["go", "conditions", "no"];
-const TAKES: readonly RoundTake[] = ["none", "half", "prorata", "lead"];
+const TAKES: readonly RoundTake[] = ["none", "half", "prorata", "lead", "syndicate"];
+const EXIT_CHOICES: readonly ExitChoice[] = ["accept", "negotiate", "reject"];
 const GV_VOTES: readonly GvVote[] = ["go", "no"];
 const ASSET_IDS: readonly AssetId[] = ["tagesgeld", "anleihen", "dividenden", "tech"];
 
@@ -36,6 +37,14 @@ export function parseAction(input: unknown): GameAction | null {
       if (!ASSET_IDS.includes(a.assetId as AssetId) || !Number.isFinite(amount) || amount === 0 || Math.abs(amount) > 50_000_000) return null;
       return { type: "trade", assetId: a.assetId as AssetId, amount: Math.round(amount) };
     }
+    case "exit":
+      return id(a.exitId) && EXIT_CHOICES.includes(a.choice as ExitChoice) ? { type: "exit", exitId: a.exitId, choice: a.choice as ExitChoice } : null;
+    case "moveOffice": {
+      const level = Number(a.level);
+      return Number.isInteger(level) && level >= 0 && level <= 4 ? { type: "moveOffice", level } : null;
+    }
+    case "joinCorporate":
+      return typeof a.accept === "boolean" ? { type: "joinCorporate", accept: a.accept } : null;
     case "buyShares":
       return id(a.offerId) ? { type: "buyShares", offerId: a.offerId } : null;
     case "meetContact":

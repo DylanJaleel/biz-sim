@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { ACTION_DAYS } from "@/lib/game/config";
-import type { Mail, StartupStatus } from "@/lib/game/types";
+import type { GameState, Mail, StartupStatus } from "@/lib/game/types";
 import { ActionButton } from "@/components/game/ActionButton";
 import { eur, pct, runwayText } from "@/components/game/format";
 import { usePlay } from "@/components/game/usePlay";
@@ -37,9 +37,26 @@ const KIND_LABEL: Record<Mail["kind"], string> = {
   round: "Runde",
   shares: "Anteile",
   network: "Netzwerk",
+  exit: "Verkauf",
 };
 
-export function Inbox({ mails, deals, initial, revision, cash }: { mails: MailView[]; deals: Record<string, DealView>; initial: string | null; revision: number; cash: number }) {
+export function Inbox({
+  mails,
+  deals,
+  initial,
+  revision,
+  cash,
+  ddDays,
+  corporateSeat,
+}: {
+  mails: MailView[];
+  deals: Record<string, DealView>;
+  initial: string | null;
+  revision: number;
+  cash: number;
+  ddDays: number;
+  corporateSeat: GameState["corporateSeat"];
+}) {
   const [selected, setSelected] = useState(initial);
   const { play } = usePlay(revision);
   const mail = mails.find((m) => m.id === selected);
@@ -57,7 +74,12 @@ export function Inbox({ mails, deals, initial, revision, cash }: { mails: MailVi
       <ul className="inbox__list" aria-label="Nachrichten">
         {mails.map((m) => (
           <li key={m.id}>
-            <button type="button" className={`inbox__item${m.id === selected ? " is-active" : ""}${m.read ? "" : " is-unread"}`} onClick={() => open(m)} aria-current={m.id === selected}>
+            <button
+              type="button"
+              className={`inbox__item${m.id === selected ? " is-active" : ""}${m.read ? "" : " is-unread"}`}
+              onClick={() => open(m)}
+              aria-current={m.id === selected}
+            >
               <span className="inbox__from">{m.from}</span>
               <span className="inbox__subject">{m.subject}</span>
               <span className="inbox__meta">
@@ -77,7 +99,33 @@ export function Inbox({ mails, deals, initial, revision, cash }: { mails: MailVi
             {mail.subject}
           </h2>
           <p className="inbox__body">{mail.body}</p>
-          {deal && <Deal deal={deal} revision={revision} cash={cash} />}
+          {deal && <Deal deal={deal} revision={revision} cash={cash} ddDays={ddDays} />}
+          {mail.exitId && (
+            <Link className="btn btn--primary" href={`/verkauf/${mail.exitId}`}>
+              Zum Verkauf
+            </Link>
+          )}
+          {mail.action === "corporate" &&
+            (corporateSeat === "offered" ? (
+              <div className="deal__actions">
+                <ActionButton action={{ type: "joinCorporate", accept: true }} revision={revision} days={ACTION_DAYS.joinCorporate} variant="primary">
+                  Mandat annehmen
+                </ActionButton>
+                <ActionButton action={{ type: "joinCorporate", accept: false }} revision={revision} variant="ghost">
+                  Absagen
+                </ActionButton>
+              </div>
+            ) : (
+              <p className="notice">
+                {corporateSeat === "joined" ? (
+                  <>
+                    Du sitzt im Aufsichtsrat. <Link href="/firma/nordhafen">Zur Nordhafen AG</Link>
+                  </>
+                ) : (
+                  "Du hast abgesagt."
+                )}
+              </p>
+            ))}
           {mail.roundId && (
             <Link className="btn btn--primary" href={`/gv/${mail.roundId}`}>
               Zur Gesellschafterversammlung
@@ -94,7 +142,7 @@ export function Inbox({ mails, deals, initial, revision, cash }: { mails: MailVi
   );
 }
 
-function Deal({ deal, revision, cash }: { deal: DealView; revision: number; cash: number }) {
+function Deal({ deal, revision, cash, ddDays }: { deal: DealView; revision: number; cash: number; ddDays: number }) {
   if (deal.status !== "offered") {
     const text: Record<StartupStatus, string> = {
       offered: "",
@@ -158,14 +206,12 @@ function Deal({ deal, revision, cash }: { deal: DealView; revision: number; cash
           <p className="muted small">Im Beirat sitzen: {deal.board.join(", ")}.</p>
         </div>
       ) : (
-        <p className="muted">
-          Eine Prüfung (Due Diligence) zeigt, was hinter den Zahlen steckt: Kosten, Team, Wettbewerb. Wer blind investiert, erfährt es später im Beirat.
-        </p>
+        <p className="muted">Eine Prüfung (Due Diligence) zeigt, was hinter den Zahlen steckt: Kosten, Team, Wettbewerb. Wer blind investiert, erfährt es später im Beirat.</p>
       )}
 
       <div className="deal__actions">
         {!deal.ddDone && (
-          <ActionButton action={{ type: "dd", startupId: deal.id }} revision={revision} days={ACTION_DAYS.dd}>
+          <ActionButton action={{ type: "dd", startupId: deal.id }} revision={revision} days={ddDays}>
             Prüfen
           </ActionButton>
         )}
