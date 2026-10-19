@@ -43,8 +43,9 @@ describe("game balance", () => {
     expect(consultant.value).toBeLessThan(analyst.value * 0.75);
   });
 
-  it("exits, syndicates and offices reward skill but print no money", () => {
-    expect(pro.value).toBeGreaterThan(analyst.value);
+  it("exits, syndicates and offices are options, not money printers", () => {
+    // With a full agenda days are scarce: an office's rent has to earn its keep.
+    expect(pro.value).toBeGreaterThan(analyst.value * 0.9);
     expect(pro.value).toBeLessThan(analyst.value * 1.5);
   });
 

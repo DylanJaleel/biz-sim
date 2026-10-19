@@ -89,6 +89,12 @@ export const IPO_CASH_SHARE = 0.5;
 export const DEALS_FROM_MONTH = 4;
 export const DEALS_MAX_OPEN = 3;
 
+// Agenda: several items per board meeting
+/** At most this many open items per company. */
+export const AGENDA_MAX = 3;
+/** Chance of a third item in a quarterly meeting. */
+export const AGENDA_THIRD = 0.2;
+
 /** Syndicate partners cool off a little each time they are asked for money. */
 export const SYNDICATE_WARMTH_COST = 15;
 

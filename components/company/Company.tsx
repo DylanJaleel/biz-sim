@@ -109,118 +109,165 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
 
       <div className="company__grid">
         <div className="company__main">
-          {item ? (
-            <section className={`panel item${item.urgent ? " item--urgent" : ""}`} aria-labelledby="item-title">
-              <p className="eyebrow">
-                Vorlage für den {board}
-                {item.urgent ? " · dringend" : ""}
-              </p>
-              <h2 id="item-title" className="panel__title panel__title--serif">
-                {item.title}
-              </h2>
-              <p className="item__motion">{item.motion}</p>
-              <p>{item.context}</p>
-
-              <div className="item__options">
-                {(["go", "conditions", "no"] as const).map((v) => (
-                  <div key={v} className={`option option--${v}`}>
-                    <span className="option__vote">{VOTE_LABEL[v]}</span>
-                    <span>{item.outcomeLabels[v]}</span>
-                  </div>
-                ))}
-              </div>
-
-              <h3 className="item__h">Rückfragen an {corporate ? "den Vorstand" : "die Gründung"}</h3>
-              <ul className="qa">
-                {item.questions.map((q) => (
-                  <li key={q.id}>
-                    <p className="qa__q">{q.q}</p>
-                    {q.a ? (
-                      <p className="qa__a">{q.a}</p>
-                    ) : (
-                      <ActionButton
-                        action={{
-                          type: "question",
-                          itemId: item.id,
-                          questionId: q.id,
-                        }}
-                        revision={revision}
-                        days={prepDays(ACTION_DAYS.question)}
-                        size="sm"
-                      >
-                        Fragen
-                      </ActionButton>
-                    )}
+          {view.agenda.length > 1 && (
+            <section className="panel agenda-head" aria-label="Tagesordnung">
+              <p className="eyebrow">Tagesordnung · {view.agenda.length} Punkte</p>
+              <ol className="agenda-head__list">
+                {view.agenda.map((a) => (
+                  <li key={a.id}>
+                    <a href={`#top-${a.id}`}>{a.title}</a>
+                    {a.urgent && <span className="tag tag--no">dringend</span>}
+                    {a.postponed && <span className="tag tag--conditions">vertagt</span>}
                   </li>
                 ))}
-              </ul>
-
-              <h3 className="item__h">CFO-Gespräch</h3>
-              {item.outcomes ? (
-                <div className="cfo-table" role="table" aria-label="Was der CFO zu jeder Option sagt">
-                  <div role="row" className="cfo-table__head">
-                    <span role="columnheader">Option</span>
-                    <span role="columnheader">Kasse danach</span>
-                    <span role="columnheader">Runway</span>
-                    <span role="columnheader">{corporate ? "Wert von 1 % der Firma in 12 Monaten" : "Wert deines Anteils in 12 Monaten"}</span>
-                  </div>
-                  {item.outcomes.map((o) => (
-                    <div role="row" key={o.vote} className={`cfo-table__row cfo-table__row--${o.vote}`}>
-                      <span role="cell">
-                        <b>{VOTE_LABEL[o.vote]}</b> {o.label}
-                      </span>
-                      <span role="cell">{eur(o.cashAfter)}</span>
-                      <span role="cell">{runwayText(o.runwayAfter)}</span>
-                      <span role="cell">
-                        {eur(o.outlook.value)}
-                        {o.outlook.chance !== undefined && (
-                          <small>
-                            {" "}
-                            · {Math.round(o.outlook.chance * 100)} % Chance: {eur(o.outlook.good ?? 0)}, sonst {eur(o.outlook.bad ?? 0)}
-                          </small>
-                        )}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="item__row">
-                  <p className="muted">
-                    {view.analyst ? "Dein Analyst" : "Der CFO"} rechnet jede Option durch: Kasse, Runway und was {corporate ? "die Firma" : "dein Anteil"} in einem Jahr wert sein
-                    dürfte.
-                  </p>
-                  <ActionButton action={{ type: "cfo", itemId: item.id }} revision={revision} days={prepDays(ACTION_DAYS.cfo)} size="sm">
-                    Durchrechnen lassen
-                  </ActionButton>
-                </div>
-              )}
-
-              <div className="item__cta">
-                <p className="muted">
-                  {view.daysLeft >= ACTION_DAYS.meeting
-                    ? `Die Sitzung kostet ${ACTION_DAYS.meeting} Tag. Danach ist die Vorlage entschieden. Gelernt wird: ${item.lesson}.`
-                    : `Kein Tag mehr frei. Schließe den Monat ab, sonst entscheidet ${corporate ? "der Vorstand" : "die Gründung"} allein.`}
-                </p>
-                {view.daysLeft >= ACTION_DAYS.meeting && (
-                  <Link className="btn btn--primary btn--lg" href={`/sitzung/${item.id}`}>
-                    Sitzung einberufen
-                  </Link>
-                )}
-              </div>
+              </ol>
+              <p className="muted small">
+                Alle Punkte werden in einer Sitzung beraten: Der erste kostet {ACTION_DAYS.meeting} Tag, jeder weitere keinen. Vorbereitung kostet pro Punkt Tage. Was bis
+                Monatsende offen bleibt, wird einmal vertagt; Dringendes entscheidet sonst {corporate ? "der Vorstand" : "die Gründung"} allein.
+              </p>
             </section>
-          ) : (
-            active && (
-              <section className="panel">
-                <p className="eyebrow">{board}</p>
-                <p className="panel__title">Keine offene Vorlage</p>
-                <p className="muted">
-                  {corporate
-                    ? "Der Aufsichtsrat tagt einmal im Quartal. Bis dahin führt der Vorstand."
-                    : "Neue Themen kommen mit dem nächsten Monat. Du kannst die Zeit nutzen, um mit der Gründung zu sprechen."}
-                </p>
-              </section>
-            )
           )}
+          {view.agenda.length > 0
+            ? view.agenda.map((item, n) => (
+                <section key={item.id} id={`top-${item.id}`} className={`panel item${item.urgent ? " item--urgent" : ""}`} aria-labelledby={`item-title-${item.id}`}>
+                  <p className="eyebrow">
+                    {view.agenda.length > 1 ? `TOP ${n + 1} · ` : ""}Vorlage für den {board}
+                    {item.urgent ? " · dringend" : ""}
+                    {item.postponed ? " · vertagt aus dem Vormonat" : ""}
+                  </p>
+                  <h2 id={`item-title-${item.id}`} className="panel__title panel__title--serif">
+                    {item.title}
+                  </h2>
+                  <p className="item__motion">{item.motion}</p>
+                  <p>{item.context}</p>
+
+                  <div className="item__options">
+                    {(["go", "conditions", "no"] as const).map((v) => (
+                      <div key={v} className={`option option--${v}`}>
+                        <span className="option__vote">{VOTE_LABEL[v]}</span>
+                        <span>{item.outcomeLabels[v]}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <h3 className="item__h">Rückfragen an {corporate ? "den Vorstand" : "die Gründung"}</h3>
+                  <ul className="qa">
+                    {item.questions.map((q) => (
+                      <li key={q.id}>
+                        <p className="qa__q">{q.q}</p>
+                        {q.a ? (
+                          <p className="qa__a">{q.a}</p>
+                        ) : (
+                          <ActionButton
+                            action={{
+                              type: "question",
+                              itemId: item.id,
+                              questionId: q.id,
+                            }}
+                            revision={revision}
+                            days={prepDays(ACTION_DAYS.question)}
+                            size="sm"
+                          >
+                            Fragen
+                          </ActionButton>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+
+                  <h3 className="item__h">CFO-Gespräch</h3>
+                  {item.outcomes ? (
+                    <div className="cfo-table" role="table" aria-label="Was der CFO zu jeder Option sagt">
+                      <div role="row" className="cfo-table__head">
+                        <span role="columnheader">Option</span>
+                        <span role="columnheader">Kasse danach</span>
+                        <span role="columnheader">Runway</span>
+                        <span role="columnheader">{corporate ? "Wert von 1 % der Firma in 12 Monaten" : "Wert deines Anteils in 12 Monaten"}</span>
+                      </div>
+                      {item.outcomes.map((o) => (
+                        <div role="row" key={o.vote} className={`cfo-table__row cfo-table__row--${o.vote}`}>
+                          <span role="cell">
+                            <b>{VOTE_LABEL[o.vote]}</b> {o.label}
+                          </span>
+                          <span role="cell">{eur(o.cashAfter)}</span>
+                          <span role="cell">{runwayText(o.runwayAfter)}</span>
+                          <span role="cell">
+                            {eur(o.outlook.value)}
+                            {o.outlook.chance !== undefined && (
+                              <small>
+                                {" "}
+                                · {Math.round(o.outlook.chance * 100)} % Chance: {eur(o.outlook.good ?? 0)}, sonst {eur(o.outlook.bad ?? 0)}
+                              </small>
+                            )}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="item__row">
+                      <p className="muted">
+                        {view.analyst ? "Dein Analyst" : "Der CFO"} rechnet jede Option durch: Kasse, Runway und was {corporate ? "die Firma" : "dein Anteil"} in einem Jahr wert
+                        sein dürfte.
+                      </p>
+                      <ActionButton action={{ type: "cfo", itemId: item.id }} revision={revision} days={prepDays(ACTION_DAYS.cfo)} size="sm">
+                        Durchrechnen lassen
+                      </ActionButton>
+                    </div>
+                  )}
+
+                  {view.agenda.length > 1 && (
+                    <div className="item__talks">
+                      <h3 className="item__h">Vorgespräche zu diesem Punkt</h3>
+                      <div className="item__talk-row">
+                        {item.members.map((m) =>
+                          m.pretalked ? (
+                            <span key={m.seat} className={`tag tag--${m.leaning === "open" ? "open" : m.leaning}`}>
+                              {m.short}: {LEANING_LABEL[m.leaning ?? "open"]}
+                            </span>
+                          ) : (
+                            <ActionButton
+                              key={m.seat}
+                              action={{ type: "pretalk", itemId: item.id, seat: m.seat }}
+                              revision={revision}
+                              days={ACTION_DAYS.pretalk}
+                              size="sm"
+                              variant="ghost"
+                            >
+                              {m.short}
+                            </ActionButton>
+                          ),
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="item__cta">
+                    <p className="muted">
+                      {view.sitting
+                        ? `Der ${board} tagt heute schon: Dieser Punkt kostet keinen weiteren Tag. Gelernt wird: ${item.lesson}.`
+                        : view.daysLeft >= ACTION_DAYS.meeting
+                          ? `Die Sitzung kostet ${ACTION_DAYS.meeting} Tag${view.agenda.length > 1 ? ", weitere Punkte derselben Sitzung keinen" : ""}. Gelernt wird: ${item.lesson}.`
+                          : `Kein Tag mehr frei. Schließe den Monat ab: ${item.urgent ? `Dann entscheidet ${corporate ? "der Vorstand" : "die Gründung"} allein.` : "Der Punkt wird einmal vertagt."}`}
+                    </p>
+                    {(view.sitting || view.daysLeft >= ACTION_DAYS.meeting) && (
+                      <Link className="btn btn--primary btn--lg" href={`/sitzung/${item.id}`}>
+                        {view.sitting ? "Punkt beraten" : "Sitzung einberufen"}
+                      </Link>
+                    )}
+                  </div>
+                </section>
+              ))
+            : active && (
+                <section className="panel">
+                  <p className="eyebrow">{board}</p>
+                  <p className="panel__title">Keine offene Vorlage</p>
+                  <p className="muted">
+                    {corporate
+                      ? "Der Aufsichtsrat tagt einmal im Quartal. Bis dahin führt der Vorstand."
+                      : "Neue Themen kommen mit dem nächsten Monat. Du kannst die Zeit nutzen, um mit der Gründung zu sprechen."}
+                  </p>
+                </section>
+              )}
 
           <section className="panel">
             <div className="panel__row">
@@ -230,7 +277,13 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
               </div>
               {active && (
                 <ActionButton action={{ type: "founderCall", startupId: s.id }} revision={revision} days={ACTION_DAYS.founderCall} size="sm" disabled={view.calledThisMonth}>
-                  {view.calledThisMonth ? "Diesen Monat gesprochen" : corporate ? "Vorstand anrufen" : s.flags.includes("mittelstand") ? "Geschäftsführung anrufen" : "Gründung anrufen"}
+                  {view.calledThisMonth
+                    ? "Diesen Monat gesprochen"
+                    : corporate
+                      ? "Vorstand anrufen"
+                      : s.flags.includes("mittelstand")
+                        ? "Geschäftsführung anrufen"
+                        : "Gründung anrufen"}
                 </ActionButton>
               )}
             </div>
@@ -384,7 +437,8 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
                           <span className="muted">wichtig: {b.interests.map((i) => INTEREST_LABEL[i]).join(", ")}</span>
                         </span>
                       ) : (
-                        item && (
+                        item &&
+                        view.agenda.length === 1 && (
                           <ActionButton
                             action={{
                               type: "pretalk",

@@ -93,3 +93,10 @@ Größte Risiken: Umfang, Inhaltsaufwand, Grafik für das Büro in 3. Person.
 - **Balance im langen Spiel** (60 Monate, Pendelwerk als Einstieg, Median): Ja-Sager etwa 0,8 Mio. €, Zufall 0,2 Mio. €, Analyst mit einer Firma 1,5–1,7 Mio. €, „Mogul“ (breit investieren, Nachfolgen, Family Office, Fonds) 2,5–2,9 Mio. € bei elf Mandaten, aber mit 25 % Wahrscheinlichkeit für mindestens eine Insolvenz. Nur zuschauen endet unter dem Startkapital. Der Test `the long game` hält fest, dass der Mogul den Ja-Sager deutlich schlägt und die oberen Karrierestufen erreicht.
 - **Offen:** isometrische Büros, mehrere offene Vorlagen pro Firma, Fonds-Laufzeit mit Rückzahlung an die Investoren, Fonds II.
 
+## Tagesordnung (2A) und Warteschlange
+
+- **Umgesetzt (2A):** bis zu drei offene Punkte pro Firma (`AGENDA_MAX`), in Quartalsmonaten zwei plus 20 % Chance auf einen dritten, sonst einer, wenn keiner offen ist; dringende Vorlagen kommen immer dazu. Weitere Punkte derselben Sitzung kosten keinen Tag und zählen für den Ruf halb. Nicht dringende Punkte werden einmal vertagt (`BoardItem.postponed`), danach entscheidet die Geschäftsführung allein. Die Beiratsvorlage „Übernahmeangebot“ zahlt jetzt das 1,15-Fache (Nachverhandeln 1,35-Fache), weil sie mit mehr Punkten pro Quartal früher auftaucht.
+- **Balance nach 2A** (40 Spiele, 24 Monate, Pendelwerk, Median): passiv 86 T€, Ja-Sager 326 T€ (Ruf 79), Zufall 207 T€, Analyst 515 T€, Profi 548 T€. Mehr Entscheidungen heißen mehr Einfluss; der Abstand zwischen sorgfältig und blind bleibt deutlich. Ein Büro zahlt sich nicht mehr automatisch aus, weil die Tage knapper sind.
+- **Warteschlange:** 3B (Investoren mit Erwartungen, jährliche Investorenversammlung) kommt, wenn Punkt 3 angegangen wird, dann zusammen mit dem Fondszyklus; derzeit nicht nötig.
+- **In Prüfung:** 1A (isometrische Räume) und 1B (begehbares 3D-Büro) als interaktive Visualisierung, Entscheidung vor dem Einbau.
+

@@ -13,7 +13,7 @@ import {
 } from "./config";
 import { CONTACTS, RING_LABEL, ringOpen, type ContactDef, type Ring } from "./network";
 import { templateOf } from "./content";
-import { daysLeft, fundBlocker, fundSize, itemOf, netWorth, previewMeeting, startupOf, syndicateBlocker } from "./engine";
+import { daysLeft, fundBlocker, fundSize, itemOf, netWorth, previewMeeting, sittingToday, startupOf, syndicateBlocker } from "./engine";
 import { lessonOf } from "./lessons";
 import { officeOf } from "./office";
 import type { MeetingEvent } from "./meeting";
@@ -67,6 +67,12 @@ export interface MeetingView {
   lesson: { id: string; title: string; summary: string; rule?: string };
   daysLeft: number;
   prepared: { cfo: boolean; asked: number; pretalks: string[] };
+  /** This month's agenda of the company, with the current item's position. */
+  agenda: { id: string; title: string; status: ItemStatus; current: boolean }[];
+  /** The next open item on the agenda, if any. */
+  nextItemId: string | null;
+  /** The board already met this month: this item costs no extra day. */
+  sitting: boolean;
 }
 
 export function meetingView(state: GameState, itemId: string): MeetingView {
@@ -77,6 +83,8 @@ export function meetingView(state: GameState, itemId: string): MeetingView {
   const outcomes = {} as MeetingView["outcomes"];
   for (const v of ["go", "conditions", "no"] as const) outcomes[v] = { label: fill(t.outcomes[v].label, s), summary: fill(t.outcomes[v].summary, s) };
 
+  // This month's agenda: what is still open and what was decided this month.
+  const agendaItems = state.items.filter((i) => i.startupId === s.id && (i.status === "open" || (i.decision && !i.decision.lapsed && i.decision.month === state.month)));
   let opening: MeetingEvent[] = [];
   const debates: Record<string, MeetingEvent[]> = {};
   if (item.status === "open" && s.status === "active") {
@@ -108,6 +116,9 @@ export function meetingView(state: GameState, itemId: string): MeetingView {
     lesson: { id: lesson.id, title: lesson.title, summary: lesson.summary, rule: lesson.rule },
     daysLeft: daysLeft(state),
     prepared: { cfo: item.cfo, asked: item.asked.length, pretalks: item.pretalks },
+    agenda: agendaItems.map((i) => ({ id: i.id, title: fill(templateOf(i.templateId).title, s), status: i.status, current: i.id === itemId })),
+    nextItemId: agendaItems.find((i) => i.status === "open" && i.id !== itemId)?.id ?? null,
+    sitting: sittingToday(state, s),
   };
 }
 
@@ -164,14 +175,19 @@ export function deskView(state: GameState, lessonsTotal: number): DeskView {
       tone: "normal",
     });
   }
-  for (const item of open) {
-    const s = startupOf(state, item.startupId);
-    const t = templateOf(item.templateId);
-    const prep = item.cfo || item.asked.length > 0 || item.pretalks.length > 0;
+  for (const s of active.filter((x) => open.some((i) => i.startupId === x.id))) {
+    const agenda = open.filter((i) => i.startupId === s.id);
+    const board = s.corporate ? "Aufsichtsrat" : "Beirat";
+    const urgent = agenda.some((i) => templateOf(i.templateId).urgent);
+    const prep = agenda.some((i) => i.cfo || i.asked.length > 0 || i.pretalks.length > 0);
+    const titles = agenda.map((i) => `„${fill(templateOf(i.templateId).title, s)}“`).join(", ");
     tasks.push({
-      text: `${s.name}: „${fill(t.title, s)}“ liegt vor. ${prep ? "Wenn du so weit bist, berufe die Sitzung ein." : `Bereite dich vor, bevor der ${s.corporate ? "Aufsichtsrat" : "Beirat"} tagt.`}`,
+      text:
+        agenda.length > 1
+          ? `${s.name}: ${agenda.length} Punkte auf der Tagesordnung (${titles}). Deine Tage reichen kaum für alles: Was bereitest du vor?`
+          : `${s.name}: ${titles} liegt vor. ${prep ? "Wenn du so weit bist, berufe die Sitzung ein." : `Bereite dich vor, bevor der ${board} tagt.`}`,
       href: `/firma/${s.id}`,
-      tone: t.urgent ? "urgent" : "normal",
+      tone: urgent ? "urgent" : "normal",
     });
   }
   for (const s of offered) {
@@ -224,6 +240,10 @@ export interface CompanyItemView {
   outcomes: (OutcomeView & { summary: string })[] | null;
   outcomeLabels: Record<Vote, string>;
   lesson: string;
+  /** Carried over from last month. */
+  postponed: boolean;
+  /** Who the player can talk to before the meeting, and what they let on. */
+  members: { seat: BoardMember["seat"]; short: string; pretalked: boolean; leaning?: Vote | "open" }[];
 }
 
 export interface CompanyView {
@@ -233,7 +253,12 @@ export interface CompanyView {
   cashFlow: number;
   runway: number;
   board: MemberView[];
+  /** The first open item (kept for older callers). */
   item: CompanyItemView | null;
+  /** Everything on this month's agenda, in order. */
+  agenda: CompanyItemView[];
+  /** The board already met this month: further items cost no extra day. */
+  sitting: boolean;
   past: {
     id: string;
     month: number;
@@ -267,14 +292,12 @@ function leaningOf(stance: number): Vote | "open" {
 
 export function companyView(state: GameState, startupId: string): CompanyView {
   const s = startupOf(state, startupId);
-  const open = state.items.find((i) => i.startupId === s.id && i.status === "open");
-  let item: CompanyItemView | null = null;
-  let stances: Record<string, number> | null = null;
-  if (open && s.status === "active") {
+  const openOnes = s.status === "active" ? state.items.filter((i) => i.startupId === s.id && i.status === "open") : [];
+  const agenda: CompanyItemView[] = openOnes.map((open) => {
     const t = templateOf(open.templateId);
-    stances = previewMeeting(state, open.id).stancesBefore;
+    const stances = previewMeeting(state, open.id).stancesBefore;
     const views = open.cfo ? outcomeViews(t, s) : null;
-    item = {
+    return {
       id: open.id,
       title: fill(t.title, s),
       motion: fill(t.motion, s),
@@ -285,11 +308,17 @@ export function companyView(state: GameState, startupId: string): CompanyView {
       outcomes: views ? views.map((v) => ({ ...v, summary: fill(t.outcomes[v.vote].summary, s) })) : null,
       outcomeLabels: { go: fill(t.outcomes.go.label, s), conditions: fill(t.outcomes.conditions.label, s), no: fill(t.outcomes.no.label, s) },
       lesson: lessonOf(t.lesson).title,
+      postponed: Boolean(open.postponed),
+      members: s.board.map((m) => {
+        const pretalked = open.pretalks.includes(m.seat);
+        return { seat: m.seat, short: m.short, pretalked, leaning: pretalked ? leaningOf(stances[m.seat]!) : undefined };
+      }),
     };
-  }
+  });
+  const item = agenda[0] ?? null;
   const board: MemberView[] = s.board.map((m) => {
-    const pretalked = Boolean(open?.pretalks.includes(m.seat));
-    return { ...m, pretalked, leaning: pretalked && stances ? leaningOf(stances[m.seat]!) : undefined };
+    const first = item?.members.find((x) => x.seat === m.seat);
+    return { ...m, pretalked: Boolean(first?.pretalked), leaning: first?.leaning };
   });
   const past = state.items
     .filter((i) => i.startupId === s.id && i.status !== "open")
@@ -317,6 +346,8 @@ export function companyView(state: GameState, startupId: string): CompanyView {
     runway: runwayMonths(s.metrics),
     board,
     item,
+    agenda,
+    sitting: sittingToday(state, s),
     past,
     calledThisMonth: state.calendar.some((c) => c.kind === "founderCall" && c.label.endsWith(s.name)),
     askedThisMonth: state.calendar.some((c) => c.kind === "askShares" && c.label.endsWith(s.name)),

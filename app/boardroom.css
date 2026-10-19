@@ -1824,3 +1824,69 @@
 .topbar__saved:focus-visible {
   background: var(--agree-soft);
 }
+
+/* Tagesordnung */
+.agenda-head__list {
+  display: grid;
+  gap: 6px;
+  margin: 6px 0 10px;
+  padding-left: 22px;
+  font-weight: 600;
+}
+
+.agenda-head__list li a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.agenda-head__list li a:hover {
+  color: var(--accent);
+}
+
+.agenda-head__list .tag {
+  margin-left: 8px;
+}
+
+.item__talk-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.item__talks {
+  margin-top: 6px;
+}
+
+.room__agenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 6px;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.room__agenda li {
+  padding: 3px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+}
+
+.room__agenda li a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.room__agenda li.is-current {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.room__agenda li.is-done {
+  color: var(--agree);
+}

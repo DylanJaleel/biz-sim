@@ -182,6 +182,8 @@ export interface BoardItem {
   asked: string[];
   pretalks: SeatId[];
   cfo: boolean;
+  /** Not decided in its month and carried over once (non-urgent items only). */
+  postponed?: boolean;
   decision?: MeetingDecision;
   /** Filled when the risky part of the outcome has been rolled. */
   result?: { good: boolean; text: string; month: number };

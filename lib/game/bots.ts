@@ -130,7 +130,7 @@ export const proBot = (prefer?: string): Bot => {
       const actions: GameAction[] = [];
       for (const e of s.exits.filter((x) => x.status === "open")) {
         const value = valuation(startupOf(s, e.startupId).metrics);
-        if (e.price >= value * 1.25) actions.push({ type: "exit", exitId: e.id, choice: "accept" });
+        if (e.price >= value * 1.15) actions.push({ type: "exit", exitId: e.id, choice: "accept" });
         else if (e.price >= value && e.choice !== "negotiate") actions.push({ type: "exit", exitId: e.id, choice: "negotiate" }, { type: "exit", exitId: e.id, choice: "accept" });
         else actions.push({ type: "exit", exitId: e.id, choice: "reject" });
       }

@@ -57,7 +57,7 @@ export function MeetingRoom({ view, revision }: { view: MeetingView; revision: n
   const playback = usePlayback(events, live ? 0 : events.length);
   const room = useMemo(() => deriveRoom(events, playback.shown), [events, playback.shown]);
 
-  const blocked = live && view.daysLeft < 1 && !result;
+  const blocked = live && view.daysLeft < 1 && !view.sitting && !result;
   const askArgument = live && !blocked && playback.caughtUp && argument === undefined;
   const askVote = live && !blocked && playback.caughtUp && argument !== undefined && vote === null;
   const finished = (!live || (result !== null && playback.caughtUp)) && view.decision !== undefined;
@@ -79,6 +79,22 @@ export function MeetingRoom({ view, revision }: { view: MeetingView; revision: n
           <span aria-hidden="true">/</span>
           <span>{view.corporate ? "Aufsichtsratssitzung" : "Beiratssitzung"}</span>
         </nav>
+        {view.agenda.length > 1 && (
+          <ol className="room__agenda" aria-label="Tagesordnung">
+            {view.agenda.map((a, n) => (
+              <li key={a.id} className={a.current ? "is-current" : a.status !== "open" ? "is-done" : undefined}>
+                {a.current || a.status !== "open" ? (
+                  <span>
+                    TOP {n + 1}
+                    {a.status !== "open" && !a.current ? " ✓" : ""}
+                  </span>
+                ) : (
+                  <Link href={`/sitzung/${a.id}`}>TOP {n + 1}</Link>
+                )}
+              </li>
+            ))}
+          </ol>
+        )}
         <h1 className="room__title">{view.title}</h1>
         <p className="room__motion">{view.motion}</p>
         <PhaseTrack phase={room.phase} />
@@ -117,7 +133,7 @@ export function MeetingRoom({ view, revision }: { view: MeetingView; revision: n
           {blocked ? (
             <div className="panel panel--notice">
               <p className="panel__title">Kein Tag mehr frei</p>
-              <p>Eine Sitzung kostet einen Tag. Schließe den Monat ab, dann tagt der Beirat im neuen Monat. Bis dahin entscheidet niemand.</p>
+              <p>Eine Sitzung kostet einen Tag. Schließe den Monat ab: Der Punkt wird einmal vertagt, Dringendes entscheidet sonst die Geschäftsführung allein.</p>
               <Link className="btn" href={`/firma/${view.startupId}`}>
                 Zurück zur Firma
               </Link>
@@ -270,7 +286,12 @@ function Verdict({ view }: { view: MeetingView }) {
           </div>
 
           <div className="verdict__actions">
-            <Link className="btn btn--primary" href={`/firma/${view.startupId}`}>
+            {view.nextItemId && (
+              <Link className="btn btn--primary" href={`/sitzung/${view.nextItemId}`}>
+                Nächster Punkt: {view.agenda.find((a) => a.id === view.nextItemId)?.title}
+              </Link>
+            )}
+            <Link className={view.nextItemId ? "btn" : "btn btn--primary"} href={`/firma/${view.startupId}`}>
               Zurück zur Firma
             </Link>
             <Link className="btn" href="/">

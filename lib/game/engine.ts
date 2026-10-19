@@ -66,6 +66,8 @@ import {
   IPO_MIN_VALUE,
   SALARY,
   TEAM_MAX,
+  AGENDA_MAX,
+  AGENDA_THIRD,
 } from "./config";
 import { FIRST, generateDeal, LAST, type DealStage } from "./dealgen";
 import { applyRound, capTableAfterEntry, exitVote, fundability, playerAmount, roundTerms, sellers, shareholderVote, grantToPlayer, syndicateAmount, transferToPlayer, waterfall } from "./captable";
@@ -401,7 +403,8 @@ export function applyAction(current: GameState, action: GameAction): { state: Ga
       }
       if (!VOTES.includes(action.vote)) throw new GameRuleError("Ungültige Stimme.");
       const s = startupOf(state, item.startupId);
-      spendDays(state, "meeting", `Beirat ${s.name}`);
+      // Further items on the same agenda are decided in the same sitting.
+      spendDays(state, "meeting", `Beirat ${s.name}`, sittingToday(state, s) ? 0 : undefined);
       const playback = buildMeeting({
         template: t,
         startup: s,
@@ -411,8 +414,16 @@ export function applyAction(current: GameState, action: GameAction): { state: Ga
         argument: action.argument,
         vote: action.vote,
       });
+      const further = state.items.some((i) => i.id !== item.id && i.startupId === s.id && i.decision && !i.decision.lapsed && !i.decision.delegated && i.decision.month === state.month);
       decide(state, item, playback.outcome!, action.vote, action.argument, playback.stancesAfter.ceo, playback.shares!);
       item.decision!.ballots = playback.ballots;
+      // Reputation comes from the sitting, not from the number of items: further items count half.
+      if (further) {
+        const d = item.decision!;
+        const half = Math.trunc(d.reputationDelta / 2);
+        state.reputation = Math.min(100, Math.max(0, state.reputation - d.reputationDelta + half));
+        d.reputationDelta = half;
+      }
       return { state, result: { kind: "meeting", playback, itemId: item.id } };
     }
     case "founderCall": {
@@ -714,6 +725,11 @@ export function applyAction(current: GameState, action: GameAction): { state: Ga
       return { state, result: { kind: "none" } };
     }
   }
+}
+
+/** The board of this company already met this month: further agenda items cost no extra day. */
+export function sittingToday(state: GameState, s: Startup): boolean {
+  return state.calendar.some((c) => c.kind === "meeting" && c.label === `Beirat ${s.name}`);
 }
 
 /** Why the player cannot lead with a syndicate yet, or null. */
@@ -1049,6 +1065,12 @@ function lapseItems(state: GameState, notes: string[]): void {
       item.status = "lapsed";
       continue;
     }
+    // A board that did not get to an item puts it on next month's agenda, once.
+    if (!t.urgent && !item.postponed) {
+      item.postponed = true;
+      notes.push(`${s.name}: „${fill(t.title, s)}“ ist vertagt und steht im nächsten Monat wieder auf der Tagesordnung.`);
+      continue;
+    }
     const stances = baseStances(t, s, meetingRandom(state, item));
     const outcome = voteFromStance(stances.ceo);
     const values = mapValues(outlook(t, s));
@@ -1103,42 +1125,71 @@ function resolveEffects(state: GameState, month: number, lines: Map<string, stri
   }
 }
 
-function pickTemplate(state: GameState, s: Startup, random: () => number): string | null {
+/** Templates that may come up for this company now, ignoring chance. */
+function candidatesFor(state: GameState, s: Startup) {
   const age = state.month - s.joined;
   const used = state.items.filter((i) => i.startupId === s.id);
-  // The supervisory board meets once a quarter.
-  if (s.corporate && age % 3 !== 1) return null;
-  const candidates = TEMPLATES.filter((t) => {
+  return TEMPLATES.filter((t) => {
     if (!!t.corporate !== !!s.corporate) return false;
     if (!t.when(s, age)) return false;
     const last = used.filter((i) => i.templateId === t.id).sort((a, b) => b.month - a.month)[0];
     if (!last) return true;
     return t.repeatAfter !== undefined && state.month - last.month >= t.repeatAfter;
   });
+}
+
+function hasUrgent(state: GameState, s: Startup): boolean {
+  if (s.corporate) return false;
+  return candidatesFor(state, s).some((t) => t.urgent);
+}
+
+function pickTemplate(state: GameState, s: Startup, random: () => number, index = 0): string | null {
+  const age = state.month - s.joined;
+  // The supervisory board meets once a quarter.
+  if (s.corporate && age % 3 !== 1) return null;
+  const candidates = candidatesFor(state, s);
   const urgent = candidates.filter((t) => t.urgent);
   if (urgent.length > 0) return urgent[0]!.id;
   if (candidates.length === 0) return null;
   const quarterly = state.month % 3 === 0;
-  if (!s.corporate && age > 1 && !quarterly && random() > 0.6) return null;
+  if (index === 0 && !s.corporate && age > 1 && !quarterly && random() > 0.6) return null;
   return candidates[Math.floor(random() * candidates.length)]!.id;
 }
 
-/** Puts new items on the agenda of each mandate, at most one open item per company. */
+/**
+ * Puts new items on the agenda of each mandate: usually one per month, two or
+ * three in a quarterly meeting, urgent ones on top. At most three are open.
+ */
 export function planAgenda(state: GameState): void {
   for (const s of state.startups.filter((x) => x.status === "active")) {
     if (state.month - s.joined < 1) continue;
-    if (openItems(state).some((i) => i.startupId === s.id)) continue;
-    const templateId = pickTemplate(state, s, randomFor(state.seed, `agenda|${s.id}|${state.month}`));
-    if (!templateId) continue;
-    const item: BoardItem = { id: nextId(state, "v"), startupId: s.id, templateId, month: state.month, status: "open", asked: [], pretalks: [], cfo: false };
-    state.items.push(item);
-    const t = templateOf(templateId);
+    const open = openItems(state).filter((i) => i.startupId === s.id).length;
+    if (open >= AGENDA_MAX) continue;
+    const random = randomFor(state.seed, `agenda|${s.id}|${state.month}`);
+    const quarterly = s.corporate ? (state.month - s.joined) % 3 === 1 : state.month % 3 === 0;
+    // Between quarters a single open item is enough; urgent ones still come.
+    const wanted = quarterly ? 2 + (random() < AGENDA_THIRD ? 1 : 0) : open > 0 ? 0 : 1;
+    const added: BoardItem[] = [];
+    const slots = Math.min(Math.max(wanted, hasUrgent(state, s) ? 1 : 0), AGENDA_MAX - open);
+    for (let k = 0; k < slots; k++) {
+      const templateId = pickTemplate(state, s, random, k);
+      if (!templateId) break;
+      const item: BoardItem = { id: nextId(state, "v"), startupId: s.id, templateId, month: state.month, status: "open", asked: [], pretalks: [], cfo: false };
+      state.items.push(item);
+      added.push(item);
+    }
+    if (added.length === 0) continue;
     const ceo = s.board.find((b) => b.seat === "ceo");
+    const agenda = openItems(state).filter((i) => i.startupId === s.id);
+    const first = templateOf(added[0]!.templateId);
     mail(state, {
       kind: "founder",
       from: ceo ? `${ceo.name}, ${s.name}` : s.name,
-      subject: `Vorlage für den Beirat: ${fill(t.title, s)}`,
-      body: `${fill(t.pitch, s)} Bitte entscheidet bis Monatsende. Wenn der Beirat nicht tagt, entscheide ich allein.`,
+      subject: agenda.length > 1 ? `Tagesordnung für den ${s.corporate ? "Aufsichtsrat" : "Beirat"}: ${agenda.length} Punkte` : `Vorlage für den Beirat: ${fill(first.title, s)}`,
+      body:
+        agenda.length > 1
+          ? `${agenda.map((i, n) => `TOP ${n + 1}: ${fill(templateOf(i.templateId).title, s)}${i.postponed ? " (vertagt)" : ""}`).join(". ")}. ${fill(first.pitch, s)} Alle Punkte werden in einer Sitzung beraten. Was bis Monatsende nicht entschieden ist, wird einmal vertagt; Dringendes entscheide ich sonst allein.`
+          : `${fill(first.pitch, s)} Bitte entscheidet bis Monatsende. Sonst wird der Punkt einmal vertagt${first.urgent ? ", und weil es dringend ist, entscheide ich allein" : ""}.`,
       startupId: s.id,
     });
   }

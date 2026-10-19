@@ -12,6 +12,14 @@ Konzept und Entscheidungen: [`docs/boardroom-konzept.md`](./docs/boardroom-konze
 - **Börse** (Zeitung auf dem Schreibtisch): Tagesgeld, Anleihen-Fonds, Dividenden-Aktien, Tech-Index. Ein gemeinsames Marktklima (Aufschwung, ruhig, schwach, Crash) bewegt die Kurse und beeinflusst auch Preis und Chancen von Startup-Runden.
 - Balance: Nur beraten bringt deutlich weniger als gut investieren (Test `game-balance`).
 
+## Tagesordnung (2A)
+
+- Sitzungen haben jetzt eine Tagesordnung: zwischen den Quartalen meist ein Punkt, in Quartalsmonaten zwei, manchmal drei, Dringendes kommt dazu (höchstens drei offen pro Firma; der Aufsichtsrat tagt quartalsweise mit zwei bis drei Punkten).
+- Alle Punkte werden in einer Sitzung beraten: Der erste kostet einen Tag, jeder weitere keinen. Rückfragen, CFO-Gespräch und Vorgespräche kosten pro Punkt Tage. Deine Zeit reicht selten für alles; du entscheidest, was du gründlich vorbereitest und was du einem Associate überlässt.
+- Was bis Monatsende offen bleibt, wird einmal vertagt; erst danach (oder bei Dringendem sofort) entscheidet die Geschäftsführung allein.
+- Ruf entsteht aus der Sitzung, nicht aus der Zahl der Punkte: Weitere Punkte derselben Sitzung zählen halb.
+- Sitzungsraum mit TOP-Leiste und „Nächster Punkt“, Firmenseite mit Tagesordnung, Büro-Assistenz fasst je Firma zusammen.
+
 ## Spielstand und Sicherungen
 
 - Der Spielstand liegt pro Konto auf dem Server (Postgres), nicht im Browser. Jeder Zug wird sofort gespeichert; Neuladen ändert nichts. Wer sich auf dem Handy oder einem anderen Rechner mit derselben E-Mail anmeldet, spielt am selben Stand weiter. Die Anmeldung hält 180 Tage.

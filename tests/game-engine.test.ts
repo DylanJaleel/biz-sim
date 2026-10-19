@@ -82,11 +82,15 @@ describe("month close", () => {
     expect(result.result.kind).toBe("report");
   });
 
-  it("lets the founder decide alone when the board never meets, at a cost of trust and reputation", () => {
+  it("postpones an item once, then lets the founder decide alone, at a cost of trust and reputation", () => {
     const state = gameWithItem();
     const item = openItems(state)[0]!;
     const trust = startupOf(state, item.startupId).metrics.trust;
     const reputation = state.reputation;
+    closeMonth(state);
+    const postponed = state.items.find((i) => i.id === item.id)!;
+    expect(postponed.status).toBe("open");
+    expect(postponed.postponed).toBe(true);
     closeMonth(state);
     const lapsed = state.items.find((i) => i.id === item.id)!;
     expect(lapsed.status).toBe("lapsed");

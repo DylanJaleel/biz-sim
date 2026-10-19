@@ -283,7 +283,7 @@ export const FINANCE_TEMPLATES: Template[] = [
     title: "Übernahmeangebot von {acquirer}",
     motion: "{acquirer} bietet an, die Firma vollständig zu kaufen. Die Geschäftsführung empfiehlt, das Angebot anzunehmen.",
     pitch: "„Das ist mehr Geld, als ich je für möglich gehalten habe. Ich bin müde. Lasst uns verkaufen.“",
-    context: (s) => `Angebot: ${eur(valueOf(s) * 1.3)} für die ganze Firma. Für deinen Anteil von ${pct(s.stake / 100)} wären das ${eur((valueOf(s) * 1.3 * s.stake) / 100)}.`,
+    context: (s) => `Angebot: ${eur(valueOf(s) * 1.15)} für die ganze Firma. Für deinen Anteil von ${pct(s.stake / 100)} wären das ${eur((valueOf(s) * 1.15 * s.stake) / 100)}.`,
     lesson: "bewertung",
     insight:
       "Ein Angebot ist so gut wie die Alternative. Wer weiter wachsen kann, verkauft zu früh. Wer müde Gründer und wenig Geld hat, bekommt selten ein besseres.",
@@ -310,7 +310,7 @@ export const FINANCE_TEMPLATES: Template[] = [
       go: {
         label: "Verkaufen",
         summary: "Die Firma geht an {acquirer}, du erhältst deinen Anteil am Kaufpreis.",
-        resolve: (s) => ({ effects: [now("Verkauf an {acquirer} unterschrieben.", { exit: valueOf(s) * 1.3, flag: "offered_exit" })] }),
+        resolve: (s) => ({ effects: [now("Verkauf an {acquirer} unterschrieben.", { exit: valueOf(s) * 1.15, flag: "offered_exit" })] }),
       },
       conditions: {
         label: "Nachverhandeln",
@@ -320,7 +320,7 @@ export const FINANCE_TEMPLATES: Template[] = [
           risk: {
             delay: 1,
             chance: 0.4,
-            good: { exit: valueOf(s) * 1.55 },
+            good: { exit: valueOf(s) * 1.35 },
             bad: { morale: -4, trust: -4 },
             goodText: "{acquirer} zahlt mehr. Der Verkauf ist unterschrieben.",
             badText: "{acquirer} springt ab. Das Angebot ist vom Tisch.",
