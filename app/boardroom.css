@@ -1703,3 +1703,124 @@
   flex-wrap: wrap;
   gap: 6px;
 }
+
+/* Spielstand und Sicherungen */
+.saves__status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 4px;
+  font-weight: 600;
+}
+
+.saves__dot {
+  width: 10px;
+  height: 10px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--agree);
+  box-shadow: 0 0 0 4px var(--agree-soft);
+}
+
+.saves__create {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 12px 0;
+}
+
+.saves__name {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.saves {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.saves__row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+
+.saves__name-col {
+  display: grid;
+  min-width: 0;
+}
+
+.saves__name-col small {
+  color: var(--muted);
+}
+
+.saves__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.saves__kind--manual {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.saves__kind--backup {
+  background: var(--maybe-soft);
+  color: var(--maybe);
+}
+
+.saves__done {
+  margin: 0;
+  color: var(--agree);
+  font-size: 14px;
+}
+
+.saves__import {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .saves__row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .saves__actions {
+    justify-content: flex-start;
+  }
+}
+
+.topbar__saved {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  place-items: center;
+  border-radius: 50%;
+}
+
+.topbar__saved:hover,
+.topbar__saved:focus-visible {
+  background: var(--agree-soft);
+}

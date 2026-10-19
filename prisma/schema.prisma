@@ -19,6 +19,7 @@ model User {
   image         String?
   createdAt     DateTime  @default(now())
   game          Game?
+  saves         GameSave[]
 }
 
 // Required by the Auth.js email (magic link) provider. Sessions are JWT-based,
@@ -42,6 +43,23 @@ model Game {
   revision  Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// Backups of a game: automatic ones after every month close and before a
+// restore or a restart, plus named saves the player makes. `summary` holds the
+// few numbers the list shows, so listing never loads whole games.
+model GameSave {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// "auto" | "manual" | "backup"
+  kind      String
+  name      String
+  state     Json
+  summary   Json
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
 }
 
 // Fixed-window counters for abuse protection (see lib/rate-limit.ts). Lives in

@@ -12,6 +12,13 @@ Konzept und Entscheidungen: [`docs/boardroom-konzept.md`](./docs/boardroom-konze
 - **Börse** (Zeitung auf dem Schreibtisch): Tagesgeld, Anleihen-Fonds, Dividenden-Aktien, Tech-Index. Ein gemeinsames Marktklima (Aufschwung, ruhig, schwach, Crash) bewegt die Kurse und beeinflusst auch Preis und Chancen von Startup-Runden.
 - Balance: Nur beraten bringt deutlich weniger als gut investieren (Test `game-balance`).
 
+## Spielstand und Sicherungen
+
+- Der Spielstand liegt pro Konto auf dem Server (Postgres), nicht im Browser. Jeder Zug wird sofort gespeichert; Neuladen ändert nichts. Wer sich auf dem Handy oder einem anderen Rechner mit derselben E-Mail anmeldet, spielt am selben Stand weiter. Die Anmeldung hält 180 Tage.
+- **Konto → Spielstand** zeigt, was gespeichert ist (Monat, Vermögen, Ruf, Karriere, Zeitpunkt). Ein grüner Punkt in der Kopfzeile führt dorthin.
+- **Sicherungen:** automatisch nach jedem Monatsabschluss (die letzten 12), vorsorglich vor jedem Laden und vor einem Neustart (die letzten 5), dazu bis zu 10 eigene, benannte Sicherungen. Jede lässt sich laden; der laufende Stand wird vorher gesichert.
+- **Datei:** Der Spielstand lässt sich als JSON herunterladen und wieder laden. Eine Prüfsumme (HMAC mit `AUTH_SECRET`) sorgt dafür, dass nur unveränderte Dateien zurückkommen.
+
 ## Stand: Phase 4 (Endspiel und Langzeit)
 
 - **Deals ohne Ende:** Nach den sechs festen Startups erzeugt das Spiel neue Firmen aus zehn Branchen (Mobilität, Software, Lebensmittel, Bildung, Logistik, Gesundheit, Energie, Finanzen, Bau und Handwerk, Tourismus) in vier Stufen: Pre-Seed, Seed, Wachstum und Nachfolge. Gründer, Beirat, Kennzahlen, Stärken und Schwächen sind jedes Mal anders; die Prüfung deckt die Schwäche ehrlich auf. Welche Stufen kommen, hängt von deinem Vermögen und Ruf ab.
@@ -77,14 +84,15 @@ components/shares/    Cap Table, Halbrund der Gesellschafterversammlung (GvStage
 components/network/   Netzwerk-Ringe
 components/market/    Börse
 components/holding/   Family Office, Team, Fonds
+components/account/   Konto, Spielstand, Sicherungen, Datei
 components/company/   Portfolio, Firma, CFO-Rechner
 components/post/      Posteingang und Angebote
 components/shell/     Kopfzeile, Monatsabschluss, Monatsbericht, Dreh-Hinweis
 lib/game/             Spiellogik: engine, sim, meeting, votes, judge, cfo, captable (inkl. Wasserfall), network, career, gigs, market, news, office, corporate, dealgen (Deal-Generator), startups, content (Vorlagen), lessons, views, validate, bots
-lib/repository/       Spielstand laden, Züge unter Sperre anwenden, zurücksetzen
+lib/repository/       Spielstand laden, Züge unter Sperre anwenden, zurücksetzen; Sicherungen (saves, save-store)
 prisma/               Schema und versionierte Migrationen
 scripts/              simulate-game.ts (Balance-Report), create-migration.mjs, vercel-build.mjs
-tests/                Engine, Balancing, Ansichten, Repository, Mail, Rate-Limit
+tests/                Engine, Phasen 2–4, Balancing, Ansichten, Repository, Sicherungen, Mail, Rate-Limit
 docs/                 Konzept, Deployment, ältere Dokumente des Handwerksspiels
 ```
 

@@ -55,6 +55,8 @@ Unter *Settings → Environment Variables*:
 
 Push auf den Production-Branch (bzw. *Deploy* im Dashboard). Der Build wendet zuerst ausstehende Migrationen an (nur `VERCEL_ENV=production`) und baut dann die App. Schlägt die Migration fehl, bricht der Build ab, ein halb migrierter Stand geht nicht live.
 
+> **Sicherungen (`game_saves`):** legt nur die Tabelle `GameSave` an und verändert keine Spielstände.
+
 > **Achtung, Boardroom:** Die Migration `boardroom` löscht alle Tabellen des Handwerksspiels und legt `Game` an. Benutzerkonten bleiben, jeder startet beim nächsten Besuch ein neues Spiel.
 
 > **Ältere Migration, Wirtschaftsmodell v2:** Die Migration `economy_v2` löscht bestehende Spielstände (`DELETE FROM "Company"`), weil sich das Modell grundlegend geändert hat (Stunden statt Auftragszahl, keine Stufen/Meilensteine). Benutzerkonten bleiben bestehen; beim nächsten Besuch startet jeder mit einer frischen Firma. Auf einer frisch angelegten Datenbank hat das keine Folgen.

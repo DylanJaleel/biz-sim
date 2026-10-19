@@ -14,7 +14,8 @@ declare module "next-auth" {
 // a request actually reaches Auth.js, never at import/build time.
 export const { handlers, auth, signIn, signOut } = NextAuth(() => ({
   adapter: PrismaAdapter(getDb()),
-  session: { strategy: "jwt" },
+  // Stay signed in for half a year, on every device: the game waits where you left it.
+  session: { strategy: "jwt", maxAge: 60 * 60 * 24 * 180 },
   pages: {
     signIn: "/login",
     verifyRequest: "/login/check-email",

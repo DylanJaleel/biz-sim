@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { monthLabel, monthName } from "@/lib/game/config";
 import { monthDays } from "@/lib/game/office";
 import { daysLeft, openItems, portfolioValue } from "@/lib/game/engine";
@@ -8,7 +9,8 @@ import { CloseMonth } from "./CloseMonth";
 import { NavLinks } from "./NavLinks";
 
 export async function TopBar() {
-  const { state, revision } = await currentGame();
+  const { state, revision, updatedAt } = await currentGame();
+  const saved = new Intl.DateTimeFormat("de-DE", { timeZone: "Europe/Berlin", dateStyle: "short", timeStyle: "short" }).format(updatedAt);
   const free = daysLeft(state);
   const total = monthDays(state);
   const unread = state.mails.filter((m) => !m.read).length;
@@ -55,6 +57,9 @@ export async function TopBar() {
           <dd>{state.reputation}</dd>
         </div>
       </dl>
+      <Link href="/konto#spielstand" className="topbar__saved" title={`Gespeichert am ${saved}`} aria-label={`Spielstand gespeichert am ${saved}`}>
+        <span className="saves__dot" aria-hidden="true" />
+      </Link>
       <CloseMonth revision={revision} month={state.month} openItems={open} daysLeft={free} />
     </header>
   );

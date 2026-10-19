@@ -12,7 +12,7 @@ export function ResetGameCard() {
     <section className="panel">
       <p className="eyebrow">Neues Spiel</p>
       <p className="panel__title">Von vorn beginnen</p>
-      <p className="muted">Du startest wieder als Business Angel im Oktober des ersten Jahres. Dein bisheriger Spielstand geht verloren.</p>
+      <p className="muted">Du startest wieder als Business Angel im Oktober des ersten Jahres. Dein bisheriger Spielstand bleibt als Sicherung erhalten und lässt sich oben wieder laden.</p>
       {confirming ? (
         <div className="panel__actions">
           <button type="button" className="btn" disabled={pending} onClick={() => setConfirming(false)}>

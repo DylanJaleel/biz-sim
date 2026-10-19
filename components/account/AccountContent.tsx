@@ -1,4 +1,5 @@
 import { ResetGameCard } from "@/components/account/ResetGameCard";
+import { SaveGames } from "@/components/account/SaveGames";
 import { requireUser } from "@/lib/session";
 import { signOutAction } from "@/app/(app)/konto/actions";
 
@@ -16,6 +17,8 @@ export async function AccountContent() {
         <p className="eyebrow">Angemeldet als</p>
         <p className="panel__title">{user.email}</p>
       </section>
+
+      <SaveGames userId={user.id!} email={user.email ?? ""} />
 
       <ResetGameCard />
 

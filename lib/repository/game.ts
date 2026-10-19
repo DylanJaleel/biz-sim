@@ -2,7 +2,9 @@ import { randomInt } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import { getDb } from "../db";
 import { applyAction, GameRuleError, newGame, planAgenda, upgradeState, type ActionResult } from "../game/engine";
+import { monthLabel } from "../game/config";
 import type { GameAction, GameState } from "../game/types";
+import { writeSave } from "./save-store";
 
 export { GameRuleError } from "../game/engine";
 
@@ -10,10 +12,12 @@ export interface StoredGame {
   id: string;
   state: GameState;
   revision: number;
+  /** Last time the game was written to the database. */
+  updatedAt: Date;
 }
 
-function toStored(row: { id: string; state: Prisma.JsonValue; revision: number }): StoredGame {
-  return { id: row.id, state: upgradeState(row.state as unknown as GameState), revision: row.revision };
+function toStored(row: { id: string; state: Prisma.JsonValue; revision: number; updatedAt: Date }): StoredGame {
+  return { id: row.id, state: upgradeState(row.state as unknown as GameState), revision: row.revision, updatedAt: row.updatedAt };
 }
 
 function freshState(): GameState {
@@ -65,11 +69,17 @@ export async function performAction(
       where: { id: row.id },
       data: { state: state as unknown as Prisma.InputJsonValue, month: state.month, revision: quiet ? undefined : { increment: 1 } },
     });
+    // Every closed month leaves a copy to go back to.
+    if (action.type === "closeMonth") await writeSave(tx, userId, "auto", `Nach dem Abschluss von ${monthLabel(state.month - 1)}`, state);
     return { game: toStored(updated), result };
   });
 }
 
-/** Deletes the game; the next visit starts over. */
+/** Deletes the game; the next visit starts over. A copy stays among the saves. */
 export async function resetGame(userId: string): Promise<void> {
-  await getDb().game.deleteMany({ where: { userId } });
+  await getDb().$transaction(async (tx) => {
+    const row = await tx.game.findUnique({ where: { userId } });
+    if (row) await writeSave(tx, userId, "backup", "Vor dem Neustart", upgradeState(row.state as unknown as GameState));
+    await tx.game.deleteMany({ where: { userId } });
+  });
 }
