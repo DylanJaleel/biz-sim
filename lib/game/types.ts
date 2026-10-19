@@ -54,7 +54,7 @@ export interface StartupHistoryPoint {
   stake: number;
 }
 
-export type StartupStatus = "offered" | "declined" | "active" | "dead" | "exited";
+export type StartupStatus = "offered" | "declined" | "active" | "dead" | "exited" | "sold";
 
 export type HolderKind = "founder" | "cofounder" | "vc" | "angel" | "esop" | "investor" | "advisor";
 
@@ -241,6 +241,44 @@ export interface ShareOffer {
   status: "open" | "bought" | "expired";
 }
 
+/** A paid job outside the portfolio: consulting, talks, interim roles. */
+export interface Gig {
+  id: string;
+  month: number;
+  kind: string;
+  client: string;
+  title: string;
+  text: string;
+  days: number;
+  fee: number;
+  reputation?: number;
+  contactId?: string;
+  warmth?: number;
+  status: "offered" | "booked" | "expired";
+}
+
+export type AssetId = "tagesgeld" | "anleihen" | "dividenden" | "tech";
+export type Regime = "boom" | "normal" | "weak" | "crash";
+
+export interface MarketState {
+  regime: Regime;
+  headline: string;
+  prices: Record<AssetId, number>;
+  /** Units held per asset. */
+  holdings: Record<AssetId, number>;
+  /** Money put in per asset, for the gain shown to the player. */
+  invested: Record<AssetId, number>;
+  history: { month: number; prices: Record<AssetId, number>; regime: Regime }[];
+}
+
+export interface IncomeLines {
+  consulting: number;
+  boardFees: number;
+  payouts: number;
+  living: number;
+  interest: number;
+}
+
 export interface ContactState {
   id: string;
   /** 0..100: how much a favour is still possible. */
@@ -273,10 +311,11 @@ export interface MonthReport {
   portfolioValue: number;
   portfolioValueBefore: number;
   notes: string[];
+  income?: IncomeLines;
 }
 
 export interface GameState {
-  version: 2;
+  version: 3;
   seed: number;
   month: number;
   daysUsed: number;
@@ -295,6 +334,8 @@ export interface GameState {
   contacts: ContactState[];
   /** Rounds the player led (career). */
   ledRounds: number;
+  gigs: Gig[];
+  market: MarketState;
 }
 
 export type ActionKind =
@@ -313,7 +354,9 @@ export type ActionKind =
   | "buyShares"
   | "askShares"
   | "meetContact"
-  | "introContact";
+  | "introContact"
+  | "gig"
+  | "trade";
 
 export type GameAction =
   | { type: "dd"; startupId: string }
@@ -331,4 +374,6 @@ export type GameAction =
   | { type: "buyShares"; offerId: string }
   | { type: "askShares"; startupId: string }
   | { type: "meetContact"; contactId: string }
-  | { type: "introContact"; contactId: string; startupId: string };
+  | { type: "introContact"; contactId: string; startupId: string }
+  | { type: "gig"; gigId: string }
+  | { type: "trade"; assetId: AssetId; amount: number };

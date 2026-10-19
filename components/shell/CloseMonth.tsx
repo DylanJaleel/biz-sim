@@ -122,6 +122,24 @@ export function ReportDialog({ report, onClose }: { report: MonthReport; onClose
           <Change before={report.reputationBefore} after={report.reputation} money={false} />
         </div>
       </div>
+      {report.income && (
+        <dl className="report__income">
+          {[
+            ["Beratung", report.income.consulting],
+            ["Beiratsvergütung", report.income.boardFees],
+            ["Zinsen und Dividenden", report.income.payouts],
+            ["Lebenshaltung", report.income.living],
+            ["Dispozinsen", report.income.interest],
+          ]
+            .filter(([, v]) => v !== 0)
+            .map(([label, v]) => (
+              <div key={label as string}>
+                <dt>{label}</dt>
+                <dd className={(v as number) >= 0 ? "pos" : "neg"}>{eur(v as number)}</dd>
+              </div>
+            ))}
+        </dl>
+      )}
       {report.lines.length === 0 && <p className="dialog__muted">Noch keine Beteiligung. Schau in die Post: Dort liegen Angebote.</p>}
       {report.lines.map((line) => (
         <section key={line.startupId} className="report__line">
@@ -129,6 +147,7 @@ export function ReportDialog({ report, onClose }: { report: MonthReport; onClose
             <b>{line.name}</b>
             {line.status === "dead" && <span className="tag tag--no">insolvent</span>}
             {line.status === "exited" && <span className="tag tag--go">verkauft</span>}
+            {line.status === "sold" && <span className="tag tag--no">Anteil verkauft</span>}
           </header>
           <div className="report__figures">
             <span>

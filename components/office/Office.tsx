@@ -5,11 +5,13 @@ import { LESSONS } from "@/lib/game/lessons";
 import { deskView } from "@/lib/game/views";
 import { currentGame } from "@/lib/current-game";
 import { eur } from "@/components/game/format";
+import { GigList } from "@/components/game/GigList";
+import { REGIME_LABEL } from "@/lib/game/market";
 
 // Dein Schreibtisch von oben. Alles, was zu tun ist, liegt als Gegenstand darauf.
 
 export async function Office() {
-  const { state } = await currentGame();
+  const { state, revision } = await currentGame();
   const desk = deskView(state, LESSONS.length);
   const firstOpen = desk.openItems[0];
   const folderHref = firstOpen ? `/firma/${firstOpen.startupId}` : "/portfolio";
@@ -87,6 +89,12 @@ export async function Office() {
             </span>
           </Link>
 
+          <Link href="/boerse" className="desk__item paper" aria-label={`Wirtschaftszeitung: ${state.market.headline}`}>
+            <span className="paper__mast">Wirtschaftsblatt</span>
+            <span className="paper__headline">{state.market.headline}</span>
+            <span className={`paper__regime paper__regime--${state.market.regime}`}>{REGIME_LABEL[state.market.regime]}</span>
+          </Link>
+
           <span className="desk__item cup" aria-hidden="true" />
           <span className="desk__item pen" aria-hidden="true" />
         </div>
@@ -108,6 +116,10 @@ export async function Office() {
             </li>
           ))}
         </ul>
+        <div className="career" aria-label="Aufträge">
+          <p className="eyebrow">Aufträge diesen Monat</p>
+          <GigList gigs={state.gigs.filter((g) => g.month === state.month)} revision={revision} reputation={state.reputation} daysLeft={desk.daysLeft} compact />
+        </div>
         <div className="career" aria-label="Karriere">
           <p className="eyebrow">Karriere</p>
           <ol className="career__steps">

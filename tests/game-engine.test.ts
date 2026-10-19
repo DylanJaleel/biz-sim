@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { forecast, outcomeViews } from "../lib/game/cfo";
-import { ACTION_DAYS, BOARD_FEE, DAYS_PER_MONTH, START_CASH } from "../lib/game/config";
+import { ACTION_DAYS, DAYS_PER_MONTH, LIVING_COSTS, START_CASH } from "../lib/game/config";
 import { TEMPLATES, templateOf } from "../lib/game/content";
 import { applyAction, closeMonth, GameRuleError, newGame, openItems, previewMeeting, startupOf } from "../lib/game/engine";
 import { judge } from "../lib/game/judge";
@@ -75,7 +75,8 @@ describe("month close", () => {
     state = result.state;
     expect(state.month).toBe(2);
     expect(state.daysUsed).toBe(0);
-    expect(state.cash).toBe(cash + BOARD_FEE);
+    // Small startups pay a 500 € allowance; living costs go out.
+    expect(state.cash).toBe(cash + 500 - LIVING_COSTS);
     expect(openItems(state)).toHaveLength(1);
     expect(state.mails[0]!.subject).toMatch(/Vorlage für den Beirat/);
     expect(result.result.kind).toBe("report");

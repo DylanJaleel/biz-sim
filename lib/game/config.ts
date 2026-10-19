@@ -21,8 +21,24 @@ export const START_MONTH_INDEX = 9;
 
 export const START_CASH = 150_000;
 export const START_REPUTATION = 20;
-/** Monthly board fee per mandate. */
-export const BOARD_FEE = 750;
+/** Monthly board fee per mandate, by company value: small startups pay an expense allowance. */
+export const BOARD_FEES = [
+  { upTo: 1_000_000, fee: 500 },
+  { upTo: 3_000_000, fee: 1_000 },
+  { upTo: 10_000_000, fee: 1_750 },
+  { upTo: Infinity, fee: 2_500 },
+] as const;
+/** Private living costs per month. */
+export const LIVING_COSTS = 1_800;
+/** The bank lets the account go this far below zero, at a monthly interest. */
+export const OVERDRAFT_LIMIT = 25_000;
+export const OVERDRAFT_RATE = 0.009;
+/** A forced sale of a stake brings this share of its value. */
+export const FIRE_SALE = 0.7;
+/** Day rate for consulting: base plus reputation. */
+export const DAY_RATE_BASE = 500;
+export const DAY_RATE_PER_REPUTATION = 10;
+export const TRADE_FEE = 0.001;
 
 export const ACTION_DAYS = {
   dd: 3,

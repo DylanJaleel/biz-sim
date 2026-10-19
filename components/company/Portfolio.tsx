@@ -8,7 +8,7 @@ import { PHASE_LABEL } from "./labels";
 export async function Portfolio() {
   const { state } = await currentGame();
   const active = state.startups.filter((s) => s.status === "active");
-  const closed = state.startups.filter((s) => s.status === "dead" || s.status === "exited");
+  const closed = state.startups.filter((s) => s.status === "dead" || s.status === "exited" || s.status === "sold");
   const offered = state.startups.filter((s) => s.status === "offered");
   const open = new Set(openItems(state).map((i) => i.startupId));
 
@@ -79,7 +79,7 @@ export async function Portfolio() {
             {closed.map((s) => (
               <li key={s.id} className="list__row">
                 <Link href={`/firma/${s.id}`}>{s.name}</Link>
-                <span className={`tag tag--${s.status === "exited" ? "go" : "no"}`}>{s.status === "exited" ? "verkauft" : "insolvent"}</span>
+                <span className={`tag tag--${s.status === "exited" ? "go" : "no"}`}>{s.status === "exited" ? "verkauft" : s.status === "sold" ? "Anteil verkauft" : "insolvent"}</span>
                 {s.exitValue !== undefined && <span className="muted">Verkauf für {eur(s.exitValue)}</span>}
               </li>
             ))}

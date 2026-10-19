@@ -517,6 +517,13 @@ body {
   display: none;
 }
 
+/* Kalender und Notizbuch liegen auch auf dem Schreibtisch. */
+@media (max-width: 1540px) {
+  .topbar__extra {
+    display: none !important;
+  }
+}
+
 @media (max-width: 1180px) {
   .topbar__hide-sm,
   .topbar__name {
@@ -1079,10 +1086,10 @@ a.desk__item:focus-visible {
 }
 
 .cards {
-  left: 7%;
-  top: 70%;
-  width: 14%;
-  opacity: 0.9;
+  left: 77%;
+  top: 83%;
+  width: 13%;
+  opacity: 0.95;
 }
 
 .cards__card {
@@ -1111,8 +1118,8 @@ a.desk__item:focus-visible {
 }
 
 .cup {
-  left: 31%;
-  top: 71%;
+  left: 35%;
+  top: 70%;
   width: 9%;
   aspect-ratio: 1;
   border-radius: 50%;
@@ -1120,9 +1127,9 @@ a.desk__item:focus-visible {
 }
 
 .pen {
-  left: 72%;
-  top: 86%;
-  width: 18%;
+  left: 36%;
+  top: 92%;
+  width: 14%;
   height: 1.1cqw;
   border-radius: 999px;
   background: linear-gradient(90deg, #11151c 0 88%, #c9a35b 88%);
@@ -2613,4 +2620,263 @@ a.desk__item:focus-visible {
   color: var(--ink);
   font: inherit;
   font-size: 14px;
+}
+
+/* Zeitung, Aufträge, Börse */
+
+.paper {
+  left: 3%;
+  top: 61%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6cqw;
+  width: 27%;
+  aspect-ratio: 1.55;
+  padding: 1.4cqw 1.6cqw;
+  border-radius: 0.4cqw;
+  background:
+    repeating-linear-gradient(180deg, transparent 0 1.1cqw, rgba(0, 0, 0, 0.05) 1.1cqw 1.2cqw) 0 60% / 100% 40% no-repeat,
+    #f3f0e8;
+  color: #1b1b1b;
+  transform: rotate(-3deg);
+}
+
+.paper:hover {
+  transform: rotate(-3deg) translateY(-0.6cqw);
+}
+
+.paper__mast {
+  padding-bottom: 0.4cqw;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.4);
+  font-family: var(--font-display);
+  font-size: max(10px, 1.6cqw);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+
+.paper__headline {
+  font-family: var(--font-display);
+  font-size: max(11px, 1.7cqw);
+  line-height: 1.15;
+}
+
+.paper__regime {
+  align-self: flex-start;
+  margin-top: auto;
+  padding: 0.1cqw 0.8cqw;
+  border-radius: 999px;
+  background: #1b1b1b;
+  color: #fff;
+  font-size: max(8px, 1cqw);
+  font-weight: 700;
+}
+
+.paper__regime--boom {
+  background: #1c9a5a;
+}
+
+.paper__regime--weak {
+  background: #c98a1c;
+}
+
+.paper__regime--crash {
+  background: #d6493c;
+}
+
+.gigs ul {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gig {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 4px 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  font-size: 14px;
+}
+
+.gigs--compact .gig {
+  grid-template-columns: minmax(0, 1fr) auto;
+  background: var(--surface-2);
+  border-color: transparent;
+}
+
+.gigs--compact .gig .action {
+  grid-column: 1 / -1;
+}
+
+.gig.is-booked {
+  border-color: color-mix(in srgb, var(--agree) 40%, transparent);
+  background: var(--agree-soft);
+}
+
+.gig__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.gig__text {
+  color: var(--ink-2);
+  font-size: 13px;
+}
+
+.gig__fee {
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.market__summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 22px;
+  margin-top: 14px;
+  font-size: 14px;
+}
+
+.pill--boom {
+  background: var(--agree-soft);
+  color: var(--agree);
+}
+
+.pill--weak {
+  background: var(--maybe-soft);
+  color: var(--maybe);
+}
+
+.pill--crash {
+  background: var(--disagree-soft);
+  color: var(--disagree);
+}
+
+.assets {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.assets .panel + .panel {
+  margin-top: 0;
+}
+
+.asset__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.asset__price {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-variant-numeric: tabular-nums;
+}
+
+.asset__price b {
+  font-size: 18px;
+}
+
+.asset__chart {
+  display: block;
+  width: 100%;
+  height: 70px;
+  margin: 8px 0;
+}
+
+.asset__chart path {
+  fill: none;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.asset__chart.is-up path {
+  stroke: var(--agree);
+}
+
+.asset__chart.is-down path {
+  stroke: var(--disagree);
+}
+
+.asset__chart--flat,
+.asset__chart--empty {
+  display: grid;
+  place-items: center;
+  border-bottom: 2px solid var(--accent);
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.asset__facts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 10px 0;
+  font-size: 13.5px;
+}
+
+.asset__facts dt {
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.asset__facts dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.asset__trade {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.asset__trade input {
+  width: 120px;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+}
+
+.report__income {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+  margin: 0 0 14px;
+}
+
+.report__income div {
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.report__income dt {
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.report__income dd {
+  margin: 0;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
 }

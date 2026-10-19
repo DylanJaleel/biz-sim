@@ -1,4 +1,4 @@
-import type { GameAction, GvVote, RoundTake, SeatId, Vote } from "./types";
+import type { AssetId, GameAction, GvVote, RoundTake, SeatId, Vote } from "./types";
 
 // Server actions receive whatever the browser sends. This turns it into a
 // GameAction or nothing; the engine then checks the game rules.
@@ -7,6 +7,7 @@ const SEATS: readonly SeatId[] = ["ceo", "cto", "vc", "indep", "angel"];
 const VOTES: readonly Vote[] = ["go", "conditions", "no"];
 const TAKES: readonly RoundTake[] = ["none", "half", "prorata", "lead"];
 const GV_VOTES: readonly GvVote[] = ["go", "no"];
+const ASSET_IDS: readonly AssetId[] = ["tagesgeld", "anleihen", "dividenden", "tech"];
 
 function id(value: unknown): value is string {
   return typeof value === "string" && value.length > 0 && value.length <= 64 && /^[\w-]+$/.test(value);
@@ -28,6 +29,13 @@ export function parseAction(input: unknown): GameAction | null {
       return id(a.roundId) && TAKES.includes(a.take as RoundTake) && GV_VOTES.includes(a.vote as GvVote)
         ? { type: "round", roundId: a.roundId, take: a.take as RoundTake, vote: a.vote as GvVote }
         : null;
+    case "gig":
+      return id(a.gigId) ? { type: "gig", gigId: a.gigId } : null;
+    case "trade": {
+      const amount = Number(a.amount);
+      if (!ASSET_IDS.includes(a.assetId as AssetId) || !Number.isFinite(amount) || amount === 0 || Math.abs(amount) > 50_000_000) return null;
+      return { type: "trade", assetId: a.assetId as AssetId, amount: Math.round(amount) };
+    }
     case "buyShares":
       return id(a.offerId) ? { type: "buyShares", offerId: a.offerId } : null;
     case "meetContact":

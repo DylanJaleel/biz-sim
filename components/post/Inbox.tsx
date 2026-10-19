@@ -102,6 +102,7 @@ function Deal({ deal, revision, cash }: { deal: DealView; revision: number; cash
       declined: "Abgelehnt oder ausgelaufen.",
       dead: "Die Firma ist inzwischen insolvent.",
       exited: "Die Firma wurde verkauft.",
+      sold: "Du hast deinen Anteil verkauft.",
     };
     return <p className="notice">{text[deal.status]}</p>;
   }

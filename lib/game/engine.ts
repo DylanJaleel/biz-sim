@@ -1,6 +1,10 @@
 import {
   ACTION_DAYS,
-  BOARD_FEE,
+  FIRE_SALE,
+  LIVING_COSTS,
+  OVERDRAFT_LIMIT,
+  OVERDRAFT_RATE,
+  TRADE_FEE,
   DAYS_PER_MONTH,
   FOUNDER_CALL,
   JUDGMENT_REPUTATION,
@@ -29,6 +33,8 @@ import {
 } from "./config";
 import { applyRound, capTableAfterEntry, fundability, playerAmount, roundTerms, sellers, shareholderVote, grantToPlayer, transferToPlayer } from "./captable";
 import { contactDef, initialContacts, ringOpen } from "./network";
+import { boardFee, drawGigs } from "./gigs";
+import { assetOf, holdingsValue, initialMarket, sentimentOf, stepMarket } from "./market";
 import { templateOf, TEMPLATES } from "./content";
 import { judge, bestVote, outlook, VOTES } from "./judge";
 import { CURRICULUM } from "./lessons";
@@ -42,6 +48,7 @@ import type {
   GameAction,
   GameState,
   GvVote,
+  IncomeLines,
   Mail,
   MonthReport,
   Round,
@@ -101,7 +108,7 @@ function mail(state: GameState, data: Omit<Mail, "id" | "month" | "read">): void
 
 export function newGame(seed: number): GameState {
   const state: GameState = {
-    version: 2,
+    version: 3,
     seed,
     month: 1,
     daysUsed: 0,
@@ -119,13 +126,16 @@ export function newGame(seed: number): GameState {
     shareOffers: [],
     contacts: initialContacts(),
     ledRounds: 0,
+    gigs: [],
+    market: initialMarket(),
   };
+  state.gigs = drawGigs(1, state.reputation, randomFor(seed, "gigs|1"), () => nextId(state, "g"));
   mail(state, {
     kind: "system",
     from: "Boardroom",
     subject: "Willkommen in deinem Büro",
     body:
-      "Du hast 150.000 € Privatkapital und den Wunsch, mehr zu bewegen als ein Sparbuch. Zwei Gründer suchen einen Angel. Prüfe die Angebote, investiere in eines und begleite die Firma im Beirat. Jeder Monat hat 20 Arbeitstage. Wofür du sie nutzt, entscheidest du.",
+      "Du hast 150.000 € Privatkapital und den Wunsch, mehr zu bewegen als ein Sparbuch. Zwei Gründer suchen einen Angel. Prüfe die Angebote, investiere in eines und begleite die Firma im Beirat. Jeder Monat hat 20 Arbeitstage. Davon lebst du auch: Rund 1.800 € kostet dein Leben im Monat, Beratungsaufträge bringen Geld, kosten aber Tage. Was nicht gebraucht wird, kann an der Börse arbeiten.",
   });
   for (const def of STARTUPS.filter((d) => d.arrives === 1)) offer(state, def.id);
   return state;
@@ -144,19 +154,25 @@ function offer(state: GameState, id: string): void {
  * get cap tables, rounds, offers and the network; nothing else changes.
  */
 export function upgradeState(input: GameState): GameState {
-  const state = input as GameState & { version: number };
-  if (state.version >= 2) return state;
-  for (const s of state.startups) {
-    if (!s.capTable) s.capTable = capTableAfterEntry(definitionOf(s.id).capTable, s.stake);
+  let state = input as GameState & { version: number };
+  if (state.version >= 3) return state;
+  if (state.version < 2) {
+    for (const s of state.startups) {
+      if (!s.capTable) s.capTable = capTableAfterEntry(definitionOf(s.id).capTable, s.stake);
+    }
+    state = {
+      ...state,
+      version: 2 as number as 3,
+      rounds: state.rounds ?? [],
+      shareOffers: state.shareOffers ?? [],
+      contacts: state.contacts ?? initialContacts(),
+      ledRounds: state.ledRounds ?? 0,
+    };
   }
-  return {
-    ...state,
-    version: 2,
-    rounds: state.rounds ?? [],
-    shareOffers: state.shareOffers ?? [],
-    contacts: state.contacts ?? initialContacts(),
-    ledRounds: state.ledRounds ?? 0,
-  };
+  // Version 3: income and the stock market.
+  const next = { ...state, version: 3 as const, market: state.market ?? initialMarket(), gigs: state.gigs ?? [] };
+  if (next.gigs.length === 0) next.gigs = drawGigs(next.month, next.reputation, randomFor(next.seed, `gigs|${next.month}`), () => nextId(next, "g"));
+  return next;
 }
 
 // ---------------------------------------------------------------------------
@@ -217,8 +233,8 @@ export type ActionResult =
   | { kind: "report"; report: MonthReport }
   | { kind: "round"; roundId: string };
 
-function spendDays(state: GameState, kind: keyof typeof ACTION_DAYS, label: string): void {
-  const days = ACTION_DAYS[kind];
+function spendDays(state: GameState, kind: keyof typeof ACTION_DAYS | "gig", label: string, custom?: number): void {
+  const days = kind === "gig" ? (custom ?? 1) : ACTION_DAYS[kind];
   if (state.daysUsed + days > DAYS_PER_MONTH) {
     throw new GameRuleError(`Dafür fehlen dir Tage: ${days} nötig, ${daysLeft(state)} frei. Schließe den Monat ab.`);
   }
@@ -429,6 +445,45 @@ export function applyAction(current: GameState, action: GameAction): { state: Ga
       state.reputation = Math.min(100, state.reputation + 1);
       unlockLesson(state, "netzwerk");
       introduce(state, s, def.id);
+      return { state, result: { kind: "none" } };
+    }
+    case "gig": {
+      const gig = state.gigs.find((g) => g.id === action.gigId);
+      if (!gig || gig.status !== "offered") throw new GameRuleError("Dieser Auftrag ist nicht mehr zu haben.");
+      spendDays(state, "gig", `${gig.title} (${gig.client})`, gig.days);
+      gig.status = "booked";
+      unlockLesson(state, "opportunitaetskosten");
+      return { state, result: { kind: "none" } };
+    }
+    case "trade": {
+      const asset = assetOf(action.assetId);
+      const m = state.market;
+      const price = m.prices[asset.id];
+      if (!Number.isFinite(action.amount) || action.amount === 0) throw new GameRuleError("Bitte einen Betrag angeben.");
+      if (action.amount > 0) {
+        const fee = Math.max(1, Math.round(action.amount * TRADE_FEE));
+        if (state.cash < action.amount + fee) throw new GameRuleError("Dafür reicht dein Privatkapital nicht.");
+        state.cash -= action.amount + fee;
+        m.holdings[asset.id] += action.amount / price;
+        m.invested[asset.id] += action.amount;
+        const kinds = Object.values(m.holdings).filter((u) => u > 0).length;
+        if (asset.yield > 0) unlockLesson(state, "dividendenrendite");
+        if (kinds >= 2) unlockLesson(state, "diversifikation");
+      } else {
+        const held = m.holdings[asset.id] * price;
+        const sell = Math.min(-action.amount, held);
+        if (sell <= 0) throw new GameRuleError("Davon hältst du nichts.");
+        const fee = Math.max(1, Math.round(sell * TRADE_FEE));
+        const share = sell / held;
+        m.holdings[asset.id] -= m.holdings[asset.id] * share;
+        m.invested[asset.id] -= m.invested[asset.id] * share;
+        if (m.holdings[asset.id] < 1e-6) {
+          m.holdings[asset.id] = 0;
+          m.invested[asset.id] = 0;
+        }
+        state.cash += sell - fee;
+        unlockLesson(state, "liquiditaet");
+      }
       return { state, result: { kind: "none" } };
     }
   }
@@ -736,6 +791,21 @@ export function closeMonth(state: GameState): MonthReport {
   lapseItems(state, notes);
   const lines = new Map<string, string[]>();
   resolveEffects(state, month + 1, lines);
+  const income: IncomeLines = { consulting: 0, boardFees: 0, payouts: 0, living: 0, interest: 0 };
+
+  // Consulting booked this month is invoiced now.
+  for (const gig of state.gigs.filter((g) => g.status === "booked" && g.month === month)) {
+    state.cash += gig.fee;
+    income.consulting += gig.fee;
+    if (gig.reputation) state.reputation = Math.min(100, state.reputation + gig.reputation);
+    if (gig.contactId && gig.warmth) {
+      const c = state.contacts.find((x) => x.id === gig.contactId);
+      if (c) {
+        c.met = true;
+        c.warmth = Math.min(100, c.warmth + gig.warmth);
+      }
+    }
+  }
 
   for (const s of state.startups.filter((x) => x.status === "active")) {
     const step = stepMonth(s, randomFor(state.seed, `step|${s.id}|${month}`));
@@ -747,11 +817,30 @@ export function closeMonth(state: GameState): MonthReport {
       state.reputation = Math.max(0, state.reputation - 3);
       notes.push(`${s.name} ist insolvent. Dein Anteil ist verloren.`);
     } else {
-      state.cash += BOARD_FEE;
+      const fee = boardFee(next.metrics);
+      state.cash += fee;
+      income.boardFees += fee;
     }
     next = { ...next, history: [...next.history, { month: month + 1, revenue: next.metrics.revenue, cash: next.metrics.cash, valuation: valuation(next.metrics), stake: next.stake }].slice(-36) };
     replaceStartup(state, next);
   }
+
+  // Private side: living costs, the stock market, the overdraft.
+  state.cash -= LIVING_COSTS;
+  income.living = -LIVING_COSTS;
+  const regimeBefore = state.market.regime;
+  const market = stepMarket(state.market, month, randomFor(state.seed, `market|${month}`));
+  state.market = market.market;
+  state.cash += market.payout;
+  income.payouts = market.payout;
+  if (market.market.regime !== regimeBefore || month % 3 === 0) notes.push(`Börse: ${market.market.headline}.`);
+  if (state.cash < 0) {
+    const interest = -state.cash * OVERDRAFT_RATE;
+    state.cash -= interest;
+    income.interest = -interest;
+    notes.push(`Dein Konto ist im Minus. Die Bank berechnet ${Math.round(interest).toLocaleString("de-DE")} € Dispozinsen.`);
+  }
+  if (state.cash < -OVERDRAFT_LIMIT) forceLiquidity(state, notes);
 
   // Deal flow: expired offers, new offers, and a fallback when nothing is left.
   state.month = month + 1;
@@ -779,6 +868,11 @@ export function closeMonth(state: GameState): MonthReport {
     }
   }
   planRounds(state);
+  for (const g of state.gigs.filter((x) => x.status === "offered")) g.status = "expired";
+  state.gigs = [
+    ...state.gigs.filter((g) => g.month > state.month - 6),
+    ...drawGigs(state.month, state.reputation, randomFor(state.seed, `gigs|${state.month}`), () => nextId(state, "g")),
+  ];
 
   state.daysUsed = 0;
   state.calendar = [];
@@ -811,10 +905,42 @@ export function closeMonth(state: GameState): MonthReport {
     portfolioValue: portfolioValue(state),
     portfolioValueBefore: valueBefore,
     notes,
+    income,
   };
   state.reports.unshift(report);
   if (state.reports.length > 24) state.reports.length = 24;
   return report;
+}
+
+/**
+ * The bank calls the overdraft: first the depot is sold, then the smallest
+ * stake goes to another investor at a discount.
+ */
+function forceLiquidity(state: GameState, notes: string[]): void {
+  const m = state.market;
+  const depot = holdingsValue(m);
+  if (depot > 0) {
+    state.cash += depot;
+    for (const key of Object.keys(m.holdings) as (keyof typeof m.holdings)[]) {
+      m.holdings[key] = 0;
+      m.invested[key] = 0;
+    }
+    notes.push(`Die Bank hat den Dispo gekündigt. Dein Depot wurde für ${Math.round(depot).toLocaleString("de-DE")} € verkauft.`);
+  }
+  if (state.cash >= -OVERDRAFT_LIMIT) return;
+  const stakes = state.startups
+    .filter((s) => s.status === "active" && s.stake > 0)
+    .map((s) => ({ s, value: (s.stake / 100) * valuation(s.metrics) }))
+    .sort((a, b) => a.value - b.value);
+  const pick = stakes[0];
+  if (!pick) return;
+  const price = pick.value * FIRE_SALE;
+  state.cash += price;
+  const capTable = [...pick.s.capTable, { id: "buyer", name: "Käufer deines Anteils", kind: "investor" as const, pct: pick.s.stake }];
+  replaceStartup(state, { ...pick.s, status: "sold", capTable, stake: 0, exitValue: price });
+  state.reputation = Math.max(0, state.reputation - 4);
+  notes.push(`Notverkauf: Deinen Anteil an ${pick.s.name} hast du mit 30 % Abschlag für ${Math.round(price).toLocaleString("de-DE")} € verkauft. Liquidität geht vor.`);
+  unlockLesson(state, "liquiditaet");
 }
 
 /** Every quarter, strong board work earns a few new shares. */
@@ -842,7 +968,8 @@ function planRounds(state: GameState): void {
     const runway = runwayMonths(s.metrics);
     if (!(runway < ROUND_RUNWAY && runway >= 1)) continue;
     const random = randomFor(state.seed, `round|${s.id}|${state.month}`);
-    if (random() > fundability(s)) {
+    const mood = sentimentOf(state.market.regime);
+    if (random() > fundability(s, mood)) {
       // Nobody wants in: the founders keep looking, the money keeps running out.
       state.rounds.push({ id: nextId(state, "r"), startupId: s.id, month: state.month, status: "failed", label: "Investorensuche", amount: 0, preMoney: 0, leadId: "", lead: "", down: false });
       mail(state, {
@@ -855,7 +982,7 @@ function planRounds(state: GameState): void {
       continue;
     }
     const done = state.rounds.filter((r) => r.startupId === s.id && r.status === "closed").length;
-    const terms = roundTerms(s, done, random);
+    const terms = roundTerms(s, done, random, mood);
     const round: Round = { id: nextId(state, "r"), startupId: s.id, month: state.month, status: "open", ...terms };
     state.rounds.push(round);
     replaceStartup(state, { ...s, flags: [...s.flags.filter((f) => f !== "round_open"), "round_open"] });

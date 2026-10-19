@@ -1,5 +1,6 @@
 import { templateOf } from "./content";
 import { applyAction, daysLeft, GameRuleError, newGame, openItems, portfolioValue, previewMeeting, randomFor, startupOf } from "./engine";
+import { holdingsValue } from "./market";
 import { bestVote, outlook, VOTES } from "./judge";
 import type { GameAction, GameState, Vote } from "./types";
 
@@ -30,6 +31,26 @@ export const passiveBot = (prefer?: string): Bot => ({
   month: (s) => investActions(s, firstAffordable(s, prefer), false),
 });
 
+/** Books paid work for the days that are left, keeping a few free. */
+function gigActions(state: GameState, reserve: number): GameAction[] {
+  let free = daysLeft(state) - reserve;
+  const out: GameAction[] = [];
+  for (const g of state.gigs.filter((x) => x.status === "offered").sort((a, b) => b.fee / b.days - a.fee / a.days)) {
+    if (g.days <= free) {
+      out.push({ type: "gig", gigId: g.id });
+      free -= g.days;
+    }
+  }
+  return out;
+}
+
+/** Never invests: lives from consulting and keeps the money on the account. */
+export const consultantBot = (): Bot => ({
+  name: "Nur Berater",
+  pick: () => null,
+  month: (s) => [...s.startups.filter((x) => x.status === "offered").map((x) => ({ type: "decline", startupId: x.id }) as GameAction), ...gigActions(s, 0)],
+});
+
 /** Always says yes to whatever the founder proposes. */
 export const yesBot = (prefer?: string): Bot => ({
   name: "Ja-Sager",
@@ -37,6 +58,7 @@ export const yesBot = (prefer?: string): Bot => ({
   month: (s) => [
     ...investActions(s, firstAffordable(s, prefer), false),
     ...openItems(s).map((i) => ({ type: "meeting", itemId: i.id, argument: null, vote: "go" }) as GameAction),
+    ...gigActions(s, 6),
   ],
 });
 
@@ -85,7 +107,9 @@ export const analystBot = (prefer?: string): Bot => ({
     for (const startup of s.startups.filter((x) => x.status === "active" && x.metrics.trust < 55)) {
       actions.push({ type: "founderCall", startupId: startup.id });
     }
-    return actions;
+    // Paid work only with the days the mandates leave over.
+    const planned = actions.length;
+    return [...actions, ...gigActions({ ...s, daysUsed: s.daysUsed + planned }, 2)];
   },
 });
 
@@ -102,6 +126,7 @@ export interface BotRun {
   reputation: number;
   dead: number;
   exited: number;
+  sold: number;
   judgments: Record<"strong" | "fair" | "weak", number>;
 }
 
@@ -125,11 +150,12 @@ export function runBot(bot: Bot, seed: number, months: number): BotRun {
     bot: bot.name,
     seed,
     months,
-    finalValue: portfolioValue(state) + state.cash,
+    finalValue: portfolioValue(state) + state.cash + holdingsValue(state.market),
     cash: state.cash,
     reputation: state.reputation,
     dead: state.startups.filter((s) => s.status === "dead").length,
     exited: state.startups.filter((s) => s.status === "exited").length,
+    sold: state.startups.filter((s) => s.status === "sold").length,
     judgments,
   };
 }

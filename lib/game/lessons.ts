@@ -208,6 +208,32 @@ export const LESSONS: Lesson[] = [
     example: "Eine Empfehlung an den richtigen Einkäufer verkürzt einen Verkauf von neun Monaten auf sechs Wochen.",
     inGame: "Kontakte pflegen kostet einen Tag. Einen Kontakt in eine Firma einbringen kostet Wärme, und erst ab einem guten Ruf öffnen sich die äußeren Ringe.",
   },
+  {
+    id: "liquiditaet",
+    title: "Liquidität",
+    summary:
+      "Vermögen ist nicht gleich verfügbares Geld. Startup-Anteile lassen sich oft jahrelang nicht verkaufen, Aktien an einem Tag. Wer alles in Unverkäufliches steckt, muss im Notfall mit Abschlag verkaufen.",
+    rule: "Reserve für 6 bis 12 Monate Lebenshaltung plus geplante Nachschüsse liquide halten",
+    example: "Ein Angel hält 400.000 € in Startup-Anteilen und 5.000 € auf dem Konto. Kommt eine Runde, kann er nicht mitziehen und wird verwässert.",
+    inGame: "Lebenshaltung kostet jeden Monat Geld. Rutscht das Konto zu tief ins Minus, verkauft die Bank erst dein Depot und dann deinen kleinsten Anteil mit Abschlag.",
+  },
+  {
+    id: "diversifikation",
+    title: "Diversifikation",
+    summary:
+      "Wer sein Geld auf verschiedene Anlagen verteilt, deren Werte sich nicht im Gleichschritt bewegen, senkt das Risiko, ohne viel Rendite aufzugeben. Startups, Aktien und Anleihen reagieren unterschiedlich auf das Marktklima.",
+    example: "Im Crash fällt der Tech-Index um 20 %, der Anleihen-Fonds kaum. Ein gemischtes Depot verliert deutlich weniger als ein reines Tech-Depot.",
+    inGame: "Vier Anlagen an der Börse, alle am selben Marktklima, aber unterschiedlich stark. Im schwachen Markt werden auch Startup-Runden schwieriger und billiger.",
+  },
+  {
+    id: "dividendenrendite",
+    title: "Dividenden- und Zinsrendite",
+    summary:
+      "Die laufende Rendite zeigt, wie viel eine Anlage jedes Jahr ausschüttet, gemessen am Preis. Sie ist planbar, aber nicht alles: Fällt der Kurs, kann ein Jahr Dividende in einem Monat weg sein.",
+    rule: "Dividendenrendite = Ausschüttung pro Jahr ÷ Kurs",
+    example: "50.000 € in Dividenden-Aktien mit 3,2 % Rendite bringen 1.600 € im Jahr, also 400 € pro Quartal.",
+    inGame: "Tagesgeld und Anleihen zahlen monatlich, Dividenden-Aktien jedes Quartal, der Tech-Index gar nicht.",
+  },
 ];
 
 /** Order in which "Weiterbildung" unlocks cards. */
@@ -235,6 +261,9 @@ export const CURRICULUM = [
   "down_round",
   "secondary",
   "netzwerk",
+  "liquiditaet",
+  "diversifikation",
+  "dividendenrendite",
 ];
 
 export function lessonOf(id: string): Lesson {

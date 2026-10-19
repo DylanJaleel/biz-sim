@@ -132,10 +132,12 @@ describe("network", () => {
 describe("saved games", () => {
   it("a phase 1 game gets cap tables and the network", () => {
     const old = invested() as unknown as Record<string, unknown>;
-    const v1 = { ...old, version: 1, rounds: undefined, shareOffers: undefined, contacts: undefined, ledRounds: undefined } as unknown as GameState;
+    const v1 = { ...old, version: 1, rounds: undefined, shareOffers: undefined, contacts: undefined, ledRounds: undefined, gigs: undefined, market: undefined } as unknown as GameState;
     for (const s of v1.startups) delete (s as Partial<typeof s>).capTable;
     const up = upgradeState(v1);
-    expect(up.version).toBe(2);
+    expect(up.version).toBe(3);
+    expect(up.gigs.length).toBeGreaterThan(0);
+    expect(up.market.prices.tech).toBe(100);
     expect(up.contacts.length).toBe(CONTACTS.length);
     expect(totalPct(startupOf(up, "pendelwerk"))).toBeCloseTo(100, 6);
   });

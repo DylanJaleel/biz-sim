@@ -1,5 +1,6 @@
 import { DAYS_PER_MONTH, monthLabel, monthName } from "@/lib/game/config";
 import { daysLeft, openItems, portfolioValue } from "@/lib/game/engine";
+import { holdingsValue } from "@/lib/game/market";
 import { currentGame } from "@/lib/current-game";
 import { eur } from "@/components/game/format";
 import { CloseMonth } from "./CloseMonth";
@@ -44,8 +45,8 @@ export async function TopBar() {
           <dd>{eur(state.cash)}</dd>
         </div>
         <div className="topbar__hide-sm">
-          <dt>Beteiligungen</dt>
-          <dd>{eur(portfolioValue(state))}</dd>
+          <dt>Vermögen</dt>
+          <dd>{eur(state.cash + holdingsValue(state.market) + portfolioValue(state))}</dd>
         </div>
         <div>
           <dt>Ruf</dt>

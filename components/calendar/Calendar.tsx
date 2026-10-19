@@ -2,6 +2,7 @@ import { currentGame } from "@/lib/current-game";
 import { ACTION_DAYS, DAYS_PER_MONTH, monthLabel } from "@/lib/game/config";
 import type { ActionKind } from "@/lib/game/types";
 import { eur, signed } from "@/components/game/format";
+import { GigList } from "@/components/game/GigList";
 import { ReportButton } from "./ReportButton";
 
 const KIND_LABEL: Partial<Record<ActionKind, string>> = {
@@ -18,12 +19,13 @@ const KIND_LABEL: Partial<Record<ActionKind, string>> = {
   askShares: "Anteile anfragen",
   meetContact: "Kontakt treffen",
   introContact: "Kontakt einbringen",
+  gig: "Auftrag",
 };
 
 const WEEKDAYS = ["Mo", "Di", "Mi", "Do", "Fr"];
 
 export async function Calendar() {
-  const { state } = await currentGame();
+  const { state, revision } = await currentGame();
   const days = Array.from({ length: DAYS_PER_MONTH }, (_, i) => {
     const day = i + 1;
     const entry = state.calendar.find((c) => day >= c.day && day < c.day + c.days);
@@ -59,6 +61,11 @@ export async function Calendar() {
           </div>
         ))}
       </div>
+
+      <section className="page__section">
+        <h2 className="section-title">Bezahlte Aufträge</h2>
+        <GigList gigs={state.gigs.filter((g) => g.month === state.month)} revision={revision} reputation={state.reputation} daysLeft={DAYS_PER_MONTH - state.daysUsed} />
+      </section>
 
       <section className="page__section">
         <h2 className="section-title">Was wie lange dauert</h2>

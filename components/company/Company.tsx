@@ -47,6 +47,7 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
           <span className="pill">{PHASE_LABEL[s.phase]}</span>
         </div>
         {s.status === "dead" && <p className="notice notice--bad">Insolvent. Dein Anteil ist verloren. Was hätte man früher sehen können?</p>}
+        {s.status === "sold" && <p className="notice notice--bad">Deinen Anteil musstest du mit Abschlag verkaufen, um flüssig zu bleiben.</p>}
         {s.status === "exited" && <p className="notice notice--good">Verkauft für {eur(s.exitValue ?? 0)}. Dein Erlös ist in deinem Privatkapital.</p>}
       </header>
 

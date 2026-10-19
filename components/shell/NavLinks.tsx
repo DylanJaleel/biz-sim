@@ -8,8 +8,9 @@ const LINKS = [
   { href: "/portfolio", label: "Portfolio" },
   { href: "/post", label: "Post" },
   { href: "/netzwerk", label: "Netzwerk", wide: true },
-  { href: "/kalender", label: "Kalender", wide: true },
-  { href: "/notizbuch", label: "Notizbuch", wide: true },
+  { href: "/boerse", label: "Börse", wide: true },
+  { href: "/kalender", label: "Kalender", wide: true, extra: true },
+  { href: "/notizbuch", label: "Notizbuch", wide: true, extra: true },
 ];
 
 export function NavLinks({ unread }: { unread: number }) {
@@ -22,7 +23,7 @@ export function NavLinks({ unread }: { unread: number }) {
           <Link
             key={l.href}
             href={l.href}
-            className={[active ? "is-active" : "", l.wide ? "topbar__wide" : ""].join(" ").trim() || undefined}
+            className={[active ? "is-active" : "", l.wide ? "topbar__wide" : "", "extra" in l ? "topbar__extra" : ""].join(" ").trim() || undefined}
             aria-current={active ? "page" : undefined}
           >
             {l.label}

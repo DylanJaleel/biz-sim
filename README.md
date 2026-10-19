@@ -4,6 +4,14 @@ Browser-Strategiespiel mit Lerneffekt: Du startest als Business Angel mit 150.00
 
 Konzept und Entscheidungen: [`docs/boardroom-konzept.md`](./docs/boardroom-konzept.md). Deployment: Das Vercel-Projekt `biz-sim` ist mit dem Repo verbunden, jeder Push auf den Branch geht automatisch in Produktion. Details: [`docs/deployment-vercel.md`](./docs/deployment-vercel.md).
 
+## Einkommen
+
+- **Lebenshaltung** kostet 1.800 € im Monat. Fällt das Konto unter null, laufen Dispozinsen; ab 25.000 € Minus verkauft die Bank erst dein Depot, dann deinen kleinsten Anteil mit 30 % Abschlag.
+- **Beratungsaufträge:** jeden Monat zwei bis drei Angebote (Workshop, Gutachten, Interim-CFO, Vortrag, Konzernprojekt …). Sie kosten Tage, bezahlt wird am Monatsende; der Tagessatz steigt mit dem Ruf. Manche bringen Ruf oder wärmen einen Kontakt.
+- **Beiratsvergütung** nach Firmengröße: 500 € für kleine Startups bis 2.500 € für große Firmen.
+- **Börse** (Zeitung auf dem Schreibtisch): Tagesgeld, Anleihen-Fonds, Dividenden-Aktien, Tech-Index. Ein gemeinsames Marktklima (Aufschwung, ruhig, schwach, Crash) bewegt die Kurse und beeinflusst auch Preis und Chancen von Startup-Runden.
+- Balance: Nur beraten bringt deutlich weniger als gut investieren (Test `game-balance`).
+
 ## Stand: Phase 2 (Wachsen)
 
 - **Cap Table:** Jede Firma zeigt, wem sie gehört (Gründung, Fonds, Angels, Mitarbeiterpool, neue Investoren, du). Verwässerung durch Runden, Optionspools und Halteprämien landet beim richtigen Gesellschafter.
@@ -37,16 +45,17 @@ Alle Zahlen rechnet die Spiellogik in `lib/game` (deterministisch, gesät). Es g
 ## Projektstruktur
 
 ```
-app/(app)/            Büro (/), portfolio, firma/[id], sitzung/[itemId], gv/[roundId], netzwerk, post, kalender, notizbuch, konto; actions.ts (eine Server Action für alle Züge)
+app/(app)/            Büro (/), portfolio, firma/[id], sitzung/[itemId], gv/[roundId], netzwerk, boerse, post, kalender, notizbuch, konto; actions.ts (eine Server Action für alle Züge)
 app/login/            Magic-Link-Login
 components/boardroom/ Ratstisch (RoundTable), 3D-Raum (BoardRoom3D), Sprechkarte, Protokoll, Phasen, Endabstimmung, Sitzungsablauf
 components/office/    Schreibtisch mit Karriereleiter
 components/shares/    Cap Table, Gesellschafterversammlung
 components/network/   Netzwerk-Ringe
+components/market/    Börse
 components/company/   Portfolio, Firma, CFO-Rechner
 components/post/      Posteingang und Angebote
 components/shell/     Kopfzeile, Monatsabschluss, Monatsbericht, Dreh-Hinweis
-lib/game/             Spiellogik: engine, sim, meeting, votes, judge, cfo, captable, network, career, startups, content (Vorlagen), lessons, views, validate, bots
+lib/game/             Spiellogik: engine, sim, meeting, votes, judge, cfo, captable, network, career, gigs, market, startups, content (Vorlagen), lessons, views, validate, bots
 lib/repository/       Spielstand laden, Züge unter Sperre anwenden, zurücksetzen
 prisma/               Schema und versionierte Migrationen
 scripts/              simulate-game.ts (Balance-Report), create-migration.mjs, vercel-build.mjs

@@ -60,12 +60,13 @@ export interface RoundTerms {
  * value. Growth, clean numbers and a good relationship with the founders lift
  * the price; a warm introduction to an investor lifts it further.
  */
-export function roundTerms(s: Startup, roundsSoFar: number, random: () => number): RoundTerms {
+export function roundTerms(s: Startup, roundsSoFar: number, random: () => number, sentiment = 0): RoundTerms {
   const burn = Math.max(0, -monthlyCashFlow(s.metrics));
   const amount = Math.max(ROUND_MIN, Math.round((burn * ROUND_MONTHS) / 10_000) * 10_000);
   const m = s.metrics;
   let factor = 0.75 + m.growth * 6 + (m.trust - 50) / 400 + (m.axes.finance - 50) / 300;
   if (s.flags.includes("investor_intro")) factor += 0.15;
+  factor += sentiment * 0.15;
   factor = Math.min(1.6, Math.max(0.5, factor));
   const preMoney = Math.round((valuation(m) * factor) / 10_000) * 10_000;
   const down = factor < 0.9;
@@ -77,9 +78,9 @@ export function roundTerms(s: Startup, roundsSoFar: number, random: () => number
 }
 
 /** Chance that investors want in at all: growth, clean numbers, trust and a warm introduction help. */
-export function fundability(s: Startup): number {
+export function fundability(s: Startup, sentiment = 0): number {
   const m = s.metrics;
-  const p = 0.2 + m.growth * 8 + (m.axes.finance - 50) / 150 + (m.trust - 50) / 300 + (s.flags.includes("investor_intro") ? 0.25 : 0);
+  const p = 0.2 + m.growth * 8 + (m.axes.finance - 50) / 150 + (m.trust - 50) / 300 + (s.flags.includes("investor_intro") ? 0.25 : 0) + sentiment * 0.15;
   return Math.min(0.9, Math.max(0.08, p));
 }
 
