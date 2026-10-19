@@ -27,7 +27,7 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
   const view = companyView(state, id);
   const s = view.startup;
   const m = s.metrics;
-  const people = peopleOf(s.board, Boolean(s.corporate));
+  const people = peopleOf(s.board, Boolean(s.corporate), s.flags.includes("mittelstand"));
   const active = s.status === "active";
   const item = view.item;
   const corporate = Boolean(s.corporate);
@@ -51,11 +51,22 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
               {s.tagline} · {s.sector}
             </p>
           </div>
-          <span className="pill">{PHASE_LABEL[s.phase]}</span>
+          <span className="company__pills">
+            {s.stage && <span className="pill">{s.stage}</span>}
+            <span className="pill">{PHASE_LABEL[s.phase]}</span>
+          </span>
         </div>
         {s.status === "dead" && <p className="notice notice--bad">Insolvent. Dein Anteil ist verloren. Was hätte man früher sehen können?</p>}
         {s.status === "sold" && <p className="notice notice--bad">Deinen Anteil musstest du mit Abschlag verkaufen, um flüssig zu bleiben.</p>}
         {s.status === "exited" && <p className="notice notice--good">Verkauft für {eur(s.exitValue ?? 0)}. Dein Erlös ist in deinem Privatkapital.</p>}
+        {view.associate && active && (
+          <p className="notice">
+            {view.associate} betreut dieses Mandat. Vorlagen, die du bis Monatsende nicht selbst entscheidest, entscheidet {view.associate.split(" ")[0]} für dich.
+          </p>
+        )}
+        {s.flags.includes("mittelstand") && active && s.stake > 50 && (
+          <p className="notice">Du hältst die Mehrheit. Verdient die Firma Geld, schüttet sie jedes Quartal aus, was über drei Monatskosten in der Kasse liegt.</p>
+        )}
         {corporate && (
           <p className="notice">Du sitzt im Aufsichtsrat: keine Anteile, feste Vergütung, eine Sitzung pro Quartal. Du kontrollierst den Vorstand, du führst nicht selbst.</p>
         )}
@@ -88,7 +99,7 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
           <span>Stimmung {Math.round(m.morale)}</span>
         </div>
         <div>
-          <small>{corporate ? "Vertrauen des Vorstands" : "Vertrauen der Gründung"}</small>
+          <small>{corporate ? "Vertrauen des Vorstands" : s.flags.includes("mittelstand") ? "Vertrauen der Geschäftsführung" : "Vertrauen der Gründung"}</small>
           <b>{Math.round(m.trust)}</b>
           <span className="meter" aria-hidden="true">
             <i style={{ width: `${m.trust}%` }} />
@@ -219,7 +230,7 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
               </div>
               {active && (
                 <ActionButton action={{ type: "founderCall", startupId: s.id }} revision={revision} days={ACTION_DAYS.founderCall} size="sm" disabled={view.calledThisMonth}>
-                  {view.calledThisMonth ? "Diesen Monat gesprochen" : corporate ? "Vorstand anrufen" : "Gründung anrufen"}
+                  {view.calledThisMonth ? "Diesen Monat gesprochen" : corporate ? "Vorstand anrufen" : s.flags.includes("mittelstand") ? "Geschäftsführung anrufen" : "Gründung anrufen"}
                 </ActionButton>
               )}
             </div>
@@ -335,6 +346,7 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
                           <>
                             {p.outcome && <span className={`tag tag--${p.outcome}`}>{p.outcomeLabel}</span>}
                             {p.judgment && <span className={`tag tag--judgment-${p.judgment}`}>Urteil {JUDGMENT_LABEL[p.judgment]}</span>}
+                            {p.delegated && <span className="tag">Associate</span>}
                           </>
                         )}
                       </span>

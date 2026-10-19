@@ -1,15 +1,45 @@
 import { playerAmount, postMoney, stakeAfter, syndicateAmount, waterfall } from "./captable";
 import { outcomeViews, type OutcomeView } from "./cfo";
-import { INTRO_COOLDOWN, LEAD_REPUTATION, RING_REPUTATION, SYNDICATE_REPUTATION, WARMTH_INTRO_MIN } from "./config";
+import {
+  FAMILY_OFFICE_COST,
+  FAMILY_OFFICE_REPUTATION,
+  FAMILY_OFFICE_WORTH,
+  INTRO_COOLDOWN,
+  LEAD_REPUTATION,
+  RING_REPUTATION,
+  SYNDICATE_REPUTATION,
+  TEAM_MAX,
+  WARMTH_INTRO_MIN,
+} from "./config";
 import { CONTACTS, RING_LABEL, ringOpen, type ContactDef, type Ring } from "./network";
 import { templateOf } from "./content";
-import { daysLeft, itemOf, previewMeeting, startupOf, syndicateBlocker } from "./engine";
+import { daysLeft, fundBlocker, fundSize, itemOf, netWorth, previewMeeting, startupOf, syndicateBlocker } from "./engine";
 import { lessonOf } from "./lessons";
 import { officeOf } from "./office";
 import type { MeetingEvent } from "./meeting";
 import { monthlyCashFlow, runwayMonths } from "./sim";
 import { fill, valueOf as valuationOf } from "./templates";
-import type { BoardItem, BoardMember, ExitOffer, GameState, Holder, Interest, ItemStatus, MeetingDecision, Payout, Round, RoundTake, ShareOffer, Startup, Vote } from "./types";
+import type {
+  BoardItem,
+  BoardMember,
+  ExitOffer,
+  FundState,
+  GameState,
+  Holder,
+  Interest,
+  ItemStatus,
+  Loan,
+  Lockup,
+  MeetingDecision,
+  Payout,
+  Round,
+  RoundTake,
+  ShareOffer,
+  Startup,
+  TeamMember,
+  TeamRole,
+  Vote,
+} from "./types";
 
 // Was eine Seite vom Spielstand braucht, als einfache Daten für den Browser.
 
@@ -19,6 +49,8 @@ export interface MeetingView {
   startupName: string;
   /** A supervisory board meeting in the corporation. */
   corporate: boolean;
+  /** A family business the player bought. */
+  family: boolean;
   board: BoardMember[];
   title: string;
   motion: string;
@@ -61,6 +93,7 @@ export function meetingView(state: GameState, itemId: string): MeetingView {
     startupId: s.id,
     startupName: s.name,
     corporate: Boolean(s.corporate),
+    family: s.flags.includes("mittelstand"),
     board: s.board,
     title: fill(t.title, s),
     motion: fill(t.motion, s),
@@ -144,7 +177,7 @@ export function deskView(state: GameState, lessonsTotal: number): DeskView {
   for (const s of offered) {
     const expires = s.offer!.expires - state.month;
     tasks.push({
-      text: `${s.name} sucht einen Angel: ${s.offer!.stake} % für ${s.offer!.ticket.toLocaleString("de-DE")} €. ${s.offer!.ddDone ? "Geprüft." : "Noch ungeprüft."} ${expires <= 0 ? "Letzter Monat." : `Noch ${expires + 1} Monate.`}`,
+      text: `${s.name} sucht ${s.offer!.buyout ? "eine Nachfolge" : s.stage ? `Geld (${s.stage})` : "einen Angel"}: ${s.offer!.stake} % für ${s.offer!.ticket.toLocaleString("de-DE")} €. ${s.offer!.ddDone ? "Geprüft." : "Noch ungeprüft."} ${expires <= 0 ? "Letzter Monat." : `Noch ${expires + 1} Monate.`}`,
       href: `/post?firma=${s.id}`,
       tone: expires <= 0 ? "urgent" : "normal",
     });
@@ -211,7 +244,10 @@ export interface CompanyView {
     judgment?: MeetingDecision["judgment"];
     outcomeLabel?: string;
     result?: BoardItem["result"];
+    delegated?: boolean;
   }[];
+  /** The associate who looks after this mandate. */
+  associate?: string;
   calledThisMonth: boolean;
   askedThisMonth: boolean;
   daysLeft: number;
@@ -270,6 +306,7 @@ export function companyView(state: GameState, startupId: string): CompanyView {
         judgment: i.decision?.lapsed ? undefined : i.decision?.judgment,
         outcomeLabel: i.decision ? fill(t.outcomes[i.decision.outcome].label, s) : undefined,
         result: i.result,
+        delegated: i.decision?.delegated,
       };
     });
   return {
@@ -288,6 +325,7 @@ export function companyView(state: GameState, startupId: string): CompanyView {
     rounds: state.rounds.filter((r) => r.startupId === s.id && r.amount > 0 && r.status !== "open").sort((a, b) => b.month - a.month),
     offers: state.shareOffers.filter((o) => o.startupId === s.id && o.status === "open"),
     exits: state.exits.filter((e) => e.startupId === s.id),
+    associate: state.team.find((m) => m.role === "associate" && m.mandate === s.id)?.name,
     analyst: officeOf(state).analyst,
   };
 }
@@ -424,5 +462,62 @@ export function networkView(state: GameState): NetworkView {
     mandates: state.startups.filter((s) => s.status === "active" && !s.corporate).map((s) => ({ id: s.id, name: s.name })),
     daysLeft: daysLeft(state),
     rings: ([1, 2, 3] as const).map((ring) => ({ ring, label: RING_LABEL[ring], open: ringOpen(state, ring), needs: RING_REPUTATION[ring] })),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Phase 4: family office, team, fund, loans, lockups
+// ---------------------------------------------------------------------------
+
+export interface Requirement {
+  label: string;
+  done: boolean;
+}
+
+export interface HoldingView {
+  founded: boolean;
+  foundRequirements: Requirement[];
+  worth: number;
+  cash: number;
+  team: (TeamMember & { mandateName?: string })[];
+  canHire: Record<TeamRole, boolean>;
+  mandates: { id: string; name: string }[];
+  fund?: FundState;
+  fundBlocker: string | null;
+  fundSize: number;
+  loans: Loan[];
+  lockups: (Lockup & { value: number })[];
+  dividendCompanies: { id: string; name: string; stake: number }[];
+  daysLeft: number;
+}
+
+export function holdingView(state: GameState): HoldingView {
+  const worth = netWorth(state);
+  const active = state.startups.filter((s) => s.status === "active");
+  return {
+    founded: state.familyOffice !== undefined,
+    foundRequirements: [
+      { label: `${FAMILY_OFFICE_REPUTATION} Ruf (du: ${state.reputation})`, done: state.reputation >= FAMILY_OFFICE_REPUTATION },
+      { label: `${FAMILY_OFFICE_WORTH.toLocaleString("de-DE")} € Vermögen (du: ${Math.round(worth).toLocaleString("de-DE")} €)`, done: worth >= FAMILY_OFFICE_WORTH },
+      { label: "Büroetage mit Analyst oder höher", done: state.office >= 3 },
+      { label: `${FAMILY_OFFICE_COST.toLocaleString("de-DE")} € für Gründung und Anwälte`, done: state.cash >= FAMILY_OFFICE_COST },
+    ],
+    worth,
+    cash: state.cash,
+    team: state.team.map((m) => ({ ...m, mandateName: m.mandate ? state.startups.find((s) => s.id === m.mandate)?.name : undefined })),
+    canHire: {
+      associate: state.team.filter((m) => m.role === "associate").length < TEAM_MAX.associate,
+      partner: state.team.filter((m) => m.role === "partner").length < TEAM_MAX.partner,
+    },
+    mandates: active.map((s) => ({ id: s.id, name: s.name })),
+    fund: state.fund,
+    fundBlocker: fundBlocker(state),
+    fundSize: fundSize(state),
+    loans: state.loans,
+    lockups: state.lockups.map((l) => ({ ...l, value: l.amount * (state.market.prices.tech / l.index) })),
+    dividendCompanies: active
+      .filter((s) => !s.corporate && s.stake + s.capTable.filter((h) => h.kind === "fund").reduce((sum, h) => sum + h.pct, 0) > 50)
+      .map((s) => ({ id: s.id, name: s.name, stake: s.stake })),
+    daysLeft: daysLeft(state),
   };
 }

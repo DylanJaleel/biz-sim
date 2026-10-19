@@ -53,15 +53,17 @@ export function ExitMeeting({ view, revision }: { view: ExitView; revision: numb
           <span>Verkauf</span>
         </nav>
         <h1 className="room__title">
-          {offer.buyer} will {view.startupName} kaufen
+          {offer.ipo ? `${view.startupName} kann an die Börse` : `${offer.buyer} will ${view.startupName} kaufen`}
         </h1>
         <p className="room__motion">
-          Für die ganze Firma bietet {offer.buyer} {eur(offer.price)}. Das ist {ratio >= 1 ? `${fmtPct((ratio - 1) * 100)} mehr` : `${fmtPct((1 - ratio) * 100)} weniger`} als der
-          heutige Wert. Jedes Prozent der Firma hat eine Stimme.
+          {offer.ipo
+            ? `Die Banken trauen sich eine Bewertung von ${eur(offer.price)} zu. Die Hälfte deines Erlöses bekommst du sofort, die andere Hälfte deiner Aktien ist sechs Monate gesperrt und folgt bis dahin dem Markt.`
+            : `Für die ganze Firma bietet ${offer.buyer} ${eur(offer.price)}. Das ist ${ratio >= 1 ? `${fmtPct((ratio - 1) * 100)} mehr` : `${fmtPct((1 - ratio) * 100)} weniger`} als der heutige Wert.`}{" "}
+          Jedes Prozent der Firma hat eine Stimme.
         </p>
         <div className="gv__terms">
           <span>
-            <small>Kaufpreis</small>
+            <small>{offer.ipo ? "Bewertung" : "Kaufpreis"}</small>
             <b>{eur(offer.price)}</b>
           </span>
           <span>
@@ -90,7 +92,7 @@ export function ExitMeeting({ view, revision }: { view: ExitView; revision: numb
             current={current}
             yes={yes}
             no={no}
-            idle="Verkaufen?"
+            idle={offer.ipo ? "Börsengang?" : "Verkaufen?"}
             label="Halbrund aus 100 Anteilen: wer dem Verkauf zustimmt"
           />
           <section className="panel waterfall" aria-labelledby="wf-title">
@@ -172,7 +174,7 @@ export function ExitMeeting({ view, revision }: { view: ExitView; revision: numb
             <section className="panel" aria-labelledby="exit-result">
               <p className="eyebrow">Ergebnis</p>
               <h2 id="exit-result" className="panel__title panel__title--serif">
-                {offer.status === "accepted" ? `${view.startupName} ist verkauft` : "Die Firma bleibt eigenständig"}
+                {offer.status === "accepted" ? (offer.ipo ? `${view.startupName} ist an der Börse` : `${view.startupName} ist verkauft`) : "Die Firma bleibt eigenständig"}
               </h2>
               <p>
                 {offer.status === "accepted"

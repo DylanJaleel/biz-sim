@@ -1,5 +1,6 @@
 import type { BoardMember, Holder, Metrics, SeatId, Startup, StartupNames } from "./types";
 import { phaseOf, valuation } from "./sim";
+import { STAGE_LABEL } from "./dealgen";
 
 /** Seats as seen from the player's desk, left to right; the founder sits in the middle. */
 export const SEAT_ORDER: SeatId[] = ["cto", "vc", "ceo", "indep", "angel"];
@@ -21,6 +22,8 @@ export interface StartupDefinition {
   board: BoardMember[];
   metrics: Metrics;
   names: StartupNames;
+  /** Generated deals only. */
+  stage?: import("./dealgen").DealStage;
 }
 
 export const STARTUPS: StartupDefinition[] = [
@@ -338,8 +341,9 @@ export function offerStartup(def: StartupDefinition, month: number): Startup {
     // Earlier funds put in money with a 1x preference, roughly at today's price.
     capTable: def.capTable.map((h) => (h.kind === "vc" ? { ...h, pref: Math.round((value * h.pct) / 100 / 1000) * 1000 } : { ...h })),
     joined: 0,
-    offer: { ticket, stake: def.stake, expires: month + 2, ddDone: false },
-    flags: [],
+    offer: { ticket, stake: def.stake, expires: month + 2, ddDone: false, ...(def.stage === "buyout" ? { buyout: true } : {}) },
+    ...(def.stage ? { stage: STAGE_LABEL[def.stage] } : {}),
+    flags: def.stage === "buyout" ? ["mittelstand"] : [],
     crisisMonths: 0,
     history: [],
     names: { ...def.names },

@@ -1614,3 +1614,92 @@
   border-radius: 16px;
   background: var(--surface);
 }
+
+/* Phase 4: Holding */
+.holding .panel + .panel {
+  margin-top: 16px;
+}
+
+.reqs {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 14px;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+}
+
+.reqs li.is-done {
+  color: var(--agree);
+}
+
+.team {
+  display: grid;
+  gap: 10px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.team__row {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.team__name {
+  display: grid;
+  min-width: 0;
+}
+
+.team__name small {
+  color: var(--muted);
+}
+
+.hire {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.hire__card {
+  display: grid;
+  gap: 4px;
+  align-content: start;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+
+.hire__card p {
+  margin: 4px 0 8px;
+  font-size: 14px;
+}
+
+.select {
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+}
+
+.deal__stage {
+  margin-bottom: 8px;
+}
+
+@media (max-width: 760px) {
+  .team__row {
+    grid-template-columns: 40px minmax(0, 1fr);
+  }
+}
+
+.company__pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}

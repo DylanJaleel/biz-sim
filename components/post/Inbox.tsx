@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ACTION_DAYS } from "@/lib/game/config";
+import { ACTION_DAYS, BUYOUT_REPUTATION } from "@/lib/game/config";
 import type { GameState, Mail, StartupStatus } from "@/lib/game/types";
 import { ActionButton } from "@/components/game/ActionButton";
 import { eur, pct, runwayText } from "@/components/game/format";
@@ -14,6 +14,11 @@ export interface DealView {
   id: string;
   name: string;
   tagline: string;
+  stage?: string;
+  buyout: boolean;
+  loan: number;
+  canBuyout: boolean;
+  fundMatch: number;
   sector: string;
   status: StartupStatus;
   ticket: number;
@@ -156,9 +161,14 @@ function Deal({ deal, revision, cash, ddDays }: { deal: DealView; revision: numb
   }
   return (
     <div className="deal">
+      {deal.stage && (
+        <p className="deal__stage">
+          <span className="pill">{deal.stage}</span> <span className="muted small">{deal.sector}</span>
+        </p>
+      )}
       <div className="deal__terms">
         <span>
-          <small>Ticket</small>
+          <small>{deal.buyout ? "Kaufpreis" : "Ticket"}</small>
           <b>{eur(deal.ticket)}</b>
         </span>
         <span>
@@ -208,6 +218,13 @@ function Deal({ deal, revision, cash, ddDays }: { deal: DealView; revision: numb
       ) : (
         <p className="muted">Eine Prüfung (Due Diligence) zeigt, was hinter den Zahlen steckt: Kosten, Team, Wettbewerb. Wer blind investiert, erfährt es später im Beirat.</p>
       )}
+      {deal.buyout && (
+        <p className="notice">
+          Nachfolge: Du kaufst die Mehrheit von der Inhaberfamilie. Mit der Mehrheit schüttet die Firma jedes Quartal aus, was sie nicht braucht. Ein Kaufkredit über 40 % läuft acht Jahre über dein Konto.
+          {!deal.canBuyout && ` Firmen übernehmen kannst du ab ${BUYOUT_REPUTATION} Ruf.`}
+        </p>
+      )}
+      {deal.fundMatch > 0 && <p className="notice">Dein Fonds investiert bis zu {eur(deal.fundMatch)} mit, zum selben Preis wie du.</p>}
 
       <div className="deal__actions">
         {!deal.ddDone && (
@@ -215,13 +232,26 @@ function Deal({ deal, revision, cash, ddDays }: { deal: DealView; revision: numb
             Prüfen
           </ActionButton>
         )}
-        <ActionButton action={{ type: "invest", startupId: deal.id }} revision={revision} days={ACTION_DAYS.invest} variant="primary" disabled={cash < deal.ticket}>
-          {cash < deal.ticket ? "Kapital reicht nicht" : `Für ${eur(deal.ticket)} einsteigen`}
-        </ActionButton>
-        {cash >= Math.round(deal.ticket / 2 / 1000) * 1000 && (
-          <ActionButton action={{ type: "invest", startupId: deal.id, size: "half" }} revision={revision} days={ACTION_DAYS.invest}>
-            {`Halbes Ticket: ${eur(Math.round(deal.ticket / 2 / 1000) * 1000)} für ${(deal.stake / 2).toLocaleString("de-DE")} %`}
-          </ActionButton>
+        {deal.buyout ? (
+          <>
+            <ActionButton action={{ type: "buyout", startupId: deal.id, leverage: true }} revision={revision} days={ACTION_DAYS.buyout} variant="primary" disabled={!deal.canBuyout || cash < deal.ticket - deal.loan}>
+              {`Mit Kaufkredit: ${eur(deal.ticket - deal.loan)} selbst, ${eur(deal.loan)} Bank`}
+            </ActionButton>
+            <ActionButton action={{ type: "buyout", startupId: deal.id, leverage: false }} revision={revision} days={ACTION_DAYS.buyout} disabled={!deal.canBuyout || cash < deal.ticket}>
+              {`Ganz aus eigenem Geld: ${eur(deal.ticket)}`}
+            </ActionButton>
+          </>
+        ) : (
+          <>
+            <ActionButton action={{ type: "invest", startupId: deal.id }} revision={revision} days={ACTION_DAYS.invest} variant="primary" disabled={cash < deal.ticket}>
+              {cash < deal.ticket ? "Kapital reicht nicht" : `Für ${eur(deal.ticket)} einsteigen`}
+            </ActionButton>
+            {cash >= Math.round(deal.ticket / 2 / 1000) * 1000 && (
+              <ActionButton action={{ type: "invest", startupId: deal.id, size: "half" }} revision={revision} days={ACTION_DAYS.invest}>
+                {`Halbes Ticket: ${eur(Math.round(deal.ticket / 2 / 1000) * 1000)} für ${(deal.stake / 2).toLocaleString("de-DE")} %`}
+              </ActionButton>
+            )}
+          </>
         )}
         <ActionButton action={{ type: "decline", startupId: deal.id }} revision={revision} variant="ghost">
           Absagen

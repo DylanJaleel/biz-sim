@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { analystBot, consultantBot, passiveBot, proBot, runBot, yesBot, type Bot } from "../lib/game/bots";
+import { analystBot, consultantBot, mogulBot, passiveBot, proBot, runBot, yesBot, type Bot } from "../lib/game/bots";
 import { START_CASH } from "../lib/game/config";
 
 // Skript-Spieler über 24 Monate. Sie halten fest, wofür das Spiel steht:
@@ -53,3 +53,22 @@ describe("game balance", () => {
     expect(passive.insolvency).toBeLessThan(0.5);
   });
 }, 120_000);
+
+describe("the long game", () => {
+  // Four years with endless deal flow, family office, fund and IPOs.
+  const LONG = 48;
+  const run = (bot: Bot) => {
+    const runs = Array.from({ length: 10 }, (_, i) => runBot(bot, i + 1, LONG));
+    return { value: median(runs.map((r) => r.finalValue)), career: median(runs.map((r) => r.career)), mandates: median(runs.map((r) => r.mandates)) };
+  };
+  const passive = run(passiveBot("pendelwerk"));
+  const yes = run(yesBot("pendelwerk"));
+  const mogul = run(mogulBot("pendelwerk"));
+
+  it("watching still loses, building an investment house pays", () => {
+    expect(passive.value).toBeLessThan(START_CASH);
+    expect(mogul.value).toBeGreaterThan(yes.value * 1.5);
+    expect(mogul.mandates).toBeGreaterThanOrEqual(5);
+    expect(mogul.career).toBeGreaterThanOrEqual(4);
+  });
+}, 240_000);

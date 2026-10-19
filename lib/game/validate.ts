@@ -1,4 +1,4 @@
-import type { AssetId, ExitChoice, GameAction, GvVote, RoundTake, SeatId, Vote } from "./types";
+import type { AssetId, ExitChoice, GameAction, GvVote, RoundTake, SeatId, TeamRole, Vote } from "./types";
 
 // Server actions receive whatever the browser sends. This turns it into a
 // GameAction or nothing; the engine then checks the game rules.
@@ -7,6 +7,7 @@ const SEATS: readonly SeatId[] = ["ceo", "cto", "vc", "indep", "angel"];
 const VOTES: readonly Vote[] = ["go", "conditions", "no"];
 const TAKES: readonly RoundTake[] = ["none", "half", "prorata", "lead", "syndicate"];
 const EXIT_CHOICES: readonly ExitChoice[] = ["accept", "negotiate", "reject"];
+const ROLES: readonly TeamRole[] = ["associate", "partner"];
 const GV_VOTES: readonly GvVote[] = ["go", "no"];
 const ASSET_IDS: readonly AssetId[] = ["tagesgeld", "anleihen", "dividenden", "tech"];
 
@@ -45,6 +46,19 @@ export function parseAction(input: unknown): GameAction | null {
     }
     case "joinCorporate":
       return typeof a.accept === "boolean" ? { type: "joinCorporate", accept: a.accept } : null;
+    case "buyout":
+      return id(a.startupId) && typeof a.leverage === "boolean" ? { type: "buyout", startupId: a.startupId, leverage: a.leverage } : null;
+    case "hire":
+      return ROLES.includes(a.role as TeamRole) ? { type: "hire", role: a.role as TeamRole } : null;
+    case "fire":
+      return id(a.memberId) ? { type: "fire", memberId: a.memberId } : null;
+    case "assign":
+      if (!id(a.memberId)) return null;
+      if (a.startupId === null) return { type: "assign", memberId: a.memberId, startupId: null };
+      return id(a.startupId) ? { type: "assign", memberId: a.memberId, startupId: a.startupId } : null;
+    case "foundFamilyOffice":
+    case "raiseFund":
+      return { type: a.type };
     case "buyShares":
       return id(a.offerId) ? { type: "buyShares", offerId: a.offerId } : null;
     case "meetContact":

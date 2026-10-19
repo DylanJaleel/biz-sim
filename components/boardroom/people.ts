@@ -32,6 +32,16 @@ const CORPORATE_ROLE: Record<SpeakerId, string> = {
   you: "Du",
 };
 
+/** In a family business the seats are owner, proxy, bank, adviser and works council. */
+const FAMILY_ROLE: Record<SpeakerId, string> = {
+  ceo: "Inhaber",
+  cto: "Prokura",
+  vc: "Hausbank",
+  indep: "Berater",
+  angel: "Betriebsrat",
+  you: "Du",
+};
+
 /** Seat colours, tuned to read on light and dark surfaces alike. */
 const COLOR: Record<SpeakerId, string> = {
   ceo: "#2342f5",
@@ -67,8 +77,8 @@ function initialsOf(name: string): string {
 
 export type People = Record<SpeakerId, Person>;
 
-export function peopleOf(board: BoardMember[], corporate = false): People {
-  const roles = corporate ? CORPORATE_ROLE : ROLE;
+export function peopleOf(board: BoardMember[], corporate = false, family = false): People {
+  const roles = corporate ? CORPORATE_ROLE : family ? FAMILY_ROLE : ROLE;
   const people = {
     you: { id: "you", name: "Du", full: "Du", title: corporate ? "Aufsichtsrat" : "Business Angel", role: roles.you, initials: "Du", color: COLOR.you },
   } as People;

@@ -12,7 +12,19 @@ Konzept und Entscheidungen: [`docs/boardroom-konzept.md`](./docs/boardroom-konze
 - **Börse** (Zeitung auf dem Schreibtisch): Tagesgeld, Anleihen-Fonds, Dividenden-Aktien, Tech-Index. Ein gemeinsames Marktklima (Aufschwung, ruhig, schwach, Crash) bewegt die Kurse und beeinflusst auch Preis und Chancen von Startup-Runden.
 - Balance: Nur beraten bringt deutlich weniger als gut investieren (Test `game-balance`).
 
-## Stand: Phase 3 (Aufsteigen)
+## Stand: Phase 4 (Endspiel und Langzeit)
+
+- **Deals ohne Ende:** Nach den sechs festen Startups erzeugt das Spiel neue Firmen aus zehn Branchen (Mobilität, Software, Lebensmittel, Bildung, Logistik, Gesundheit, Energie, Finanzen, Bau und Handwerk, Tourismus) in vier Stufen: Pre-Seed, Seed, Wachstum und Nachfolge. Gründer, Beirat, Kennzahlen, Stärken und Schwächen sind jedes Mal anders; die Prüfung deckt die Schwäche ehrlich auf. Welche Stufen kommen, hängt von deinem Vermögen und Ruf ab.
+- **Nachfolge kaufen (Buyout):** Ab 55 Ruf bieten Mittelständler (Autohaus, Bäckerei, Spedition, Elektrobetrieb …) die Mehrheit an. Bis zu 40 % des Kaufpreises finanziert die Bank über acht Jahre; die Rate läuft über dein Konto. Mit der Mehrheit schüttet eine profitable Firma jedes Quartal aus, was über drei Monatskosten liegt. Fünf eigene Vorlagen für Familienunternehmen (Preise, Nachfolge in der Führung, Online-Shop, Zukauf, Halle).
+- **Family Office:** Ab 70 Ruf, 1 Mio. € Vermögen und der Büroetage. Associates (5.000 €/Monat, bis zu drei) übernehmen je ein Mandat und entscheiden dort am Monatsende, wenn du keine Zeit hattest; meist gut, nie brillant, und der Ruf wird geteilt. Eine Partnerin (9.000 €/Monat) bringt jeden Monat einen Deal mehr und drei Arbeitstage.
+- **Eigener Fonds (Investment-Mogul):** Mit Family Office, 80 Ruf und einem erfolgreichen Verkauf legst du einen Fonds über 3 bis 15 Mio. € auf. Er investiert bei jedem neuen Einstieg das Doppelte deines Tickets mit (höchstens ein Viertel des Fonds pro Firma), stimmt wie du und zahlt dir 2 % Gebühr im Jahr plus 20 % Carry bei Verkäufen.
+- **Börsengang:** Große, wachsende Firmen (ab 12 Mio. € Wert) bekommen manchmal das Angebot eines Börsengangs. Die Hälfte deines Erlöses kommt sofort, die andere Hälfte ist sechs Monate gesperrt und folgt dem Tech-Index.
+- **Mehr Vielfalt:** sechs neue Startup-Vorlagen (Influencer-Kampagne, Vier-Tage-Woche, Auslandsexpansion, Großkunde mit Rabatt, Förderkredit, Datenpanne), 29 Wirtschaftsnachrichten statt 17, vier neue Beratungsaufträge, Aufsichtsratsthemen wiederholen sich im langen Spiel, Jahresbilanz in der Post zu jedem Jahreswechsel.
+- **Holding-Seite** (`/holding`): Family Office, Team und Mandate, Fonds, Kaufkredite, Ausschüttungen und gesperrte Aktien.
+- Vier neue Lernkarten: Kauf mit Kredit, Ausschüttung, Fonds, Börsengang. Die Karriereleiter ist vollständig spielbar.
+- Spielstände aus Phase 3 werden beim Laden auf Version 5 gehoben.
+
+## Phase 3 (Aufsteigen)
 
 - **Verkäufe (Exits):** Gewachsene Firmen (ab 2 Mio. € Wert, frühestens 8 Monate nach Einstieg) bekommen gelegentlich Kaufangebote, in guten Märkten öfter und teurer. Die Gesellschafterversammlung stimmt im Halbrund ab; du kannst zustimmen, ablehnen oder einmal nachverhandeln (+15 % oder der Käufer steigt aus). Auch gegen deine Stimme kann die Mehrheit verkaufen.
 - **Liquidationspräferenz und Wasserfall:** Geld aus Runden ist 1× nicht partizipierend bevorzugt. Die Verkaufsseite zeigt, wer was bekommt: Investoren zuerst ihr Geld zurück (oder ihren Anteil, wenn der mehr bringt), dann der Rest nach Prozenten.
@@ -57,17 +69,18 @@ Alle Zahlen rechnet die Spiellogik in `lib/game` (deterministisch, gesät). Es g
 ## Projektstruktur
 
 ```
-app/(app)/            Büro (/), portfolio, firma/[id], sitzung/[itemId], gv/[roundId], verkauf/[exitId], netzwerk, boerse, post, kalender, notizbuch, konto; actions.ts (eine Server Action für alle Züge)
+app/(app)/            Büro (/), portfolio, firma/[id], sitzung/[itemId], gv/[roundId], verkauf/[exitId], holding, netzwerk, boerse, post, kalender, notizbuch, konto; actions.ts (eine Server Action für alle Züge)
 app/login/            Magic-Link-Login
 components/boardroom/ Ratstisch (RoundTable), 3D-Raum (BoardRoom3D), Sprechkarte, Protokoll, Phasen, Endabstimmung, Sitzungsablauf
 components/office/    Schreibtisch mit Karriereleiter
 components/shares/    Cap Table, Halbrund der Gesellschafterversammlung (GvStage), Runde, Verkauf mit Wasserfall
 components/network/   Netzwerk-Ringe
 components/market/    Börse
+components/holding/   Family Office, Team, Fonds
 components/company/   Portfolio, Firma, CFO-Rechner
 components/post/      Posteingang und Angebote
 components/shell/     Kopfzeile, Monatsabschluss, Monatsbericht, Dreh-Hinweis
-lib/game/             Spiellogik: engine, sim, meeting, votes, judge, cfo, captable (inkl. Wasserfall), network, career, gigs, market, news, office, corporate, startups, content (Vorlagen), lessons, views, validate, bots
+lib/game/             Spiellogik: engine, sim, meeting, votes, judge, cfo, captable (inkl. Wasserfall), network, career, gigs, market, news, office, corporate, dealgen (Deal-Generator), startups, content (Vorlagen), lessons, views, validate, bots
 lib/repository/       Spielstand laden, Züge unter Sperre anwenden, zurücksetzen
 prisma/               Schema und versionierte Migrationen
 scripts/              simulate-game.ts (Balance-Report), create-migration.mjs, vercel-build.mjs
@@ -83,7 +96,7 @@ cp .env.example .env.local   # dann AUTH_SECRET setzen: openssl rand -base64 32
 npm run db:migrate  # Migrationen auf die lokale PGlite-DB anwenden
 npm run dev         # lokale DB + Dev-Server auf http://localhost:3000
 npm test            # Vitest
-npm run simulate    # Balance-Report: Skript-Spieler über 24 Monate
+npm run simulate    # Balance-Report: Skript-Spieler über 24 Monate und das lange Spiel über 60 Monate
 npm run lint
 npm run build
 ```

@@ -34,6 +34,10 @@ const GIGS: GigDef[] = [
   { kind: "turnaround", client: "Insolvenzverwalter Dr. Haas", title: "Sanierungsgutachten", text: "Lohnt sich die Rettung eines insolventen Zulieferers? Viel Arbeit, gut bezahlt.", days: 5, rate: 1.5, minReputation: 45, fromMonth: 6 },
   { kind: "corporate", client: "Brenner Konzern", title: "Innovationsprojekt im Konzern", text: "Der Konzern sucht Startups für die Zusammenarbeit. Stefan Krämer aus dem Einkauf sitzt mit am Tisch.", days: 4, rate: 1.6, minReputation: 55, fromMonth: 6, contactId: "einkauf", warmth: 15 },
   { kind: "board", client: "Familienunternehmen Lorenz", title: "Beirat auf Zeit", text: "Drei Sitzungstage in einem Familienunternehmen, das die Nachfolge regelt.", days: 3, rate: 1.4, minReputation: 40, fromMonth: 5, reputation: 1 },
+  { kind: "podcast", client: "Podcast „Gründerzeit“", title: "Gast im Podcast", text: "Eine Stunde über deine besten und schlechtesten Entscheidungen. Kein Honorar der Rede wert, aber viele Zuhörer.", days: 1, rate: 0.3, minReputation: 25, fromMonth: 5, reputation: 1 },
+  { kind: "esg", client: "Kunststoffwerk Brandt", title: "Nachhaltigkeitsbericht", text: "Ein Mittelständler muss erstmals über Umwelt und Soziales berichten und braucht Struktur.", days: 3, rate: 1.3, minReputation: 35, fromMonth: 8 },
+  { kind: "mna", client: "Kanzlei Vogt & Partner", title: "Beratung bei einem Firmenverkauf", text: "Ein Familienunternehmer will verkaufen. Du bewertest die Firma und sitzt bei den Verhandlungen dabei.", days: 4, rate: 1.7, minReputation: 50, fromMonth: 10 },
+  { kind: "keynote", client: "Wirtschaftsgipfel Süd", title: "Hauptrede", text: "Die große Bühne: zwanzig Minuten vor zweitausend Gästen und der Presse.", days: 1, rate: 2.2, minReputation: 65, fromMonth: 12, reputation: 1 },
 ];
 
 export function dayRate(reputation: number): number {

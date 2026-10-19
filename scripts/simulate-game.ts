@@ -1,7 +1,7 @@
 // Balance-Report für das Boardroom-Spiel: Skript-Spieler × Startups × Seeds.
 //   npm run simulate            (100 seeds, 24 Monate)
 //   npm run simulate -- 200 36
-import { analystBot, consultantBot, passiveBot, proBot, randomBot, runBot, yesBot, type Bot } from "../lib/game/bots";
+import { analystBot, consultantBot, mogulBot, passiveBot, proBot, randomBot, runBot, yesBot, type Bot } from "../lib/game/bots";
 
 const seeds = Number(process.argv[2] ?? 100);
 const months = Number(process.argv[3] ?? 24);
@@ -38,3 +38,24 @@ const share = (f: (r: (typeof pro)[number]) => boolean) => `${Math.round((pro.fi
 console.log(
   `Profi (pendelwerk): Büro-Stufe Median ${median(pro.map((r) => r.office))}, Aufsichtsrat ${share((r) => r.corporate)}, Runde angeführt ${share((r) => r.ledRounds > 0)}, Verkauf ${share((r) => r.exited > 0)}`,
 );
+
+// Das lange Spiel: fünf Jahre, mit Deal-Generator, Family Office, Fonds und Börsengängen.
+const long = Number(process.argv[4] ?? 60);
+console.log(`\nLanges Spiel: ${Math.min(seeds, 40)} Spiele à ${long} Monate`);
+console.log("Spieler".padEnd(12) + "Wert (Median)   P25 / P75            Insolvenz  Karriere  Mandate  Nachfolgen  Börsengänge");
+const STEPS = ["Angel", "Lead", "Mehrheit", "Aufsichtsrat", "Family Office", "Mogul"];
+for (const bot of [passiveBot("pendelwerk"), yesBot("pendelwerk"), analystBot("pendelwerk"), proBot("pendelwerk"), mogulBot("pendelwerk")]) {
+  const runs = Array.from({ length: Math.min(seeds, 40) }, (_, i) => runBot(bot, i + 1, long));
+  const sorted = runs.map((r) => r.finalValue).sort((a, b) => a - b);
+  const q = (p: number) => sorted[Math.floor(p * (sorted.length - 1))]!;
+  console.log(
+    bot.name.padEnd(12) +
+      eur(median(sorted)) +
+      `   ${eur(q(0.25)).trim()} / ${eur(q(0.75)).trim()}`.padEnd(22) +
+      `${Math.round((runs.filter((r) => r.dead > 0).length / runs.length) * 100)} %`.padStart(10) +
+      (STEPS[median(runs.map((r) => r.career))] ?? "–").padStart(14) +
+      String(median(runs.map((r) => r.mandates))).padStart(8) +
+      String(runs.reduce((a, r) => a + r.buyouts, 0)).padStart(12) +
+      String(runs.reduce((a, r) => a + r.ipos, 0)).padStart(13),
+  );
+}

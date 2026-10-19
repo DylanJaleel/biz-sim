@@ -113,6 +113,7 @@ export const CORPORATE_TEMPLATES: Template[] = [
     lesson: "kapitalallokation",
     insight: "Zukäufe scheitern selten am Preis, sondern an der Integration. Wer kauft, braucht einen Plan für die ersten hundert Tage.",
     when: on,
+    repeatAfter: 18,
     pull: { growth: 0.6, control: 0.3, cash: -0.5, team: -0.2 },
     pro: [
       { interest: "growth", text: "Service bringt wiederkehrende Umsätze und bessere Margen." },
@@ -165,6 +166,7 @@ export const CORPORATE_TEMPLATES: Template[] = [
     lesson: "aufsichtsrat",
     insight: "Im Aufsichtsrat sitzen Kapital und Belegschaft an einem Tisch. Gute Entscheidungen rechnen beides: Kosten und das Vertrauen, ohne das kein Werk läuft.",
     when: on,
+    repeatAfter: 18,
     pull: { cash: 0.5, growth: 0.2, team: -0.7, customer: -0.1 },
     pro: [
       { interest: "cash", text: "Die Marge steigt um zwei Punkte." },
@@ -214,6 +216,7 @@ export const CORPORATE_TEMPLATES: Template[] = [
     lesson: "aufsichtsrat",
     insight: "Was man belohnt, bekommt man. Ein Bonus auf Umsatz lädt zu teurem Wachstum ein; ein Bonus auf Gewinn und Kapitalrendite zwingt zu guten Investitionen.",
     when: on,
+    repeatAfter: 18,
     pull: { growth: 0.4, control: -0.4, cash: -0.4, team: 0.1 },
     pro: [
       { interest: "growth", text: "Ein motivierter Vorstand bringt Wachstum." },
@@ -257,6 +260,7 @@ export const CORPORATE_TEMPLATES: Template[] = [
     lesson: "kapitalallokation",
     insight: "Große Programme scheitern, wenn sie alles auf einmal wollen. Wer in einem Werk beginnt und lernt, gibt weniger aus und weiß mehr.",
     when: on,
+    repeatAfter: 18,
     pull: { product: 0.5, cash: -0.3, control: 0.3, team: -0.1 },
     pro: [
       { interest: "product", text: "Weniger Ausschuss heißt bessere Qualität." },
@@ -303,6 +307,7 @@ export const CORPORATE_TEMPLATES: Template[] = [
     lesson: "aufsichtsrat",
     insight: "Ein fester Preis über Jahre ist eine Wette auf die Kosten. Gute Verträge teilen das Risiko: Preisgleitklauseln binden den Preis an Rohstoffe.",
     when: on,
+    repeatAfter: 18,
     pull: { growth: 0.5, customer: 0.4, cash: -0.2, control: -0.3 },
     pro: [
       { interest: "growth", text: "Auslastung für fünf Jahre." },

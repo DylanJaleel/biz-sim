@@ -517,8 +517,8 @@ body {
   display: none;
 }
 
-/* Kalender und Notizbuch liegen auch auf dem Schreibtisch. */
-@media (max-width: 1540px) {
+/* Holding, Kalender und Notizbuch erreicht man auch über den Schreibtisch. */
+@media (max-width: 1640px) {
   .topbar__extra {
     display: none !important;
   }

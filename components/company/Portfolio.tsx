@@ -19,7 +19,9 @@ export async function Portfolio() {
       <header className="page__head">
         <p className="eyebrow">Portfolio</p>
         <h1 className="page__title">Deine Mandate</h1>
-        <p className="page__lead">Jede Beteiligung ist ein Sitz im Beirat. Dein Anteil steigt im Wert, wenn die Firma wächst und gesund bleibt.</p>
+        <p className="page__lead">
+          Jede Beteiligung ist ein Sitz im Beirat. Dein Anteil steigt im Wert, wenn die Firma wächst und gesund bleibt. Team, Fonds und Kredite verwaltest du in der <Link href="/holding">Holding</Link>.
+        </p>
       </header>
 
       {active.length === 0 && (
@@ -46,7 +48,7 @@ export async function Portfolio() {
                   <b className="company-card__name">{s.name}</b>
                   <span className="company-card__tag">{s.tagline}</span>
                 </span>
-                <span className="pill">{PHASE_LABEL[s.phase]}</span>
+                <span className="pill">{s.flags.includes("mittelstand") ? "Nachfolge" : PHASE_LABEL[s.phase]}</span>
               </span>
               <span className="kpis kpis--compact">
                 <span>

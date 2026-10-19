@@ -16,6 +16,7 @@ export const HOLDER_LABEL: Record<HolderKind | "you", string> = {
   investor: "Investor",
   advisor: "Beirat",
   syndicate: "Dein Syndikat",
+  fund: "Dein Fonds",
   you: "Du",
 };
 
@@ -125,14 +126,15 @@ function holderVote(h: Holder, r: Round, s: Startup): { vote: GvVote; reason: st
       return { vote: "no", reason: "Bei diesem Preis verliere ich zu viel. Ich stimme dagegen." };
     case "esop":
     case "syndicate":
+    case "fund":
       return { vote: "go", reason: "" };
   }
 }
 
-/** A syndicate votes the way the player who leads it votes. */
+/** A syndicate or the player's fund votes the way the player votes. */
 function withSyndicate(h: Holder, player: GvVote | "abstain", own: () => { vote: GvVote; reason: string }): { vote: GvVote | "abstain"; reason: string } {
-  if (h.kind !== "syndicate") return own();
-  return { vote: player, reason: player === "abstain" ? "Ohne deine Weisung keine Stimme." : "Das Syndikat stimmt wie du." };
+  if (h.kind !== "syndicate" && h.kind !== "fund") return own();
+  return { vote: player, reason: player === "abstain" ? "Ohne deine Weisung keine Stimme." : h.kind === "fund" ? "Dein Fonds stimmt wie du." : "Das Syndikat stimmt wie du." };
 }
 
 /**
@@ -234,12 +236,12 @@ export function waterfall(s: Startup, price: number): { payouts: Payout[]; carry
   return withCarry(payouts, parties);
 }
 
-/** The player earns a share of the syndicate's gain (carry). */
+/** The player earns a share of the gain of the syndicate and the fund (carry). */
 function withCarry(payouts: Payout[], parties: { id: string; cost: number }[]): { payouts: Payout[]; carry: number } {
   let carry = 0;
   for (const p of payouts) {
     const cost = parties.find((x) => x.id === p.id)?.cost ?? 0;
-    if (p.kind === "syndicate" && p.amount > cost) carry += (p.amount - cost) * CARRY;
+    if ((p.kind === "syndicate" || p.kind === "fund") && p.amount > cost) carry += (p.amount - cost) * CARRY;
   }
   return { payouts, carry };
 }

@@ -2,6 +2,7 @@ import { templateOf } from "./content";
 import { applyAction, daysLeft, GameRuleError, netWorth, newGame, openItems, portfolioValue, previewMeeting, randomFor, startupOf } from "./engine";
 import { holdingsValue } from "./market";
 import { OFFICES } from "./office";
+import { careerOf } from "./career";
 import { valuation } from "./sim";
 import { bestVote, outlook, VOTES } from "./judge";
 import type { GameAction, GameState, Vote } from "./types";
@@ -144,6 +145,50 @@ export const proBot = (prefer?: string): Bot => {
   };
 };
 
+/**
+ * The long game: invests in several companies, buys family businesses with a
+ * bank loan, founds the family office, hires associates and raises a fund.
+ */
+export const mogulBot = (prefer?: string): Bot => {
+  const base = proBot(prefer);
+  return {
+    name: "Mogul",
+    pick: base.pick,
+    month: (s, random) => {
+      const actions: GameAction[] = [];
+      const active = s.startups.filter((x) => x.status === "active" && !x.corporate);
+      let budget = s.cash * 0.35;
+      for (const o of s.startups.filter((x) => x.status === "offered" && x.offer)) {
+        if (active.length + actions.length / 2 >= 6) break;
+        const ticket = o.offer!.ticket;
+        if (o.offer!.buyout) {
+          if (s.reputation >= 55 && ticket * 0.6 <= s.cash * 0.85) actions.push({ type: "dd", startupId: o.id }, { type: "buyout", startupId: o.id, leverage: true });
+          continue;
+        }
+        if (ticket <= budget) {
+          actions.push({ type: "dd", startupId: o.id }, { type: "invest", startupId: o.id });
+          budget -= ticket;
+        } else if (ticket / 2 <= budget) {
+          actions.push({ type: "dd", startupId: o.id }, { type: "invest", startupId: o.id, size: "half" });
+          budget -= ticket / 2;
+        }
+      }
+      if (!s.familyOffice) actions.push({ type: "foundFamilyOffice" });
+      else {
+        const associates = s.team.filter((m) => m.role === "associate");
+        if (associates.length < Math.min(3, active.length - 2) && s.cash > 150_000) actions.push({ type: "hire", role: "associate" });
+        if (!s.team.some((m) => m.role === "partner") && s.cash > 400_000) actions.push({ type: "hire", role: "partner" });
+        const free = active.filter((x) => !s.team.some((m) => m.mandate === x.id));
+        associates.filter((m) => !m.mandate || !active.some((x) => x.id === m.mandate)).forEach((m, i) => {
+          if (free[i]) actions.push({ type: "assign", memberId: m.id, startupId: free[i]!.id });
+        });
+        if (!s.fund) actions.push({ type: "raiseFund" });
+      }
+      return [...actions, ...base.month(s, random)];
+    },
+  };
+};
+
 function target(v: Vote): number {
   return v === "go" ? 0.85 : v === "conditions" ? 0.1 : -0.85;
 }
@@ -161,6 +206,10 @@ export interface BotRun {
   office: number;
   corporate: boolean;
   ledRounds: number;
+  career: number;
+  mandates: number;
+  buyouts: number;
+  ipos: number;
   judgments: Record<"strong" | "fair" | "weak", number>;
 }
 
@@ -193,6 +242,10 @@ export function runBot(bot: Bot, seed: number, months: number): BotRun {
     office: state.office,
     corporate: state.corporateSeat === "joined",
     ledRounds: state.ledRounds,
+    career: careerOf(state).level,
+    mandates: state.startups.filter((s) => s.joined > 0 && !s.corporate).length,
+    buyouts: state.startups.filter((s) => s.flags.includes("mittelstand") && s.joined > 0).length,
+    ipos: state.exits.filter((e) => e.ipo && e.status === "accepted").length,
     judgments,
   };
 }

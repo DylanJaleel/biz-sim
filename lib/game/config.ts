@@ -54,6 +54,41 @@ export const NEGOTIATE_CHANCE = 0.55;
 export const CORPORATE_REPUTATION = 65;
 export const CORPORATE_FEE = 4_000;
 export const NEWS_FROM_MONTH = 3;
+// Phase 4: family office, team, buyouts, fund, IPO
+export const FAMILY_OFFICE_REPUTATION = 70;
+export const FAMILY_OFFICE_WORTH = 1_000_000;
+export const FAMILY_OFFICE_COST = 40_000;
+export const SALARY = { associate: 5_000, partner: 9_000 } as const;
+export const TEAM_MAX = { associate: 3, partner: 1 } as const;
+/** An associate finds the best option this often; otherwise they play it safe. */
+export const ASSOCIATE_SKILL = 0.7;
+export const PARTNER_DAYS = 3;
+export const BUYOUT_REPUTATION = 55;
+/** Share of a buyout price the bank lends, and on what terms. */
+export const BUYOUT_LOAN_SHARE = 0.4;
+export const BUYOUT_LOAN_RATE = 0.055;
+export const BUYOUT_LOAN_MONTHS = 96;
+/** Majority-owned profitable companies distribute most of what they do not need. */
+export const DIVIDEND_RESERVE_MONTHS = 3;
+export const DIVIDEND_SHARE = 0.7;
+export const FUND_REPUTATION = 80;
+export const FUND_BASE = 3_000_000;
+export const FUND_PER_EXIT = 1_500_000;
+export const FUND_MAX = 15_000_000;
+export const FUND_FEE = 0.02;
+/** The fund puts in this multiple of the player's own ticket. */
+export const FUND_MATCH = 2;
+/** No single company gets more than this share of the fund. */
+export const FUND_MAX_DEAL = 0.25;
+export const IPO_MIN_VALUE = 12_000_000;
+export const IPO_CHANCE = 0.05;
+export const IPO_LOCKUP = 6;
+/** Share of the player's IPO proceeds paid at once; the rest waits for the lockup. */
+export const IPO_CASH_SHARE = 0.5;
+/** Generated deals: from this month on, and at most this many open offers. */
+export const DEALS_FROM_MONTH = 4;
+export const DEALS_MAX_OPEN = 3;
+
 /** Syndicate partners cool off a little each time they are asked for money. */
 export const SYNDICATE_WARMTH_COST = 15;
 
@@ -74,6 +109,10 @@ export const ACTION_DAYS = {
   exit: 2,
   negotiate: 1,
   joinCorporate: 1,
+  foundFamilyOffice: 2,
+  hire: 1,
+  buyout: 3,
+  raiseFund: 3,
 } as const;
 
 // Company model

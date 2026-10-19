@@ -44,7 +44,7 @@ export function MeetingRoom({ view, revision }: { view: MeetingView; revision: n
   const [result, setResult] = useState<MeetingPlayback | null>(null);
   const { play, pending, error } = usePlay(revision);
 
-  const people = useMemo(() => peopleOf(view.board, view.corporate), [view.board, view.corporate]);
+  const people = useMemo(() => peopleOf(view.board, view.corporate, view.family), [view.board, view.corporate, view.family]);
   const seats = useMemo(() => seatedOf(view.board), [view.board]);
 
   const events = useMemo(() => {
@@ -213,7 +213,7 @@ export function MeetingRoom({ view, revision }: { view: MeetingView; revision: n
 
 function Verdict({ view }: { view: MeetingView }) {
   const d = view.decision!;
-  const people = peopleOf(view.board, view.corporate);
+  const people = peopleOf(view.board, view.corporate, view.family);
   const judgment = JUDGMENT[d.judgment];
   const max = Math.max(...VOTES.map((v) => Math.abs(d.values[v])), 1);
   return (

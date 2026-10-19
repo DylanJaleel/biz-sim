@@ -167,7 +167,9 @@ export async function Office() {
           )}
         </div>
         <div className="career" aria-label="Karriere">
-          <p className="eyebrow">Karriere</p>
+          <p className="eyebrow">
+            Karriere · <Link href="/holding">Holding</Link>
+          </p>
           <ol className="career__steps">
             {career.steps.map((step) => (
               <li key={step.title} className={step.done ? "is-done" : step === next ? "is-next" : step.later ? "is-later" : undefined}>

@@ -9,6 +9,7 @@ const LINKS = [
   { href: "/post", label: "Post" },
   { href: "/netzwerk", label: "Netzwerk", wide: true },
   { href: "/boerse", label: "Börse", wide: true },
+  { href: "/holding", label: "Holding", wide: true, extra: true },
   { href: "/kalender", label: "Kalender", wide: true, extra: true },
   { href: "/notizbuch", label: "Notizbuch", wide: true, extra: true },
 ];
@@ -18,7 +19,7 @@ export function NavLinks({ unread }: { unread: number }) {
   return (
     <nav className="topbar__nav" aria-label="Hauptnavigation">
       {LINKS.map((l) => {
-        const active = l.href === "/" ? path === "/" : path.startsWith(l.href) || (l.href === "/portfolio" && /^\/(firma|sitzung|gv)/.test(path));
+        const active = l.href === "/" ? path === "/" : path.startsWith(l.href) || (l.href === "/portfolio" && /^\/(firma|sitzung|gv|verkauf)/.test(path));
         return (
           <Link
             key={l.href}

@@ -130,6 +130,11 @@ export function ReportDialog({ report, onClose }: { report: MonthReport; onClose
             ["Zinsen und Dividenden", report.income.payouts],
             ["Lebenshaltung", report.income.living],
             ["Büromiete", report.income.rent ?? 0],
+            ["Gehälter", report.income.salaries ?? 0],
+            ["Fondsgebühr", report.income.fundFee ?? 0],
+            ["Ausschüttungen", report.income.dividends ?? 0],
+            ["Kaufkredite", report.income.loans ?? 0],
+            ["Aktien nach Sperrfrist", report.income.lockups ?? 0],
             ["Dispozinsen", report.income.interest],
           ]
             .filter(([, v]) => v !== 0)

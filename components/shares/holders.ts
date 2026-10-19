@@ -10,6 +10,7 @@ export const HOLDER_COLOR: Record<HolderKind | "you", string> = {
   esop: "#b9bec8",
   advisor: "#d48a10",
   syndicate: "#f06a2a",
+  fund: "#c2410c",
 };
 
 export function initialsOf(name: string): string {

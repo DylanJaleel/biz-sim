@@ -1,8 +1,8 @@
-import { CORPORATE_REPUTATION, LEAD_REPUTATION } from "./config";
+import { CORPORATE_REPUTATION, FAMILY_OFFICE_REPUTATION, FAMILY_OFFICE_WORTH, FUND_REPUTATION, LEAD_REPUTATION } from "./config";
 import type { GameState } from "./types";
 
-// Die Karriereleiter vom Angel zum Investment-Mogul. Die ersten vier Stufen
-// sind spielbar, die oberen kommen in späteren Phasen.
+// Die Karriereleiter vom Angel zum Investment-Mogul. Danach geht das Spiel
+// weiter: mehr Firmen, größere Deals, der eigene Fonds wächst.
 
 export interface CareerStep {
   title: string;
@@ -27,8 +27,8 @@ export function careerOf(state: GameState): Career {
     { title: "Lead-Investor", requirement: `Eine Finanzierungsrunde anführen (ab ${LEAD_REPUTATION} Ruf)`, done: led },
     { title: "Mehrheitsgesellschafter", requirement: "Mehr als 50 % an einer Firma halten", done: majority },
     { title: "Konzern-Aufsichtsrat", requirement: `Ein Mandat im Aufsichtsrat eines Konzerns (ab ${CORPORATE_REPUTATION} Ruf, mit angeführter Runde oder Mehrheit)`, done: state.corporateSeat === "joined" },
-    { title: "Family Office", requirement: "Eigenes Family Office mit Team", done: false, later: true },
-    { title: "Investment-Mogul", requirement: "Eigene Private-Equity-Firma", done: false, later: true },
+    { title: "Family Office", requirement: `Family Office gründen (ab ${FAMILY_OFFICE_REPUTATION} Ruf, ${(FAMILY_OFFICE_WORTH / 1_000_000).toLocaleString("de-DE")} Mio. € Vermögen, Büroetage)`, done: state.familyOffice !== undefined },
+    { title: "Investment-Mogul", requirement: `Eigenen Fonds auflegen (ab ${FUND_REPUTATION} Ruf, mit einem erfolgreichen Verkauf)`, done: state.fund !== undefined },
   ];
   let level = -1;
   for (let i = 0; i < steps.length; i++) if (steps[i]!.done) level = i;

@@ -2,7 +2,8 @@ import { currentGame } from "@/lib/current-game";
 import { monthLabel } from "@/lib/game/config";
 import { monthlyCashFlow, runwayMonths, valuation } from "@/lib/game/sim";
 import { officeOf } from "@/lib/game/office";
-import { definitionOf } from "@/lib/game/startups";
+import { BUYOUT_LOAN_SHARE, BUYOUT_REPUTATION, FUND_MATCH, FUND_MAX_DEAL } from "@/lib/game/config";
+import { definitionIn } from "@/lib/game/engine";
 import { Inbox, type DealView, type MailView } from "./Inbox";
 
 export async function Post({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
@@ -15,11 +16,16 @@ export async function Post({ searchParams }: { searchParams: Promise<Record<stri
   const deals: Record<string, DealView> = {};
   for (const s of state.startups) {
     if (!s.offer) continue;
-    const def = definitionOf(s.id);
+    const def = definitionIn(state, s.id);
     deals[s.id] = {
       id: s.id,
       name: s.name,
       tagline: s.tagline,
+      stage: s.stage,
+      buyout: Boolean(s.offer.buyout),
+      loan: s.offer.buyout ? Math.round((s.offer.ticket * BUYOUT_LOAN_SHARE) / 1000) * 1000 : 0,
+      canBuyout: state.reputation >= BUYOUT_REPUTATION,
+      fundMatch: state.fund ? Math.min(state.fund.cash, state.fund.size * FUND_MAX_DEAL, s.offer.ticket * FUND_MATCH) : 0,
       sector: s.sector,
       status: s.status,
       ticket: s.offer.ticket,

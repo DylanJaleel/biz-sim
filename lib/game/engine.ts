@@ -41,7 +41,33 @@ import {
   SYNDICATE_REPUTATION,
   SYNDICATE_WARMTH,
   SYNDICATE_WARMTH_COST,
+  ASSOCIATE_SKILL,
+  BUYOUT_LOAN_MONTHS,
+  BUYOUT_LOAN_RATE,
+  BUYOUT_LOAN_SHARE,
+  BUYOUT_REPUTATION,
+  DEALS_FROM_MONTH,
+  DEALS_MAX_OPEN,
+  DIVIDEND_RESERVE_MONTHS,
+  DIVIDEND_SHARE,
+  FAMILY_OFFICE_COST,
+  FAMILY_OFFICE_REPUTATION,
+  FAMILY_OFFICE_WORTH,
+  FUND_BASE,
+  FUND_FEE,
+  FUND_MATCH,
+  FUND_MAX,
+  FUND_MAX_DEAL,
+  FUND_PER_EXIT,
+  FUND_REPUTATION,
+  IPO_CASH_SHARE,
+  IPO_CHANCE,
+  IPO_LOCKUP,
+  IPO_MIN_VALUE,
+  SALARY,
+  TEAM_MAX,
 } from "./config";
+import { FIRST, generateDeal, LAST, type DealStage } from "./dealgen";
 import { applyRound, capTableAfterEntry, exitVote, fundability, playerAmount, roundTerms, sellers, shareholderVote, grantToPlayer, syndicateAmount, transferToPlayer, waterfall } from "./captable";
 import { CORPORATE_ID, corporateStartup } from "./corporate";
 import { NEWS, targetsOf } from "./news";
@@ -53,8 +79,8 @@ import { templateOf, TEMPLATES } from "./content";
 import { judge, bestVote, outlook, VOTES } from "./judge";
 import { CURRICULUM } from "./lessons";
 import { baseStances, buildMeeting, type MeetingPlayback } from "./meeting";
-import { applyDelta, runwayMonths, stepMonth, valuation } from "./sim";
-import { definitionOf, offerStartup, STARTUPS } from "./startups";
+import { applyDelta, monthlyCashFlow, runwayMonths, stepMonth, valuation } from "./sim";
+import { definitionOf, offerStartup, STARTUPS, type StartupDefinition } from "./startups";
 import { fill } from "./templates";
 import type {
   BoardItem,
@@ -123,7 +149,7 @@ function mail(state: GameState, data: Omit<Mail, "id" | "month" | "read">): void
 
 export function newGame(seed: number): GameState {
   const state: GameState = {
-    version: 4,
+    version: 5,
     seed,
     month: 1,
     daysUsed: 0,
@@ -147,6 +173,11 @@ export function newGame(seed: number): GameState {
     exits: [],
     news: [],
     corporateSeat: "none",
+    deals: [],
+    team: [],
+    lockups: [],
+    loans: [],
+    yearWorth: START_CASH,
   };
   state.gigs = drawGigs(1, state.reputation, randomFor(seed, "gigs|1"), () => nextId(state, "g"));
   mail(state, {
@@ -160,9 +191,14 @@ export function newGame(seed: number): GameState {
   return state;
 }
 
+/** Fixed startups and generated deals alike. */
+export function definitionIn(state: GameState, id: string): StartupDefinition {
+  return state.deals?.find((d) => d.id === id) ?? definitionOf(id);
+}
+
 function offer(state: GameState, id: string): void {
   if (state.startups.some((s) => s.id === id)) return;
-  const def = definitionOf(id);
+  const def = definitionIn(state, id);
   const startup = offerStartup(def, state.month);
   state.startups.push(startup);
   mail(state, { kind: "deal", from: def.mail.from, subject: def.mail.subject, body: def.mail.body, startupId: id });
@@ -174,14 +210,14 @@ function offer(state: GameState, id: string): void {
  */
 export function upgradeState(input: GameState): GameState {
   let state = input as GameState & { version: number };
-  if (state.version >= 4) return state;
+  if (state.version >= 5) return state;
   if (state.version < 2) {
     for (const s of state.startups) {
       if (!s.capTable) s.capTable = capTableAfterEntry(definitionOf(s.id).capTable, s.stake);
     }
     state = {
       ...state,
-      version: 2 as number as 4,
+      version: 2 as number as 5,
       rounds: state.rounds ?? [],
       shareOffers: state.shareOffers ?? [],
       contacts: state.contacts ?? initialContacts(),
@@ -189,13 +225,19 @@ export function upgradeState(input: GameState): GameState {
     };
   }
   // Version 3: income and the stock market.
-  const next: GameState = { ...state, version: 4, market: state.market ?? initialMarket(), gigs: state.gigs ?? [] };
+  const next: GameState = { ...state, version: 5, market: state.market ?? initialMarket(), gigs: state.gigs ?? [] };
   if (next.gigs.length === 0) next.gigs = drawGigs(next.month, next.reputation, randomFor(next.seed, `gigs|${next.month}`), () => nextId(next, "g"));
   // Version 4: offices, exits, news and the corporate seat.
   next.office = next.office ?? 0;
   next.exits = next.exits ?? [];
   next.news = next.news ?? [];
   next.corporateSeat = next.corporateSeat ?? "none";
+  // Version 5: generated deals, family office, fund, IPO lockups, loans.
+  next.deals = next.deals ?? [];
+  next.team = next.team ?? [];
+  next.lockups = next.lockups ?? [];
+  next.loans = next.loans ?? [];
+  next.yearWorth = next.yearWorth ?? netWorth(next);
   return next;
 }
 
@@ -294,6 +336,7 @@ export function applyAction(current: GameState, action: GameAction): { state: Ga
     case "invest": {
       const s = startupOf(state, action.startupId);
       if (s.status !== "offered" || !s.offer) throw new GameRuleError("Dieses Angebot liegt nicht mehr vor.");
+      if (s.offer.buyout) throw new GameRuleError("Eine Nachfolge kaufst du über den Kauf der Mehrheit.");
       const half = action.size === "half";
       const ticket = half ? Math.round(s.offer.ticket / 2 / 1000) * 1000 : s.offer.ticket;
       const stake = half ? s.offer.stake / 2 : s.offer.stake;
@@ -306,6 +349,7 @@ export function applyAction(current: GameState, action: GameAction): { state: Ga
       s.joined = state.month;
       if (!s.offer.ddDone) s.flags.push("blind");
       s.history.push({ month: state.month, revenue: s.metrics.revenue, cash: s.metrics.cash, valuation: valuation(s.metrics), stake: s.stake });
+      replaceStartup(state, fundCoInvest(state, s, ticket, stake, false));
       const ceo = s.board.find((b) => b.seat === "ceo");
       mail(state, {
         kind: "founder",
@@ -560,6 +604,96 @@ export function applyAction(current: GameState, action: GameAction): { state: Ga
       });
       return { state, result: { kind: "none" } };
     }
+    case "buyout": {
+      const s = startupOf(state, action.startupId);
+      if (s.status !== "offered" || !s.offer?.buyout) throw new GameRuleError("Dieses Angebot liegt nicht mehr vor.");
+      if (state.reputation < BUYOUT_REPUTATION) throw new GameRuleError(`Eine Firma übernehmen kannst du ab ${BUYOUT_REPUTATION} Ruf.`);
+      const price = s.offer.ticket;
+      const loan = action.leverage ? Math.round((price * BUYOUT_LOAN_SHARE) / 1000) * 1000 : 0;
+      if (state.cash < price - loan) throw new GameRuleError(`Dafür reicht dein Kapital nicht: ${(price - loan).toLocaleString("de-DE")} € nötig.`);
+      spendDays(state, "buyout", `Übernahme ${s.name}`);
+      state.cash -= price - loan;
+      if (loan > 0) {
+        state.loans.push({ id: nextId(state, "k"), startupId: s.id, label: `Kaufkredit ${s.name}`, balance: loan, rate: BUYOUT_LOAN_RATE, payment: annuity(loan, BUYOUT_LOAN_RATE, BUYOUT_LOAN_MONTHS) });
+        unlockLesson(state, "lbo");
+      }
+      s.status = "active";
+      s.stake = s.offer.stake;
+      s.capTable = capTableAfterEntry(s.capTable, s.stake);
+      s.joined = state.month;
+      if (!s.offer.ddDone) s.flags.push("blind");
+      s.history.push({ month: state.month, revenue: s.metrics.revenue, cash: s.metrics.cash, valuation: valuation(s.metrics), stake: s.stake });
+      replaceStartup(state, fundCoInvest(state, s, price, s.offer.stake, true));
+      checkMajority(state, startupOf(state, s.id), 0);
+      unlockLesson(state, "ausschuettung");
+      mail(state, {
+        kind: "founder",
+        from: s.board.find((b) => b.seat === "ceo")?.name ?? s.name,
+        subject: "Der Vertrag ist unterschrieben",
+        body: `${s.name} gehört jetzt mehrheitlich dir. ${loan > 0 ? `Die Bank finanziert ${loan.toLocaleString("de-DE")} € über acht Jahre; die Rate läuft über dein Konto. ` : ""}Was die Firma nicht braucht, schüttet sie jedes Quartal aus.`,
+        startupId: s.id,
+      });
+      return { state, result: { kind: "none" } };
+    }
+    case "foundFamilyOffice": {
+      if (state.familyOffice) throw new GameRuleError("Dein Family Office gibt es schon.");
+      if (state.reputation < FAMILY_OFFICE_REPUTATION) throw new GameRuleError(`Ein Family Office gründest du ab ${FAMILY_OFFICE_REPUTATION} Ruf.`);
+      if (state.office < 3) throw new GameRuleError("Dafür brauchst du mindestens die Büroetage mit Analyst.");
+      if (netWorth(state) < FAMILY_OFFICE_WORTH) throw new GameRuleError(`Dafür brauchst du ${FAMILY_OFFICE_WORTH.toLocaleString("de-DE")} € Vermögen.`);
+      if (state.cash < FAMILY_OFFICE_COST) throw new GameRuleError("Für Gründung, Notar und Anwälte fehlt dir das Geld.");
+      spendDays(state, "foundFamilyOffice", "Gründung Family Office");
+      state.cash -= FAMILY_OFFICE_COST;
+      state.familyOffice = state.month;
+      mail(state, {
+        kind: "system",
+        from: "Boardroom",
+        subject: "Dein Family Office ist gegründet",
+        body: "Ab jetzt arbeitest du nicht mehr allein. Associates übernehmen Beiratsmandate, eine Partnerin bringt Deals und Zeit. Und mit genug Erfolgen kannst du einen eigenen Fonds auflegen.",
+      });
+      return { state, result: { kind: "none" } };
+    }
+    case "hire": {
+      if (!state.familyOffice) throw new GameRuleError("Ein Team stellst du im Family Office ein.");
+      const count = state.team.filter((m) => m.role === action.role).length;
+      if (count >= TEAM_MAX[action.role]) throw new GameRuleError("Mehr Leute in dieser Rolle brauchst du nicht.");
+      spendDays(state, "hire", "Bewerbungsgespräche");
+      const random = randomFor(state.seed, `hire|${state.counter}`);
+      const name = `${FIRST[Math.floor(random() * FIRST.length)]} ${LAST[Math.floor(random() * LAST.length)]}`;
+      state.team.push({ id: nextId(state, "t"), role: action.role, name, salary: SALARY[action.role], hired: state.month });
+      return { state, result: { kind: "none" } };
+    }
+    case "fire": {
+      const member = state.team.find((m) => m.id === action.memberId);
+      if (!member) throw new GameRuleError("Diese Person arbeitet nicht bei dir.");
+      state.team = state.team.filter((m) => m.id !== member.id);
+      return { state, result: { kind: "none" } };
+    }
+    case "assign": {
+      const member = state.team.find((m) => m.id === action.memberId);
+      if (!member || member.role !== "associate") throw new GameRuleError("Nur Associates übernehmen Mandate.");
+      if (action.startupId !== null) {
+        const s = startupOf(state, action.startupId);
+        if (s.status !== "active") throw new GameRuleError("Das ist kein aktives Mandat.");
+        for (const m of state.team) if (m.mandate === s.id) delete m.mandate;
+        member.mandate = s.id;
+      } else delete member.mandate;
+      return { state, result: { kind: "none" } };
+    }
+    case "raiseFund": {
+      const why = fundBlocker(state);
+      if (why) throw new GameRuleError(why);
+      spendDays(state, "raiseFund", "Roadshow bei Investoren");
+      const size = fundSize(state);
+      state.fund = { name: "Dein Fonds I", size, cash: size, invested: 0, returned: 0, raised: state.month };
+      unlockLesson(state, "fonds");
+      mail(state, {
+        kind: "system",
+        from: "Boardroom",
+        subject: `Fonds geschlossen: ${size.toLocaleString("de-DE")} €`,
+        body: `Investoren vertrauen dir ${size.toLocaleString("de-DE")} € an. Der Fonds legt bei jedem neuen Einstieg das Doppelte deines Tickets dazu. Du bekommst 2 % Verwaltungsgebühr im Jahr und 20 % des Gewinns bei jedem Verkauf.`,
+      });
+      return { state, result: { kind: "none" } };
+    }
     case "joinCorporate": {
       if (state.corporateSeat !== "offered") throw new GameRuleError("Dieses Mandat liegt nicht vor.");
       if (!action.accept) {
@@ -588,6 +722,68 @@ export function syndicateBlocker(state: GameState): string | null {
   const club = state.contacts.find((c) => c.id === "angels");
   if (!club?.met || club.warmth < SYNDICATE_WARMTH) return `Dafür brauchst du einen warmen Draht zum Angel-Club (ab ${SYNDICATE_WARMTH} Wärme).`;
   return null;
+}
+
+/** Monthly payment of a loan paid back in equal instalments. */
+export function annuity(amount: number, rate: number, months: number): number {
+  const r = rate / 12;
+  return Math.round((amount * r) / (1 - Math.pow(1 + r, -months)));
+}
+
+export function fundSize(state: GameState): number {
+  const exits = state.exits.filter((e) => e.status === "accepted").length;
+  return Math.min(FUND_MAX, FUND_BASE + exits * FUND_PER_EXIT + Math.max(0, state.reputation - FUND_REPUTATION) * 100_000);
+}
+
+/** Why the player cannot raise a fund yet, or null. */
+export function fundBlocker(state: GameState): string | null {
+  if (state.fund) return "Dein Fonds ist schon geschlossen.";
+  if (!state.familyOffice) return "Einen Fonds legst du aus dem Family Office auf.";
+  if (state.reputation < FUND_REPUTATION) return `Investoren geben Geld ab ${FUND_REPUTATION} Ruf.`;
+  if (!state.exits.some((e) => e.status === "accepted")) return "Investoren wollen mindestens einen erfolgreichen Verkauf sehen.";
+  return null;
+}
+
+/**
+ * The player's fund invests alongside: twice the player's ticket, at the same
+ * price. In a buyout it buys from the seller, otherwise new shares.
+ */
+function fundCoInvest(state: GameState, s: Startup, ticket: number, pct: number, secondary: boolean): Startup {
+  const f = state.fund;
+  if (!f || pct <= 0) return s;
+  const amount = Math.min(f.cash, f.size * FUND_MAX_DEAL, Math.round((ticket * FUND_MATCH) / 1000) * 1000);
+  if (amount < 10_000) return s;
+  let fundPct = (amount / ticket) * pct;
+  let next: Startup;
+  if (secondary) {
+    const seller = s.capTable.find((h) => h.kind === "founder");
+    if (!seller) return s;
+    fundPct = Math.min(fundPct, seller.pct - 2);
+    if (fundPct <= 0.5) return s;
+    const capTable = s.capTable.map((h) => (h.id === seller.id ? { ...h, pct: h.pct - fundPct } : h));
+    capTable.push({ id: "fonds", name: f.name, kind: "fund", pct: fundPct, pref: 0, cost: 0 });
+    next = { ...s, capTable };
+  } else {
+    const d = fundPct / (100 + fundPct);
+    next = applyDelta(s, { cash: amount, dilution: d, dilutionTo: { id: "fonds", name: f.name, kind: "fund" } });
+  }
+  const used = Math.round((fundPct / pct) * ticket);
+  const holder = next.capTable.find((h) => h.id === "fonds")!;
+  holder.pref = (holder.pref ?? 0) + (secondary ? 0 : used);
+  holder.cost = (holder.cost ?? 0) + used;
+  f.cash -= used;
+  f.invested += used;
+  mail(state, { kind: "system", from: f.name, subject: `${f.name} steigt bei ${s.name} mit ein`, body: `Der Fonds investiert ${used.toLocaleString("de-DE")} € und hält ${fundPct.toLocaleString("de-DE", { maximumFractionDigits: 1 })} %. Er stimmt wie du; am Gewinn bist du mit 20 % Carry beteiligt.`, startupId: s.id });
+  return next;
+}
+
+/** Loans tied to a company are paid back when it is sold. */
+function repayLoans(state: GameState, startupId: string, notes: string[]): void {
+  for (const loan of state.loans.filter((l) => l.startupId === startupId)) {
+    state.cash -= loan.balance;
+    notes.push(`${loan.label}: Restschuld von ${Math.round(loan.balance).toLocaleString("de-DE")} € aus dem Erlös getilgt.`);
+  }
+  state.loans = state.loans.filter((l) => l.startupId !== startupId);
 }
 
 /** The buyer either adds to the price or walks away. */
@@ -620,15 +816,30 @@ function settleExit(state: GameState, offer: ExitOffer, vote: GvVote | "abstain"
     return;
   }
   offer.status = "accepted";
-  const mine = (result.payouts.find((p) => p.id === "you")?.amount ?? 0) + result.carry;
-  state.cash += mine;
+  const own = result.payouts.find((p) => p.id === "you")?.amount ?? 0;
+  const mine = own + result.carry;
+  const fundMoney = result.payouts.filter((p) => p.kind === "fund").reduce((sum, p) => sum + p.amount, 0);
+  if (state.fund && fundMoney > 0) {
+    state.fund.cash += fundMoney;
+    state.fund.returned += fundMoney;
+  }
+  if (offer.ipo) {
+    // Listed shares: half now, the rest after the lockup at the market's price.
+    const later = own * (1 - IPO_CASH_SHARE);
+    state.cash += mine - later;
+    state.lockups.push({ id: nextId(state, "l"), name: s.name, amount: later, index: state.market.prices.tech, due: state.month + IPO_LOCKUP });
+    unlockLesson(state, "ipo");
+  } else state.cash += mine;
+  repayLoans(state, s.id, notes);
   state.reputation = Math.min(100, state.reputation + 6);
   if (result.carry > 0) unlockLesson(state, "carry");
   replaceStartup(state, { ...s, status: "exited", exitValue: offer.price, flags: [...s.flags.filter((f) => f !== "round_open"), "offered_exit"] });
   state.items = state.items.filter((i) => !(i.startupId === s.id && i.status === "open"));
-  const text = `${s.name} ist an ${offer.buyer} verkauft, für ${offer.price.toLocaleString("de-DE")} €. Du erhältst ${Math.round(mine).toLocaleString("de-DE")} €${result.carry > 0 ? `, davon ${Math.round(result.carry).toLocaleString("de-DE")} € Carry aus dem Syndikat` : ""}.`;
+  const text = offer.ipo
+    ? `${s.name} geht an die Börse, bewertet mit ${offer.price.toLocaleString("de-DE")} €. Du erhältst ${Math.round(mine).toLocaleString("de-DE")} €; die Hälfte deiner Aktien ist ${IPO_LOCKUP} Monate gesperrt und folgt bis dahin dem Markt.`
+    : `${s.name} ist an ${offer.buyer} verkauft, für ${offer.price.toLocaleString("de-DE")} €. Du erhältst ${Math.round(mine).toLocaleString("de-DE")} €${result.carry > 0 ? `, davon ${Math.round(result.carry).toLocaleString("de-DE")} € Carry` : ""}.`;
   notes.push(text);
-  mail(state, { kind: "exit", from: s.name, subject: `Verkauft an ${offer.buyer}`, body: text, startupId: s.id, exitId: offer.id });
+  mail(state, { kind: "exit", from: s.name, subject: offer.ipo ? "Börsengang geglückt" : `Verkauft an ${offer.buyer}`, body: text, startupId: s.id, exitId: offer.id });
 }
 
 function introduce(state: GameState, s: Startup, contactId: string): void {
@@ -652,7 +863,12 @@ function introduce(state: GameState, s: Startup, contactId: string): void {
     case "deal": {
       const fresh = STARTUPS.find((d) => !state.startups.some((x) => x.id === d.id));
       if (fresh) offer(state, fresh.id);
-      else mail(state, { kind: "network", from: def.name, subject: "Gerade nichts Passendes", body: "Ich melde mich, wenn ich etwas sehe.", startupId: s.id });
+      else {
+        const random = randomFor(state.seed, `intro-deal|${state.month}|${state.counter}`);
+        const deal = generateDeal(random, dealStage(state, random), nextId(state, "d"), state.month, new Set(state.startups.map((x) => x.name)));
+        state.deals.push(deal);
+        offer(state, deal.id);
+      }
       break;
     }
   }
@@ -946,10 +1162,11 @@ export function closeMonth(state: GameState): MonthReport {
     if (startupOf(state, offer.startupId).status === "active") settleExit(state, offer, "abstain", notes);
     else offer.status = "withdrawn";
   }
+  delegateItems(state, notes);
   lapseItems(state, notes);
   const lines = new Map<string, string[]>();
   resolveEffects(state, month + 1, lines);
-  const income: IncomeLines = { consulting: 0, boardFees: 0, payouts: 0, living: 0, interest: 0, rent: 0 };
+  const income: IncomeLines = { consulting: 0, boardFees: 0, payouts: 0, living: 0, interest: 0, rent: 0, salaries: 0, fundFee: 0, dividends: 0, loans: 0, lockups: 0 };
 
   // Consulting booked this month is invoiced now.
   for (const gig of state.gigs.filter((g) => g.status === "booked" && g.month === month)) {
@@ -994,6 +1211,7 @@ export function closeMonth(state: GameState): MonthReport {
   const rent = officeOf(state).rent;
   state.cash -= rent;
   income.rent = -rent;
+  holdingMonth(state, month, income, notes);
   const regimeBefore = state.market.regime;
   const market = stepMarket(state.market, month, randomFor(state.seed, `market|${month}`));
   state.market = market.market;
@@ -1036,6 +1254,8 @@ export function closeMonth(state: GameState): MonthReport {
   planRounds(state);
   planExits(state);
   offerCorporateSeat(state);
+  pruneDeals(state);
+  planDeals(state);
   for (const g of state.gigs.filter((x) => x.status === "offered")) g.status = "expired";
   state.gigs = [
     ...state.gigs.filter((g) => g.month > state.month - 6),
@@ -1181,6 +1401,7 @@ function planExits(state: GameState): void {
     if (value < EXIT_MIN_VALUE) continue;
     if (state.exits.some((e) => e.startupId === s.id && (e.status === "open" || state.month - e.month < 6))) continue;
     if (openItems(state).some((i) => i.startupId === s.id && i.templateId === "acquisition")) continue;
+    if (planIpo(state, s, value, mood)) continue;
     const random = randomFor(state.seed, `exit|${s.id}|${state.month}`);
     const chance = EXIT_CHANCE * (1 + mood * 0.6) * (s.metrics.growth > 0.03 ? 1.4 : 1);
     if (random() > chance) continue;
@@ -1198,6 +1419,164 @@ function planExits(state: GameState): void {
       startupId: s.id,
       exitId: offer.id,
     });
+  }
+}
+
+/** Big, growing companies can list on the stock exchange instead of being sold. */
+function planIpo(state: GameState, s: Startup, value: number, mood: number): boolean {
+  if (value < IPO_MIN_VALUE || state.month - s.joined < 12 || s.metrics.growth < 0.012) return false;
+  const random = randomFor(state.seed, `ipo|${s.id}|${state.month}`);
+  if (random() > IPO_CHANCE * (1 + mood)) return false;
+  const price = Math.round((value * (1.1 + random() * 0.5 + mood * 0.2)) / 100_000) * 100_000;
+  const offer: ExitOffer = { id: nextId(state, "x"), startupId: s.id, month: state.month, buyer: "Börsengang in Frankfurt", price, status: "open", ipo: true };
+  state.exits.push(offer);
+  mail(state, {
+    kind: "exit",
+    from: "Konsortium der Emissionsbanken",
+    subject: `${s.name} kann an die Börse: ${price.toLocaleString("de-DE")} €`,
+    body: `Die Banken trauen sich eine Bewertung von ${price.toLocaleString("de-DE")} € zu. Bei einem Börsengang bekommst du die Hälfte deines Erlöses sofort; die andere Hälfte deiner Aktien ist ${IPO_LOCKUP} Monate gesperrt und schwankt mit dem Markt. Die Gesellschafterversammlung entscheidet bis Monatsende.`,
+    startupId: s.id,
+    exitId: offer.id,
+  });
+  return true;
+}
+
+/** Associates decide for the mandates they look after: usually well, never brilliantly. */
+function delegateItems(state: GameState, notes: string[]): void {
+  for (const item of openItems(state)) {
+    const member = state.team.find((m) => m.role === "associate" && m.mandate === item.startupId);
+    const s = state.startups.find((x) => x.id === item.startupId);
+    if (!member || !s || s.status !== "active") continue;
+    const t = templateOf(item.templateId);
+    const values = mapValues(outlook(t, s));
+    const random = randomFor(state.seed, `associate|${item.id}`);
+    const vote: Vote = random() < ASSOCIATE_SKILL ? bestVote(values) : "conditions";
+    const stances = baseStances(t, s, meetingRandom(state, item));
+    decide(state, item, vote, vote, null, stances.ceo, { go: 0, conditions: 0, no: 0, abstain: 0 });
+    // The credit goes mostly to the associate.
+    const d = item.decision!;
+    const half = Math.trunc(d.reputationDelta / 2);
+    state.reputation = Math.min(100, Math.max(0, state.reputation - d.reputationDelta + half));
+    d.reputationDelta = half;
+    d.delegated = true;
+    notes.push(`${s.name}: ${member.name} hat für dich im Beirat entschieden: ${fill(t.outcomes[vote].label, s)}.`);
+  }
+}
+
+/**
+ * The private holding's month: team salaries, fund fee, loan instalments,
+ * shares coming out of lockup, quarterly dividends, the yearly balance.
+ */
+function holdingMonth(state: GameState, month: number, income: IncomeLines, notes: string[]): void {
+  const salaries = state.team.reduce((sum, m) => sum + m.salary, 0);
+  state.cash -= salaries;
+  income.salaries = -salaries;
+  if (state.fund) {
+    const fee = Math.round((state.fund.size * FUND_FEE) / 12);
+    state.cash += fee;
+    income.fundFee = fee;
+  }
+  for (const loan of state.loans) {
+    const interest = (loan.balance * loan.rate) / 12;
+    const pay = Math.min(loan.payment, loan.balance + interest);
+    loan.balance = Math.max(0, loan.balance + interest - pay);
+    state.cash -= pay;
+    income.loans = (income.loans ?? 0) - pay;
+  }
+  state.loans = state.loans.filter((l) => l.balance > 1);
+  for (const lock of state.lockups.filter((l) => l.due <= month + 1)) {
+    const amount = lock.amount * (state.market.prices.tech / lock.index);
+    state.cash += amount;
+    income.lockups = (income.lockups ?? 0) + amount;
+    notes.push(`${lock.name}: Die Sperrfrist ist vorbei. Deine restlichen Aktien bringen ${Math.round(amount).toLocaleString("de-DE")} €.`);
+  }
+  state.lockups = state.lockups.filter((l) => l.due > month + 1);
+  if (month % 3 === 0) payDividends(state, income, notes);
+  if (month % 12 === 0) yearBalance(state, month);
+}
+
+/** Majority-owned companies that earn money pay out what they do not need. */
+function payDividends(state: GameState, income: IncomeLines, notes: string[]): void {
+  for (const s of state.startups.filter((x) => x.status === "active" && !x.corporate)) {
+    const fundPct = s.capTable.filter((h) => h.kind === "fund").reduce((sum, h) => sum + h.pct, 0);
+    if (s.stake + fundPct <= 50 || monthlyCashFlow(s.metrics) <= 0) continue;
+    const excess = s.metrics.cash - DIVIDEND_RESERVE_MONTHS * s.metrics.opex;
+    if (excess < 5_000) continue;
+    const total = excess * DIVIDEND_SHARE;
+    const mine = (total * s.stake) / 100;
+    const fund = (total * fundPct) / 100;
+    state.cash += mine;
+    income.dividends = (income.dividends ?? 0) + mine;
+    if (state.fund) {
+      state.fund.cash += fund;
+      state.fund.returned += fund;
+    }
+    replaceStartup(state, applyDelta(s, { cash: -total }));
+    notes.push(`${s.name} schüttet ${Math.round(total).toLocaleString("de-DE")} € aus. Dein Anteil: ${Math.round(mine).toLocaleString("de-DE")} €.`);
+    unlockLesson(state, "ausschuettung");
+  }
+}
+
+function yearBalance(state: GameState, month: number): void {
+  const worth = netWorth(state);
+  const before = state.yearWorth || START_CASH;
+  const change = (worth - before) / Math.max(1, before);
+  const year = Math.floor((month + 8) / 12);
+  const sold = state.exits.filter((e) => e.status === "accepted" && e.month > month - 12).length;
+  const dead = state.startups.filter((s) => s.status === "dead").length;
+  mail(state, {
+    kind: "system",
+    from: "Boardroom",
+    subject: `Jahresbilanz, Jahr ${year}`,
+    body: `Dein Vermögen ist von ${Math.round(before).toLocaleString("de-DE")} € auf ${Math.round(worth).toLocaleString("de-DE")} € ${change >= 0 ? "gestiegen" : "gefallen"} (${(change * 100).toLocaleString("de-DE", { maximumFractionDigits: 1 })} %). ${sold > 0 ? `${sold} Verkauf${sold > 1 ? "e" : ""} in diesem Jahr. ` : ""}${dead > 0 ? `Insolvenzen bisher: ${dead}. ` : ""}Ruf: ${state.reputation}. Ein neues Jahr, neue Gründungen.`,
+  });
+  state.yearWorth = worth;
+}
+
+/** Generated offers nobody took disappear, so the save stays small. */
+function pruneDeals(state: GameState): void {
+  const gone = new Set(state.startups.filter((s) => s.status === "declined" && state.deals.some((d) => d.id === s.id)).map((s) => s.id));
+  if (gone.size === 0) return;
+  state.startups = state.startups.filter((s) => !gone.has(s.id));
+  state.deals = state.deals.filter((d) => !gone.has(d.id));
+}
+
+/** Which kind of company knocks: early on small rounds, later growth rounds and family businesses. */
+function dealStage(state: GameState, random: () => number): DealStage {
+  const worth = netWorth(state);
+  const weights: [DealStage, number][] = [
+    ["preseed", worth < 300_000 ? 6 : 3],
+    ["seed", worth < 150_000 ? 1 : 4],
+    ["growth", worth > 500_000 ? 3 : 0],
+    ["buyout", state.reputation >= BUYOUT_REPUTATION && worth >= 600_000 ? 2 : 0],
+  ];
+  const total = weights.reduce((sum, [, w]) => sum + w, 0);
+  let roll = random() * total;
+  for (const [stage, w] of weights) {
+    roll -= w;
+    if (roll < 0) return stage;
+  }
+  return "preseed";
+}
+
+/**
+ * After the first companies, new ones keep coming: every few months, more
+ * often with a warm deal-flow contact, and every month with a partner.
+ */
+function planDeals(state: GameState): void {
+  if (state.month < DEALS_FROM_MONTH) return;
+  const open = state.startups.filter((s) => s.status === "offered").length;
+  const random = randomFor(state.seed, `deals|${state.month}`);
+  const warm = state.contacts.some((c) => c.id === "dealflow" && c.met && c.warmth >= 40);
+  const idle = !state.startups.some((s) => s.status === "active" && !s.corporate) && open === 0;
+  let count = idle || random() < 0.4 + (warm ? 0.15 : 0) + (state.office >= 1 ? 0.05 : 0) ? 1 : 0;
+  count += state.team.filter((m) => m.role === "partner").length;
+  const taken = new Set(state.startups.map((s) => s.name));
+  for (let i = 0; i < count && open + i < DEALS_MAX_OPEN; i++) {
+    const def = generateDeal(random, dealStage(state, random), nextId(state, "d"), state.month, taken);
+    taken.add(def.name);
+    state.deals.push(def);
+    offer(state, def.id);
   }
 }
 

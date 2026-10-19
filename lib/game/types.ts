@@ -56,7 +56,7 @@ export interface StartupHistoryPoint {
 
 export type StartupStatus = "offered" | "declined" | "active" | "dead" | "exited" | "sold";
 
-export type HolderKind = "founder" | "cofounder" | "vc" | "angel" | "esop" | "investor" | "advisor" | "syndicate";
+export type HolderKind = "founder" | "cofounder" | "vc" | "angel" | "esop" | "investor" | "advisor" | "syndicate" | "fund";
 
 /** One line of the cap table. The player is not in the list: their share is Startup.stake. */
 export interface Holder {
@@ -90,7 +90,9 @@ export interface Startup {
   corporate?: boolean;
   /** Month the player joined; 0 while only offered. */
   joined: number;
-  offer?: { ticket: number; stake: number; expires: number; ddDone: boolean };
+  offer?: { ticket: number; stake: number; expires: number; ddDone: boolean; buyout?: boolean };
+  /** Stage label of a generated deal (Pre-Seed, Seed, Wachstum, Nachfolge). */
+  stage?: string;
   flags: string[];
   /** Months in a row with negative cash. */
   crisisMonths: number;
@@ -163,6 +165,8 @@ export interface MeetingDecision {
   month: number;
   /** Set when the board never met and the founder decided alone. */
   lapsed?: boolean;
+  /** An associate of the family office decided in the player's place. */
+  delegated?: boolean;
 }
 
 export type Judgment = "strong" | "fair" | "weak";
@@ -290,6 +294,12 @@ export interface IncomeLines {
   interest: number;
   /** Office rent (from Phase 3). */
   rent?: number;
+  /** Phase 4: team salaries, fund fee, dividends, loan payments. */
+  salaries?: number;
+  fundFee?: number;
+  dividends?: number;
+  loans?: number;
+  lockups?: number;
 }
 
 export type ExitChoice = "accept" | "negotiate" | "reject";
@@ -315,6 +325,51 @@ export interface ExitOffer {
   ballots?: GvBallot[];
   payouts?: Payout[];
   carry?: number;
+  /** A listing on the stock exchange instead of a sale. */
+  ipo?: boolean;
+}
+
+export type TeamRole = "associate" | "partner";
+
+export interface TeamMember {
+  id: string;
+  role: TeamRole;
+  name: string;
+  salary: number;
+  hired: number;
+  /** The mandate an associate looks after. */
+  mandate?: string;
+}
+
+export interface FundState {
+  name: string;
+  /** Money the investors (LPs) committed. */
+  size: number;
+  /** Not invested yet. */
+  cash: number;
+  invested: number;
+  returned: number;
+  raised: number;
+}
+
+/** Shares from an IPO that may only be sold after the lockup. */
+export interface Lockup {
+  id: string;
+  name: string;
+  amount: number;
+  /** Tech index when the lockup started: the payout follows the market. */
+  index: number;
+  due: number;
+}
+
+/** A loan the player took to buy a company. */
+export interface Loan {
+  id: string;
+  startupId: string;
+  label: string;
+  balance: number;
+  payment: number;
+  rate: number;
 }
 
 export interface NewsItem {
@@ -362,7 +417,7 @@ export interface MonthReport {
 }
 
 export interface GameState {
-  version: 4;
+  version: 5;
   seed: number;
   month: number;
   daysUsed: number;
@@ -389,6 +444,16 @@ export interface GameState {
   news: NewsItem[];
   /** The supervisory board seat in the corporation. */
   corporateSeat: "none" | "offered" | "joined" | "declined";
+  /** Phase 4: generated deals (definitions of companies not in the fixed list). */
+  deals: import("./startups").StartupDefinition[];
+  /** Month the family office was founded. */
+  familyOffice?: number;
+  team: TeamMember[];
+  fund?: FundState;
+  lockups: Lockup[];
+  loans: Loan[];
+  /** Net worth at the start of the current game year. */
+  yearWorth: number;
 }
 
 export type ActionKind =
@@ -413,7 +478,11 @@ export type ActionKind =
   | "exit"
   | "negotiate"
   | "moveOffice"
-  | "joinCorporate";
+  | "joinCorporate"
+  | "foundFamilyOffice"
+  | "hire"
+  | "buyout"
+  | "raiseFund";
 
 export type GameAction =
   | { type: "dd"; startupId: string }
@@ -436,4 +505,10 @@ export type GameAction =
   | { type: "trade"; assetId: AssetId; amount: number }
   | { type: "exit"; exitId: string; choice: ExitChoice }
   | { type: "moveOffice"; level: number }
-  | { type: "joinCorporate"; accept: boolean };
+  | { type: "joinCorporate"; accept: boolean }
+  | { type: "foundFamilyOffice" }
+  | { type: "hire"; role: TeamRole }
+  | { type: "fire"; memberId: string }
+  | { type: "assign"; memberId: string; startupId: string | null }
+  | { type: "buyout"; startupId: string; leverage: boolean }
+  | { type: "raiseFund" };

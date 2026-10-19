@@ -270,6 +270,42 @@ export const LESSONS: Lesson[] = [
     example: "Ein Programm verspricht 12 % Rendite, erfahrungsgemäß werden es 8 %. Bekommen Aktionäre am Markt 6 %, lohnt es sich knapp.",
     inGame: "Im Aufsichtsrat und bei deinem eigenen Geld: Börse, Startups und Büro konkurrieren um dasselbe Kapital.",
   },
+  {
+    id: "lbo",
+    title: "Kauf mit Kredit (Leveraged Buyout)",
+    summary:
+      "Wer eine Firma kauft, muss nicht alles selbst bezahlen: Eine Bank leiht einen Teil des Kaufpreises. Das hebt die Rendite auf das eigene Geld, solange die Gewinne die Raten tragen. Läuft es schlecht, frisst die Rate das Eigenkapital.",
+    rule: "Lohnt sich, wenn Ausschüttungen und Wertzuwachs größer sind als Zins und Tilgung.",
+    example: "Kaufpreis 2 Mio. €, davon 800.000 € Kredit zu 5,5 %: Die Rate liegt bei rund 10.000 € im Monat. Schüttet die Firma 15.000 € im Monat aus, bleibt Geld übrig.",
+    inGame: "Bei einer Nachfolge kannst du 40 % des Kaufpreises über die Bank finanzieren. Die Rate läuft acht Jahre über dein Konto.",
+  },
+  {
+    id: "ausschuettung",
+    title: "Ausschüttung",
+    summary:
+      "Eine Firma, die Geld verdient, kann es behalten und investieren oder an die Eigentümer auszahlen. Wer die Mehrheit hält, entscheidet darüber. Eine gesunde Firma behält eine Reserve für schlechte Monate.",
+    rule: "Ausschüttung = (Kasse − Reserve) × Ausschüttungsquote, verteilt nach Anteilen.",
+    example: "Kasse 500.000 €, Reserve drei Monatskosten von je 100.000 €: Von 200.000 € Überschuss werden 70 % ausgeschüttet, bei 70 % Anteil bekommst du 98.000 €.",
+    inGame: "Firmen, an denen du (mit deinem Fonds) die Mehrheit hältst und die Geld verdienen, schütten jedes Quartal aus.",
+  },
+  {
+    id: "fonds",
+    title: "Fonds: LPs, Gebühr, Carry",
+    summary:
+      "Ein Fonds sammelt Geld von Investoren (Limited Partners) ein und legt es in Firmen an. Der Manager bekommt eine jährliche Verwaltungsgebühr und einen Anteil am Gewinn, den Carry. Die Investoren bekommen ihr Geld zurück, wenn Beteiligungen verkauft werden.",
+    rule: "Üblich: 2 % Gebühr pro Jahr, 20 % Carry auf den Gewinn.",
+    example: "Ein Fonds über 5 Mio. € bringt 100.000 € Gebühr im Jahr. Verkauft er eine Beteiligung für 3 Mio. €, die 1 Mio. € gekostet hat, gehen 400.000 € Carry an den Manager.",
+    inGame: "Mit Family Office, 80 Ruf und einem erfolgreichen Verkauf kannst du einen Fonds auflegen. Er investiert bei jedem neuen Einstieg das Doppelte deines Tickets.",
+  },
+  {
+    id: "ipo",
+    title: "Börsengang und Lock-up",
+    summary:
+      "Beim Börsengang (IPO) werden Aktien einer Firma öffentlich handelbar. Bisherige Eigentümer dürfen meist nicht sofort alles verkaufen: Eine Sperrfrist (Lock-up) von sechs bis zwölf Monaten soll den Kurs schützen. Bis dahin schwankt der Wert mit dem Markt.",
+    rule: "Erlös = sofort verkaufter Teil + gesperrter Teil × (Kurs nach der Sperrfrist ÷ Kurs beim Börsengang)",
+    example: "Dein Anteil ist beim Börsengang 1 Mio. € wert. 500.000 € bekommst du sofort; fällt der Markt in sechs Monaten um 20 %, bringt der Rest 400.000 €.",
+    inGame: "Große, wachsende Firmen (ab 12 Mio. € Wert) bekommen manchmal das Angebot eines Börsengangs. Die gesperrte Hälfte folgt dem Tech-Index.",
+  },
 ];
 
 /** Order in which "Weiterbildung" unlocks cards. */
@@ -304,6 +340,10 @@ export const CURRICULUM = [
   "carry",
   "aufsichtsrat",
   "kapitalallokation",
+  "lbo",
+  "ausschuettung",
+  "fonds",
+  "ipo",
 ];
 
 export function lessonOf(id: string): Lesson {

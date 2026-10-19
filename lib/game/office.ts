@@ -1,4 +1,4 @@
-import { DAYS_PER_MONTH } from "./config";
+import { DAYS_PER_MONTH, PARTNER_DAYS } from "./config";
 import type { GameState } from "./types";
 
 // Vom Küchentisch in die oberste Etage. Jedes Büro kostet Miete und bringt
@@ -32,5 +32,6 @@ export function officeOf(state: GameState): OfficeLevel {
 }
 
 export function monthDays(state: GameState): number {
-  return DAYS_PER_MONTH + officeOf(state).extraDays;
+  const partners = (state.team ?? []).filter((m) => m.role === "partner").length;
+  return DAYS_PER_MONTH + officeOf(state).extraDays + partners * PARTNER_DAYS;
 }
