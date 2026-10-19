@@ -25,7 +25,7 @@ export const FINANCE_TEMPLATES: Template[] = [
     lesson: "runway",
     insight:
       "Eine Brücke kauft Zeit, nicht Erfolg. Sie lohnt sich, wenn die Zeit für einen klaren Meilenstein reicht. Ohne Brücke droht eine Notfinanzierung zu viel schlechteren Bedingungen.",
-    when: (s, age) => age >= 1 && runway(s) < 3.5,
+    when: (s, age) => age >= 1 && runway(s) < 3.5 && !has(s, "round_open"),
     urgent: true,
     repeatAfter: 4,
     pull: { cash: 0.7, growth: 0.3, control: -0.3, team: 0.4 },
@@ -109,7 +109,7 @@ export const FINANCE_TEMPLATES: Template[] = [
     lesson: "verwaesserung",
     insight:
       "Verwässerung ist kein Verlust, wenn der Kuchen schneller wächst als dein Stück schrumpft. Entscheidend ist, was die Firma mit dem Geld schafft und zu welchem Preis es kommt.",
-    when: (s, age) => age >= 3 && !has(s, "seeded") && (s.metrics.revenue >= 14_000 || age >= 6),
+    when: (s, age) => age >= 3 && !has(s, "seeded") && !has(s, "round_open") && (s.metrics.revenue >= 14_000 || age >= 6),
     pull: { growth: 0.6, cash: 0.6, control: -0.6, team: 0.2 },
     pro: [
       { interest: "growth", text: "Mit dem Geld können wir endlich in Vertrieb und Produkt investieren." },

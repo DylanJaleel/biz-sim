@@ -56,6 +56,17 @@ export interface StartupHistoryPoint {
 
 export type StartupStatus = "offered" | "declined" | "active" | "dead" | "exited";
 
+export type HolderKind = "founder" | "cofounder" | "vc" | "angel" | "esop" | "investor" | "advisor";
+
+/** One line of the cap table. The player is not in the list: their share is Startup.stake. */
+export interface Holder {
+  id: string;
+  name: string;
+  kind: HolderKind;
+  /** Percent of the company (0..100). */
+  pct: number;
+}
+
 export interface Startup {
   id: string;
   status: StartupStatus;
@@ -67,6 +78,8 @@ export interface Startup {
   phase: StartupPhase;
   /** Player's stake in percent (0..100). */
   stake: number;
+  /** Everyone else; together with stake it adds up to 100. */
+  capTable: Holder[];
   /** Month the player joined; 0 while only offered. */
   joined: number;
   offer?: { ticket: number; stake: number; expires: number; ddDone: boolean };
@@ -103,6 +116,8 @@ export interface Delta {
   axes?: Partial<Axes>;
   /** Player stake is multiplied by (1 - dilution). */
   dilution?: number;
+  /** Who receives the new shares of a dilution (default: new investors). */
+  dilutionTo?: { id: string; name: string; kind: HolderKind };
   playerCash?: number;
   reputation?: number;
   flag?: string;
@@ -167,7 +182,7 @@ export interface CalendarEntry {
   label: string;
 }
 
-export type MailKind = "deal" | "news" | "founder" | "system";
+export type MailKind = "deal" | "news" | "founder" | "system" | "round" | "shares" | "network";
 
 export interface Mail {
   id: string;
@@ -177,7 +192,61 @@ export interface Mail {
   subject: string;
   body: string;
   startupId?: string;
+  roundId?: string;
+  offerId?: string;
   read: boolean;
+}
+
+export type RoundTake = "none" | "half" | "prorata" | "lead";
+export type GvVote = "go" | "no";
+
+export interface GvBallot {
+  id: string;
+  name: string;
+  kind: HolderKind | "you";
+  pct: number;
+  vote: GvVote | "abstain";
+  reason: string;
+}
+
+/** A financing round. It needs the shareholders' meeting (votes by shares). */
+export interface Round {
+  id: string;
+  startupId: string;
+  month: number;
+  label: string;
+  amount: number;
+  preMoney: number;
+  leadId: string;
+  lead: string;
+  /** Priced below the last value: early holders lose more. */
+  down: boolean;
+  status: "open" | "closed" | "failed";
+  take?: RoundTake;
+  playerAmount?: number;
+  ballots?: GvBallot[];
+  stakeBefore?: number;
+  stakeAfter?: number;
+}
+
+/** Someone wants to sell shares to the player. */
+export interface ShareOffer {
+  id: string;
+  startupId: string;
+  sellerId: string;
+  sellerName: string;
+  pct: number;
+  price: number;
+  expires: number;
+  status: "open" | "bought" | "expired";
+}
+
+export interface ContactState {
+  id: string;
+  /** 0..100: how much a favour is still possible. */
+  warmth: number;
+  met: boolean;
+  lastIntro?: number;
 }
 
 export interface ReportLine {
@@ -207,7 +276,7 @@ export interface MonthReport {
 }
 
 export interface GameState {
-  version: 1;
+  version: 2;
   seed: number;
   month: number;
   daysUsed: number;
@@ -221,6 +290,11 @@ export interface GameState {
   lessons: string[];
   reports: MonthReport[];
   counter: number;
+  rounds: Round[];
+  shareOffers: ShareOffer[];
+  contacts: ContactState[];
+  /** Rounds the player led (career). */
+  ledRounds: number;
 }
 
 export type ActionKind =
@@ -234,11 +308,16 @@ export type ActionKind =
   | "founderCall"
   | "learn"
   | "readMail"
-  | "closeMonth";
+  | "closeMonth"
+  | "round"
+  | "buyShares"
+  | "askShares"
+  | "meetContact"
+  | "introContact";
 
 export type GameAction =
   | { type: "dd"; startupId: string }
-  | { type: "invest"; startupId: string }
+  | { type: "invest"; startupId: string; size?: "full" | "half" }
   | { type: "decline"; startupId: string }
   | { type: "question"; itemId: string; questionId: string }
   | { type: "cfo"; itemId: string }
@@ -247,4 +326,9 @@ export type GameAction =
   | { type: "founderCall"; startupId: string }
   | { type: "learn" }
   | { type: "readMail"; mailId: string }
-  | { type: "closeMonth" };
+  | { type: "closeMonth" }
+  | { type: "round"; roundId: string; take: RoundTake; vote: GvVote }
+  | { type: "buyShares"; offerId: string }
+  | { type: "askShares"; startupId: string }
+  | { type: "meetContact"; contactId: string }
+  | { type: "introContact"; contactId: string; startupId: string };

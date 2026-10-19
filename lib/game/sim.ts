@@ -15,7 +15,19 @@ import {
   CUSTOMER_LOSS_CHANCE,
   CUSTOMER_LOSS_THRESHOLD,
 } from "./config";
-import type { Axes, Delta, Metrics, Startup, StartupPhase } from "./types";
+import type { Axes, Delta, Holder, HolderKind, Metrics, Startup, StartupPhase } from "./types";
+
+export const NEW_INVESTORS = { id: "investors", name: "Neue Investoren", kind: "investor" as HolderKind };
+
+/** Everyone keeps (1 - d) of their share; the new shares go to `to`. */
+export function dilute(capTable: Holder[], d: number, to: { id: string; name: string; kind: HolderKind } = NEW_INVESTORS): Holder[] {
+  if (d <= 0) return capTable;
+  const next = capTable.map((h) => ({ ...h, pct: h.pct * (1 - d) }));
+  const target = next.find((h) => h.id === to.id);
+  if (target) target.pct += d * 100;
+  else next.push({ ...to, pct: d * 100 });
+  return next;
+}
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 
@@ -86,9 +98,11 @@ export function applyDelta(s: Startup, d: Delta, scale = 1): Startup {
     topCustomer: clamp(m.topCustomer + (d.topCustomer ?? 0) * scale, 0, 1),
     debt: Math.max(0, m.debt + (d.debt ?? 0) * scale),
   };
-  const stake = s.stake * (1 - clamp((d.dilution ?? 0) * scale, 0, 0.9));
+  const dil = clamp((d.dilution ?? 0) * scale, 0, 0.9);
+  const stake = s.stake * (1 - dil);
+  const capTable = dil > 0 ? dilute(s.capTable ?? [], dil, d.dilutionTo) : s.capTable;
   const flags = d.flag && !s.flags.includes(d.flag) ? [...s.flags, d.flag] : s.flags;
-  return { ...s, metrics, stake, flags, phase: phaseOf(metrics) };
+  return { ...s, metrics, stake, capTable, flags, phase: phaseOf(metrics) };
 }
 
 function scaleAxes(axes: Partial<Axes>, scale: number): Partial<Axes> {

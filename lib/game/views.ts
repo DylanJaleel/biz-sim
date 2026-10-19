@@ -1,11 +1,14 @@
+import { playerAmount, postMoney, stakeAfter } from "./captable";
 import { outcomeViews, type OutcomeView } from "./cfo";
+import { INTRO_COOLDOWN, LEAD_REPUTATION, RING_REPUTATION, WARMTH_INTRO_MIN } from "./config";
+import { CONTACTS, RING_LABEL, ringOpen, type ContactDef, type Ring } from "./network";
 import { templateOf } from "./content";
 import { daysLeft, itemOf, previewMeeting, startupOf } from "./engine";
 import { lessonOf } from "./lessons";
 import type { MeetingEvent } from "./meeting";
 import { monthlyCashFlow, runwayMonths } from "./sim";
 import { fill, valueOf as valuationOf } from "./templates";
-import type { BoardItem, BoardMember, GameState, Interest, ItemStatus, MeetingDecision, Startup, Vote } from "./types";
+import type { BoardItem, BoardMember, GameState, Holder, Interest, ItemStatus, MeetingDecision, Round, RoundTake, ShareOffer, Startup, Vote } from "./types";
 
 // Was eine Seite vom Spielstand braucht, als einfache Daten für den Browser.
 
@@ -96,6 +99,22 @@ export function deskView(state: GameState, lessonsTotal: number): DeskView {
   const offered = state.startups.filter((s) => s.status === "offered");
   const open = state.items.filter((i) => i.status === "open");
   const tasks: DeskTask[] = [];
+  for (const r of state.rounds.filter((x) => x.status === "open")) {
+    const s = startupOf(state, r.startupId);
+    tasks.push({
+      text: `${s.name}: ${r.label} über ${r.amount.toLocaleString("de-DE")} €. Die Gesellschafterversammlung entscheidet bis Monatsende, ob mit dir oder ohne dich.`,
+      href: `/gv/${r.id}`,
+      tone: "urgent",
+    });
+  }
+  for (const o of state.shareOffers.filter((x) => x.status === "open")) {
+    const s = startupOf(state, o.startupId);
+    tasks.push({
+      text: `${o.sellerName} bietet ${o.pct.toLocaleString("de-DE")} % an ${s.name} für ${o.price.toLocaleString("de-DE")} €.`,
+      href: `/firma/${s.id}#anteile`,
+      tone: "normal",
+    });
+  }
   for (const item of open) {
     const s = startupOf(state, item.startupId);
     const t = templateOf(item.templateId);
@@ -178,7 +197,11 @@ export interface CompanyView {
     result?: BoardItem["result"];
   }[];
   calledThisMonth: boolean;
+  askedThisMonth: boolean;
   daysLeft: number;
+  round: Round | null;
+  rounds: Round[];
+  offers: ShareOffer[];
 }
 
 function leaningOf(stance: number): Vote | "open" {
@@ -240,6 +263,108 @@ export function companyView(state: GameState, startupId: string): CompanyView {
     item,
     past,
     calledThisMonth: state.calendar.some((c) => c.kind === "founderCall" && c.label.endsWith(s.name)),
+    askedThisMonth: state.calendar.some((c) => c.kind === "askShares" && c.label.endsWith(s.name)),
     daysLeft: daysLeft(state),
+    round: state.rounds.find((r) => r.startupId === s.id && r.status === "open") ?? null,
+    rounds: state.rounds.filter((r) => r.startupId === s.id && r.amount > 0 && r.status !== "open").sort((a, b) => b.month - a.month),
+    offers: state.shareOffers.filter((o) => o.startupId === s.id && o.status === "open"),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Phase 2: rounds, shares, network
+// ---------------------------------------------------------------------------
+
+export interface RoundOption {
+  take: RoundTake;
+  label: string;
+  amount: number;
+  stakeAfter: number;
+  /** Value of the player's stake right after the round (post-money × stake). */
+  valueAfter: number;
+  allowed: boolean;
+  reason?: string;
+}
+
+export interface RoundView {
+  round: Round;
+  startupId: string;
+  startupName: string;
+  stake: number;
+  postMoney: number;
+  valueNow: number;
+  holders: Holder[];
+  options: RoundOption[];
+  cash: number;
+  reputation: number;
+  daysLeft: number;
+}
+
+const TAKE_LABEL: Record<RoundTake, string> = {
+  none: "Nicht mitziehen",
+  half: "Halb pro rata",
+  prorata: "Pro rata",
+  lead: "Runde anführen",
+};
+
+export function roundView(state: GameState, roundId: string): RoundView | null {
+  const round = state.rounds.find((r) => r.id === roundId);
+  if (!round || round.amount === 0) return null;
+  const s = startupOf(state, round.startupId);
+  const stake = round.status === "open" ? s.stake : (round.stakeBefore ?? s.stake);
+  const post = postMoney(round);
+  const options: RoundOption[] = (["none", "half", "prorata", "lead"] as const).map((take) => {
+    const amount = playerAmount(round, stake, take);
+    const after = stakeAfter(round, stake, take);
+    let reason: string | undefined;
+    if (take === "lead" && state.reputation < LEAD_REPUTATION) reason = `Ab ${LEAD_REPUTATION} Ruf`;
+    else if (amount > state.cash) reason = "Zu wenig Kapital";
+    return { take, label: TAKE_LABEL[take], amount, stakeAfter: after, valueAfter: (post * after) / 100, allowed: !reason, reason };
+  });
+  return {
+    round,
+    startupId: s.id,
+    startupName: s.name,
+    stake,
+    postMoney: post,
+    valueNow: (valuationOf(s) * stake) / 100,
+    holders: s.capTable,
+    options,
+    cash: state.cash,
+    reputation: state.reputation,
+    daysLeft: daysLeft(state),
+  };
+}
+
+export interface ContactView extends ContactDef {
+  warmth: number;
+  met: boolean;
+  open: boolean;
+  /** Months until the next favour is possible; 0 = now. */
+  cooldown: number;
+  canIntro: boolean;
+}
+
+export interface NetworkView {
+  contacts: ContactView[];
+  reputation: number;
+  mandates: { id: string; name: string }[];
+  daysLeft: number;
+  rings: { ring: Ring; label: string; open: boolean; needs: number }[];
+}
+
+export function networkView(state: GameState): NetworkView {
+  const contacts = CONTACTS.map((def) => {
+    const c = state.contacts.find((x) => x.id === def.id) ?? { id: def.id, warmth: 0, met: false };
+    const open = ringOpen(state, def.ring);
+    const cooldown = c.lastIntro === undefined ? 0 : Math.max(0, INTRO_COOLDOWN - (state.month - c.lastIntro));
+    return { ...def, warmth: c.warmth, met: c.met, open, cooldown, canIntro: open && c.met && c.warmth >= WARMTH_INTRO_MIN && cooldown === 0 };
+  });
+  return {
+    contacts,
+    reputation: state.reputation,
+    mandates: state.startups.filter((s) => s.status === "active").map((s) => ({ id: s.id, name: s.name })),
+    daysLeft: daysLeft(state),
+    rings: ([1, 2, 3] as const).map((ring) => ({ ring, label: RING_LABEL[ring], open: ringOpen(state, ring), needs: RING_REPUTATION[ring] })),
   };
 }

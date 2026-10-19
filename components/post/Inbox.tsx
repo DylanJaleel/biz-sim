@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { ACTION_DAYS } from "@/lib/game/config";
 import type { Mail, StartupStatus } from "@/lib/game/types";
@@ -28,7 +29,15 @@ export interface DealView {
   board: string[];
 }
 
-const KIND_LABEL: Record<Mail["kind"], string> = { deal: "Angebot", news: "Neuigkeit", founder: "Gründung", system: "Assistenz" };
+const KIND_LABEL: Record<Mail["kind"], string> = {
+  deal: "Angebot",
+  news: "Neuigkeit",
+  founder: "Gründung",
+  system: "Assistenz",
+  round: "Runde",
+  shares: "Anteile",
+  network: "Netzwerk",
+};
 
 export function Inbox({ mails, deals, initial, revision, cash }: { mails: MailView[]; deals: Record<string, DealView>; initial: string | null; revision: number; cash: number }) {
   const [selected, setSelected] = useState(initial);
@@ -69,6 +78,16 @@ export function Inbox({ mails, deals, initial, revision, cash }: { mails: MailVi
           </h2>
           <p className="inbox__body">{mail.body}</p>
           {deal && <Deal deal={deal} revision={revision} cash={cash} />}
+          {mail.roundId && (
+            <Link className="btn btn--primary" href={`/gv/${mail.roundId}`}>
+              Zur Gesellschafterversammlung
+            </Link>
+          )}
+          {!mail.roundId && mail.startupId && (mail.kind === "shares" || mail.kind === "network") && (
+            <Link className="btn" href={`/firma/${mail.startupId}#anteile`}>
+              Zur Firma
+            </Link>
+          )}
         </article>
       )}
     </div>
@@ -152,6 +171,11 @@ function Deal({ deal, revision, cash }: { deal: DealView; revision: number; cash
         <ActionButton action={{ type: "invest", startupId: deal.id }} revision={revision} days={ACTION_DAYS.invest} variant="primary" disabled={cash < deal.ticket}>
           {cash < deal.ticket ? "Kapital reicht nicht" : `Für ${eur(deal.ticket)} einsteigen`}
         </ActionButton>
+        {cash >= Math.round(deal.ticket / 2 / 1000) * 1000 && (
+          <ActionButton action={{ type: "invest", startupId: deal.id, size: "half" }} revision={revision} days={ACTION_DAYS.invest}>
+            {`Halbes Ticket: ${eur(Math.round(deal.ticket / 2 / 1000) * 1000)} für ${(deal.stake / 2).toLocaleString("de-DE")} %`}
+          </ActionButton>
+        )}
         <ActionButton action={{ type: "decline", startupId: deal.id }} revision={revision} variant="ghost">
           Absagen
         </ActionButton>

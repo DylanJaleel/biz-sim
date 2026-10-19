@@ -11,22 +11,41 @@ import {
   START_CASH,
   START_REPUTATION,
   monthLabel,
+  ADVISOR_SHARES,
+  INTRO_COOLDOWN,
+  LEAD_REPUTATION,
+  LEAD_REPUTATION_GAIN,
+  MAJORITY_REPUTATION_GAIN,
+  ROUND_COOLDOWN,
+  FAILED_SEARCH_COOLDOWN,
+  ROUND_RUNWAY,
+  SECONDARY_CHANCE,
+  SECONDARY_DISCOUNT,
+  WARMTH_DECAY,
+  WARMTH_INTRO_COST,
+  WARMTH_INTRO_MIN,
+  WARMTH_MEET,
+  WARMTH_MEET_FIRST,
 } from "./config";
+import { applyRound, capTableAfterEntry, fundability, playerAmount, roundTerms, sellers, shareholderVote, grantToPlayer, transferToPlayer } from "./captable";
+import { contactDef, initialContacts, ringOpen } from "./network";
 import { templateOf, TEMPLATES } from "./content";
 import { judge, bestVote, outlook, VOTES } from "./judge";
 import { CURRICULUM } from "./lessons";
 import { baseStances, buildMeeting, type MeetingPlayback } from "./meeting";
-import { applyDelta, stepMonth, valuation } from "./sim";
+import { applyDelta, runwayMonths, stepMonth, valuation } from "./sim";
 import { definitionOf, offerStartup, STARTUPS } from "./startups";
 import { fill } from "./templates";
 import type {
-  ActionKind,
   BoardItem,
   Delta,
   GameAction,
   GameState,
+  GvVote,
   Mail,
   MonthReport,
+  Round,
+  RoundTake,
   Shares,
   Startup,
   Vote,
@@ -82,7 +101,7 @@ function mail(state: GameState, data: Omit<Mail, "id" | "month" | "read">): void
 
 export function newGame(seed: number): GameState {
   const state: GameState = {
-    version: 1,
+    version: 2,
     seed,
     month: 1,
     daysUsed: 0,
@@ -96,6 +115,10 @@ export function newGame(seed: number): GameState {
     lessons: [],
     reports: [],
     counter: 0,
+    rounds: [],
+    shareOffers: [],
+    contacts: initialContacts(),
+    ledRounds: 0,
   };
   mail(state, {
     kind: "system",
@@ -114,6 +137,26 @@ function offer(state: GameState, id: string): void {
   const startup = offerStartup(def, state.month);
   state.startups.push(startup);
   mail(state, { kind: "deal", from: def.mail.from, subject: def.mail.subject, body: def.mail.body, startupId: id });
+}
+
+/**
+ * Brings a stored game up to the current version. Version 1 games (Phase 1)
+ * get cap tables, rounds, offers and the network; nothing else changes.
+ */
+export function upgradeState(input: GameState): GameState {
+  const state = input as GameState & { version: number };
+  if (state.version >= 2) return state;
+  for (const s of state.startups) {
+    if (!s.capTable) s.capTable = capTableAfterEntry(definitionOf(s.id).capTable, s.stake);
+  }
+  return {
+    ...state,
+    version: 2,
+    rounds: state.rounds ?? [],
+    shareOffers: state.shareOffers ?? [],
+    contacts: state.contacts ?? initialContacts(),
+    ledRounds: state.ledRounds ?? 0,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -171,9 +214,10 @@ export function previewMeeting(state: GameState, itemId: string, argument?: stri
 export type ActionResult =
   | { kind: "none" }
   | { kind: "meeting"; playback: MeetingPlayback; itemId: string }
-  | { kind: "report"; report: MonthReport };
+  | { kind: "report"; report: MonthReport }
+  | { kind: "round"; roundId: string };
 
-function spendDays(state: GameState, kind: Exclude<ActionKind, "decline" | "readMail" | "closeMonth">, label: string): void {
+function spendDays(state: GameState, kind: keyof typeof ACTION_DAYS, label: string): void {
   const days = ACTION_DAYS[kind];
   if (state.daysUsed + days > DAYS_PER_MONTH) {
     throw new GameRuleError(`Dafür fehlen dir Tage: ${days} nötig, ${daysLeft(state)} frei. Schließe den Monat ab.`);
@@ -203,11 +247,15 @@ export function applyAction(current: GameState, action: GameAction): { state: Ga
     case "invest": {
       const s = startupOf(state, action.startupId);
       if (s.status !== "offered" || !s.offer) throw new GameRuleError("Dieses Angebot liegt nicht mehr vor.");
-      if (state.cash < s.offer.ticket) throw new GameRuleError("Dafür reicht dein Privatkapital nicht.");
+      const half = action.size === "half";
+      const ticket = half ? Math.round(s.offer.ticket / 2 / 1000) * 1000 : s.offer.ticket;
+      const stake = half ? s.offer.stake / 2 : s.offer.stake;
+      if (state.cash < ticket) throw new GameRuleError("Dafür reicht dein Privatkapital nicht.");
       spendDays(state, "invest", `Beteiligung ${s.name}`);
-      state.cash -= s.offer.ticket;
+      state.cash -= ticket;
       s.status = "active";
-      s.stake = s.offer.stake;
+      s.stake = stake;
+      s.capTable = capTableAfterEntry(definitionOf(s.id).capTable, stake);
       s.joined = state.month;
       if (!s.offer.ddDone) s.flags.push("blind");
       s.history.push({ month: state.month, revenue: s.metrics.revenue, cash: s.metrics.cash, valuation: valuation(s.metrics), stake: s.stake });
@@ -302,7 +350,190 @@ export function applyAction(current: GameState, action: GameAction): { state: Ga
       const report = closeMonth(state);
       return { state, result: { kind: "report", report } };
     }
+    case "round": {
+      const round = state.rounds.find((r) => r.id === action.roundId);
+      if (!round || round.status !== "open") throw new GameRuleError("Über diese Runde wurde schon entschieden.");
+      const s = startupOf(state, round.startupId);
+      if (s.status !== "active") throw new GameRuleError("Die Firma ist nicht mehr aktiv.");
+      if (action.take === "lead" && state.reputation < LEAD_REPUTATION) {
+        throw new GameRuleError(`Eine Runde anführen kannst du ab ${LEAD_REPUTATION} Ruf.`);
+      }
+      if (state.cash < playerAmount(round, s.stake, action.take)) throw new GameRuleError("Dafür reicht dein Privatkapital nicht.");
+      spendDays(state, "round", `Gesellschafterversammlung ${s.name}`);
+      settleRound(state, round, action.take, action.vote, []);
+      return { state, result: { kind: "round", roundId: round.id } };
+    }
+    case "buyShares": {
+      const offer = state.shareOffers.find((o) => o.id === action.offerId);
+      if (!offer || offer.status !== "open") throw new GameRuleError("Dieses Angebot gilt nicht mehr.");
+      const s = startupOf(state, offer.startupId);
+      if (s.status !== "active") throw new GameRuleError("Die Firma ist nicht mehr aktiv.");
+      const seller = s.capTable.find((h) => h.id === offer.sellerId);
+      if (!seller || seller.pct + 0.01 < offer.pct) throw new GameRuleError("Diese Anteile gibt es so nicht mehr.");
+      if (state.cash < offer.price) throw new GameRuleError("Dafür reicht dein Privatkapital nicht.");
+      spendDays(state, "buyShares", `Anteilskauf ${s.name}`);
+      state.cash -= offer.price;
+      offer.status = "bought";
+      const before = s.stake;
+      replaceStartup(state, transferToPlayer(s, offer.sellerId, Math.min(offer.pct, seller.pct)));
+      unlockLesson(state, "secondary");
+      checkMajority(state, startupOf(state, s.id), before);
+      return { state, result: { kind: "none" } };
+    }
+    case "askShares": {
+      const s = startupOf(state, action.startupId);
+      if (s.status !== "active") throw new GameRuleError("Du bist an dieser Firma nicht beteiligt.");
+      if (state.calendar.some((c) => c.kind === "askShares" && c.label.endsWith(s.name))) {
+        throw new GameRuleError("Du hast diesen Monat schon nach Anteilen gefragt.");
+      }
+      spendDays(state, "askShares", `Anteile anfragen ${s.name}`);
+      const random = randomFor(state.seed, `ask|${s.id}|${state.month}`);
+      const options = sellers(s);
+      const chance = Math.min(0.9, 0.35 + s.metrics.trust / 250 + state.reputation / 250);
+      if (options.length === 0 || random() > chance) {
+        mail(state, { kind: "shares", from: s.name, subject: "Niemand will verkaufen", body: "Du hast dich umgehört, aber gerade will niemand Anteile abgeben. Mehr Vertrauen und ein besserer Ruf öffnen Türen.", startupId: s.id });
+        return { state, result: { kind: "none" } };
+      }
+      const pick = options[Math.floor(random() * options.length) % options.length]!;
+      createShareOffer(state, s, pick.holder.id, pick.pct, pick.factor);
+      return { state, result: { kind: "none" } };
+    }
+    case "meetContact": {
+      const c = state.contacts.find((x) => x.id === action.contactId);
+      if (!c) throw new GameRuleError("Diesen Kontakt gibt es nicht.");
+      const def = contactDef(c.id);
+      if (!ringOpen(state, def.ring)) throw new GameRuleError("Dieser Kreis öffnet sich erst mit mehr Ruf.");
+      if (state.calendar.some((e) => e.kind === "meetContact" && e.label.endsWith(def.name))) {
+        throw new GameRuleError("Ihr habt euch diesen Monat schon getroffen.");
+      }
+      spendDays(state, "meetContact", `Treffen mit ${def.name}`);
+      c.warmth = Math.min(100, c.warmth + (c.met ? WARMTH_MEET : WARMTH_MEET_FIRST));
+      c.met = true;
+      unlockLesson(state, "netzwerk");
+      return { state, result: { kind: "none" } };
+    }
+    case "introContact": {
+      const c = state.contacts.find((x) => x.id === action.contactId);
+      if (!c) throw new GameRuleError("Diesen Kontakt gibt es nicht.");
+      const def = contactDef(c.id);
+      if (!c.met || !ringOpen(state, def.ring)) throw new GameRuleError("Diesen Kontakt kennst du noch nicht gut genug.");
+      if (c.warmth < WARMTH_INTRO_MIN) throw new GameRuleError(`Die Beziehung ist zu kühl. Ab ${WARMTH_INTRO_MIN} Wärme kannst du um einen Gefallen bitten.`);
+      if (c.lastIntro !== undefined && state.month - c.lastIntro < INTRO_COOLDOWN) {
+        throw new GameRuleError(`${def.name} hat dir gerade erst geholfen. Frag in ein paar Monaten wieder.`);
+      }
+      const s = startupOf(state, action.startupId);
+      if (s.status !== "active") throw new GameRuleError("Du bist an dieser Firma nicht beteiligt.");
+      spendDays(state, "introContact", `${def.name} für ${s.name}`);
+      c.warmth = Math.max(0, c.warmth - WARMTH_INTRO_COST);
+      c.lastIntro = state.month;
+      state.reputation = Math.min(100, state.reputation + 1);
+      unlockLesson(state, "netzwerk");
+      introduce(state, s, def.id);
+      return { state, result: { kind: "none" } };
+    }
   }
+}
+
+function introduce(state: GameState, s: Startup, contactId: string): void {
+  const def = contactDef(contactId);
+  switch (def.kind) {
+    case "delta":
+    case "loan":
+      state.effects.push({ delay: 1, text: def.result, delta: def.delta ?? {}, startupId: s.id, due: state.month + 1, itemId: `intro-${contactId}-${state.month}` });
+      break;
+    case "investor":
+      replaceStartup(state, { ...s, flags: s.flags.includes("investor_intro") ? s.flags : [...s.flags, "investor_intro"] });
+      mail(state, { kind: "network", from: def.name, subject: `${s.name}: gern beim nächsten Mal`, body: def.result, startupId: s.id });
+      break;
+    case "shares": {
+      const options = sellers({ ...s, metrics: { ...s.metrics, trust: 0 } });
+      const pick = options[0];
+      if (pick) createShareOffer(state, s, pick.holder.id, pick.pct, SECONDARY_DISCOUNT);
+      else mail(state, { kind: "network", from: def.name, subject: "Gerade niemand", body: "Bei dieser Firma will gerade niemand verkaufen.", startupId: s.id });
+      break;
+    }
+    case "deal": {
+      const fresh = STARTUPS.find((d) => !state.startups.some((x) => x.id === d.id));
+      if (fresh) offer(state, fresh.id);
+      else mail(state, { kind: "network", from: def.name, subject: "Gerade nichts Passendes", body: "Ich melde mich, wenn ich etwas sehe.", startupId: s.id });
+      break;
+    }
+  }
+}
+
+function createShareOffer(state: GameState, s: Startup, sellerId: string, pct: number, factor: number): void {
+  const seller = s.capTable.find((h) => h.id === sellerId);
+  if (!seller) return;
+  const share = Math.round(Math.min(pct, seller.pct) * 10) / 10;
+  if (share < 0.5) return;
+  const price = Math.round(((valuation(s.metrics) * share) / 100) * factor / 1000) * 1000;
+  const id = nextId(state, "a");
+  state.shareOffers.push({ id, startupId: s.id, sellerId, sellerName: seller.name, pct: share, price, expires: state.month + 1, status: "open" });
+  mail(state, {
+    kind: "shares",
+    from: seller.name,
+    subject: `${s.name}: ${share.toLocaleString("de-DE")} % zu verkaufen`,
+    body: `${seller.name} bietet dir ${share.toLocaleString("de-DE")} % an ${s.name} für ${price.toLocaleString("de-DE")} € an. ${factor > 1 ? "Gründer verkaufen nur mit Aufschlag." : factor < 1 ? "Mit Abschlag auf die heutige Bewertung, weil Geld gebraucht wird." : "Zur heutigen Bewertung."} Das Angebot gilt bis Ende nächsten Monats.`,
+    startupId: s.id,
+    offerId: id,
+  });
+}
+
+function checkMajority(state: GameState, s: Startup, before: number): void {
+  if (before <= 50 && s.stake > 50) {
+    state.reputation = Math.min(100, state.reputation + MAJORITY_REPUTATION_GAIN);
+    unlockLesson(state, "stimmrechte");
+    mail(state, { kind: "system", from: "Boardroom", subject: `Mehrheit an ${s.name}`, body: `Du hältst jetzt ${s.stake.toLocaleString("de-DE", { maximumFractionDigits: 1 })} % an ${s.name}. In der Gesellschafterversammlung entscheidest du ab sofort die meisten Fragen allein.`, startupId: s.id });
+  }
+}
+
+const FUNDING_TEMPLATES = ["bridge", "seed_round"];
+
+/** Closes a round: the shareholders vote, money and shares move if it passes. */
+function settleRound(state: GameState, round: Round, take: RoundTake, vote: GvVote | "abstain", notes: string[]): void {
+  let s = startupOf(state, round.startupId);
+  const { ballots, approved } = shareholderVote(round, s, vote);
+  round.ballots = ballots;
+  round.take = take;
+  round.stakeBefore = s.stake;
+  unlockLesson(state, "pre_post_money");
+  if (round.down) unlockLesson(state, "down_round");
+  if (take === "prorata" || take === "half") unlockLesson(state, "pro_rata");
+  if (!approved) {
+    round.status = "failed";
+    round.playerAmount = 0;
+    round.stakeAfter = s.stake;
+    s = { ...s, flags: s.flags.filter((f) => f !== "round_open") };
+    if (vote === "no") s = applyDelta(s, { trust: -6 });
+    replaceStartup(state, s);
+    const text = `${s.name}: Die Gesellschafterversammlung lehnt die ${round.label} ab. Kein neues Geld.`;
+    notes.push(text);
+    mail(state, { kind: "round", from: s.name, subject: `${round.label} abgelehnt`, body: text, startupId: s.id, roundId: round.id });
+    return;
+  }
+  const invested = playerAmount(round, s.stake, take);
+  state.cash -= invested;
+  // New money makes bridge loans and seed offers on the agenda obsolete.
+  const obsolete = state.items.filter((i) => i.startupId === s.id && i.status === "open" && FUNDING_TEMPLATES.includes(i.templateId));
+  if (obsolete.length > 0) {
+    state.items = state.items.filter((i) => !obsolete.includes(i));
+    notes.push(`${s.name}: Die Vorlage zur Finanzierung ist mit der Runde erledigt.`);
+  }
+  const before = s.stake;
+  s = applyRound(s, round, invested);
+  if (vote === "go") s = applyDelta(s, { trust: 3 });
+  replaceStartup(state, s);
+  round.status = "closed";
+  round.playerAmount = invested;
+  round.stakeAfter = s.stake;
+  if (take === "lead") {
+    state.ledRounds += 1;
+    state.reputation = Math.min(100, state.reputation + LEAD_REPUTATION_GAIN);
+  }
+  const text = `${s.name}: ${round.label} über ${round.amount.toLocaleString("de-DE")} € abgeschlossen. Dein Anteil: ${before.toLocaleString("de-DE", { maximumFractionDigits: 1 })} % → ${s.stake.toLocaleString("de-DE", { maximumFractionDigits: 1 })} %.`;
+  notes.push(text);
+  mail(state, { kind: "round", from: s.name, subject: `${round.label} abgeschlossen`, body: text, startupId: s.id, roundId: round.id });
+  checkMajority(state, s, before);
 }
 
 function replaceStartup(state: GameState, next: Startup): void {
@@ -315,7 +546,8 @@ function unlockLesson(state: GameState, id: string): void {
 }
 
 /** Applies a delta that may touch the player too (cash, reputation, exit). */
-function applyFull(state: GameState, s: Startup, delta: Delta, texts: string[], text?: string): Startup {
+function applyFull(state: GameState, s: Startup, input: Delta, texts: string[], text?: string): Startup {
+  const delta = input.dilutionTo ? { ...input, dilutionTo: { ...input.dilutionTo, name: fill(input.dilutionTo.name, s) } } : input;
   if (text) texts.push(fill(text, s));
   state.cash += delta.playerCash ?? 0;
   state.reputation = Math.min(100, Math.max(0, state.reputation + (delta.reputation ?? 0)));
@@ -496,6 +728,11 @@ export function closeMonth(state: GameState): MonthReport {
   const valueBefore = portfolioValue(state);
   const before = new Map(state.startups.map((s) => [s.id, { revenue: s.metrics.revenue, cash: s.metrics.cash, valuation: valuation(s.metrics) }]));
 
+  // Rounds the player let run: the meeting votes without them.
+  for (const round of state.rounds.filter((r) => r.status === "open")) {
+    if (startupOf(state, round.startupId).status === "active") settleRound(state, round, "none", "abstain", notes);
+    else round.status = "failed";
+  }
   lapseItems(state, notes);
   const lines = new Map<string, string[]>();
   resolveEffects(state, month + 1, lines);
@@ -530,6 +767,18 @@ export function closeMonth(state: GameState): MonthReport {
     const fresh = STARTUPS.find((d) => !state.startups.some((s) => s.id === d.id));
     if (fresh) offer(state, fresh.id);
   }
+
+  for (const o of state.shareOffers.filter((x) => x.status === "open" && x.expires < state.month)) o.status = "expired";
+  for (const c of state.contacts.filter((x) => x.met)) c.warmth = Math.max(0, c.warmth - WARMTH_DECAY);
+  if (month % 3 === 0) grantAdvisorShares(state, month, notes);
+  for (const s of state.startups.filter((x) => x.status === "active")) {
+    const random = randomFor(state.seed, `secondary|${s.id}|${state.month}`);
+    if (random() < SECONDARY_CHANCE) {
+      const pick = s.capTable.find((h) => h.kind === "angel" && h.pct >= 1.5);
+      if (pick) createShareOffer(state, s, pick.id, pick.pct / 2, SECONDARY_DISCOUNT);
+    }
+  }
+  planRounds(state);
 
   state.daysUsed = 0;
   state.calendar = [];
@@ -566,6 +815,60 @@ export function closeMonth(state: GameState): MonthReport {
   state.reports.unshift(report);
   if (state.reports.length > 24) state.reports.length = 24;
   return report;
+}
+
+/** Every quarter, strong board work earns a few new shares. */
+function grantAdvisorShares(state: GameState, month: number, notes: string[]): void {
+  for (const s of state.startups.filter((x) => x.status === "active")) {
+    const strong = state.items.filter(
+      (i) => i.startupId === s.id && i.decision && !i.decision.lapsed && i.decision.judgment === "strong" && i.decision.month > month - 3,
+    ).length;
+    if (strong === 0 || s.metrics.trust < 60) continue;
+    replaceStartup(state, grantToPlayer(s, ADVISOR_SHARES));
+    const text = `${s.name}: Für deine Arbeit im Beirat bekommst du ${ADVISOR_SHARES.toLocaleString("de-DE")} % Leistungsanteile.`;
+    notes.push(text);
+    mail(state, { kind: "founder", from: s.name, subject: "Leistungsanteile für dich", body: `${text} Gute Beiräte binden Firmen gern mit Anteilen.`, startupId: s.id });
+  }
+}
+
+/** Companies running short of money raise a round; the shareholders' meeting decides. */
+function planRounds(state: GameState): void {
+  for (const s of state.startups.filter((x) => x.status === "active")) {
+    if (state.month - s.joined < 2) continue;
+    const blocked = state.rounds.some(
+      (r) => r.startupId === s.id && (r.status === "open" || state.month - r.month < (r.amount === 0 ? FAILED_SEARCH_COOLDOWN : ROUND_COOLDOWN)),
+    );
+    if (blocked) continue;
+    const runway = runwayMonths(s.metrics);
+    if (!(runway < ROUND_RUNWAY && runway >= 1)) continue;
+    const random = randomFor(state.seed, `round|${s.id}|${state.month}`);
+    if (random() > fundability(s)) {
+      // Nobody wants in: the founders keep looking, the money keeps running out.
+      state.rounds.push({ id: nextId(state, "r"), startupId: s.id, month: state.month, status: "failed", label: "Investorensuche", amount: 0, preMoney: 0, leadId: "", lead: "", down: false });
+      mail(state, {
+        kind: "round",
+        from: s.name,
+        subject: "Investoren winken ab",
+        body: `Das Geld reicht noch etwa ${Math.floor(runway)} Monate, aber kein Investor will gerade einsteigen. Wachstum, saubere Zahlen und Kontakte zu Investoren machen die Firma attraktiver.`,
+        startupId: s.id,
+      });
+      continue;
+    }
+    const done = state.rounds.filter((r) => r.startupId === s.id && r.status === "closed").length;
+    const terms = roundTerms(s, done, random);
+    const round: Round = { id: nextId(state, "r"), startupId: s.id, month: state.month, status: "open", ...terms };
+    state.rounds.push(round);
+    replaceStartup(state, { ...s, flags: [...s.flags.filter((f) => f !== "round_open"), "round_open"] });
+    const ceo = s.board.find((b) => b.seat === "ceo");
+    mail(state, {
+      kind: "round",
+      from: ceo ? `${ceo.name}, ${s.name}` : s.name,
+      subject: `${terms.label}: ${terms.amount.toLocaleString("de-DE")} € von ${terms.lead}`,
+      body: `Das Geld reicht noch etwa ${Math.floor(runway)} Monate. ${terms.lead} bietet ${terms.amount.toLocaleString("de-DE")} € bei einer Bewertung von ${terms.preMoney.toLocaleString("de-DE")} € vor dem Geld.${terms.down ? " Das ist weniger, als die Firma zuletzt wert war." : ""} Die Gesellschafterversammlung muss zustimmen. Ziehst du mit?`,
+      startupId: s.id,
+      roundId: round.id,
+    });
+  }
 }
 
 export function describeMonth(state: GameState): string {

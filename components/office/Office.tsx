@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { DAYS_PER_MONTH, monthLabel, monthName } from "@/lib/game/config";
+import { careerOf } from "@/lib/game/career";
 import { LESSONS } from "@/lib/game/lessons";
 import { deskView } from "@/lib/game/views";
 import { currentGame } from "@/lib/current-game";
@@ -13,6 +14,9 @@ export async function Office() {
   const firstOpen = desk.openItems[0];
   const folderHref = firstOpen ? `/firma/${firstOpen.startupId}` : "/portfolio";
   const portfolioValue = desk.mandates.reduce((sum, m) => sum + m.value, 0);
+  const career = careerOf(state);
+  const next = career.steps.find((step) => !step.done);
+  const warm = state.contacts.filter((c) => c.met && c.warmth >= 40).length;
 
   return (
     <div className="office">
@@ -75,13 +79,13 @@ export async function Office() {
             </span>
           </Link>
 
-          <div className="desk__item cards" aria-label="Visitenkarten: Netzwerk folgt in Phase 2" role="img">
+          <Link href="/netzwerk" className="desk__item cards" aria-label={`Visitenkarten: ${warm} warme Kontakte`}>
             <span className="cards__card cards__card--2" aria-hidden="true" />
             <span className="cards__card">
               <b>Netzwerk</b>
-              <span>bald</span>
+              <span>{warm} warm</span>
             </span>
-          </div>
+          </Link>
 
           <span className="desk__item cup" aria-hidden="true" />
           <span className="desk__item pen" aria-hidden="true" />
@@ -104,6 +108,18 @@ export async function Office() {
             </li>
           ))}
         </ul>
+        <div className="career" aria-label="Karriere">
+          <p className="eyebrow">Karriere</p>
+          <ol className="career__steps">
+            {career.steps.map((step) => (
+              <li key={step.title} className={step.done ? "is-done" : step === next ? "is-next" : step.later ? "is-later" : undefined}>
+                <span className="career__dot" aria-hidden="true" />
+                <span className="career__title">{step.title}</span>
+                {step === next && <span className="career__req">{step.requirement}</span>}
+              </li>
+            ))}
+          </ol>
+        </div>
         <p className="assistant__foot">
           Jede Handlung kostet Tage. Wenn du fertig bist, schließe oben den Monat ab: Die Firmen arbeiten weiter, und der Monatsbericht kommt.
         </p>

@@ -35,7 +35,7 @@ export const PEOPLE_TEMPLATES: Template[] = [
       go: {
         label: "Gegenangebot mit 3 % Anteil",
         summary: "{cto} bleibt, alle anderen werden um 3 % verwässert.",
-        resolve: () => ({ effects: [now("{cto} bleibt und bekommt 3 % Anteil.", { dilution: 0.03, morale: 6, axes: { product: 2 }, flag: "cto" })] }),
+        resolve: () => ({ effects: [now("{cto} bleibt und bekommt 3 % Anteil.", { dilution: 0.03, dilutionTo: { id: "cto_shares", name: "{cto} (Halteprämie)", kind: "cofounder" }, morale: 6, axes: { product: 2 }, flag: "cto" })] }),
       },
       conditions: {
         label: "Interims-CTO und Übergabe",
@@ -92,12 +92,12 @@ export const PEOPLE_TEMPLATES: Template[] = [
       go: {
         label: "8 % Optionspool",
         summary: "Alle Mitarbeiter bekommen Optionen.",
-        resolve: () => ({ effects: [now("Optionspool eingeführt: 8 % Verwässerung.", { dilution: 0.08, morale: 14, axes: { management: 4 }, flag: "esop" })] }),
+        resolve: () => ({ effects: [now("Optionspool eingeführt: 8 % Verwässerung.", { dilution: 0.08, dilutionTo: { id: "esop", name: "Mitarbeiterpool", kind: "esop" }, morale: 14, axes: { management: 4 }, flag: "esop" })] }),
       },
       conditions: {
         label: "4 % für Schlüsselpersonen",
         summary: "Kleiner Pool, gezielt vergeben.",
-        resolve: () => ({ effects: [now("Kleiner Optionspool: 4 % Verwässerung.", { dilution: 0.04, morale: 6, flag: "esop" })] }),
+        resolve: () => ({ effects: [now("Kleiner Optionspool: 4 % Verwässerung.", { dilution: 0.04, dilutionTo: { id: "esop", name: "Mitarbeiterpool", kind: "esop" }, morale: 6, flag: "esop" })] }),
       },
       no: {
         label: "Kein Optionspool",

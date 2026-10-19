@@ -33,6 +33,11 @@ export const ACTION_DAYS = {
   meeting: 1,
   founderCall: 1,
   learn: 1,
+  round: 2,
+  buyShares: 1,
+  askShares: 2,
+  meetContact: 1,
+  introContact: 1,
 } as const;
 
 // Company model
@@ -75,6 +80,35 @@ export const PROJECTION_MONTHS = 12;
 /** Gap to the best outcome (share of its value) that still counts as strong or fair judgment. */
 export const STRONG_GAP = 0.02;
 export const FAIR_GAP = 0.1;
+
+// Phase 2: rounds, shares, network
+/** A round starts when the money lasts less than this many months. */
+export const ROUND_RUNWAY = 6;
+/** Months of burn a round raises. */
+export const ROUND_MONTHS = 14;
+export const ROUND_MIN = 100_000;
+/** No new round within this many months of the last one. */
+export const ROUND_COOLDOWN = 6;
+/** After investors said no, the founders try again after this many months. */
+export const FAILED_SEARCH_COOLDOWN = 3;
+/** Reputation needed to lead a round; the lead takes half of it. */
+export const LEAD_REPUTATION = 40;
+export const LEAD_SHARE = 0.5;
+export const LEAD_REPUTATION_GAIN = 3;
+export const MAJORITY_REPUTATION_GAIN = 5;
+/** Discount when an early holder wants out; premium founders ask. */
+export const SECONDARY_DISCOUNT = 0.85;
+export const FOUNDER_PREMIUM = 1.25;
+export const SECONDARY_CHANCE = 0.1;
+/** Shares granted per quarter for strong board work. */
+export const ADVISOR_SHARES = 0.5;
+export const RING_REPUTATION = { 1: 0, 2: 35, 3: 55 } as const;
+export const WARMTH_MEET_FIRST = 30;
+export const WARMTH_MEET = 15;
+export const WARMTH_INTRO_MIN = 40;
+export const WARMTH_INTRO_COST = 20;
+export const WARMTH_DECAY = 3;
+export const INTRO_COOLDOWN = 3;
 
 export function monthLabel(month: number): string {
   const index = (START_MONTH_INDEX + month - 1) % 12;

@@ -1,4 +1,4 @@
-import type { BoardMember, Metrics, SeatId, Startup, StartupNames } from "./types";
+import type { BoardMember, Holder, Metrics, SeatId, Startup, StartupNames } from "./types";
 import { phaseOf, valuation } from "./sim";
 
 /** Seats as seen from the player's desk, left to right; the founder sits in the middle. */
@@ -14,6 +14,8 @@ export interface StartupDefinition {
   /** Facts the due diligence brings to light, in plain words. */
   diligence: { label: string; text: string; tone: "good" | "warn" | "bad" }[];
   stake: number;
+  /** Who owns the company before the player comes in (adds up to 100). */
+  capTable: Holder[];
   /** Month the offer arrives (game month). */
   arrives: number;
   board: BoardMember[];
@@ -29,6 +31,13 @@ export const STARTUPS: StartupDefinition[] = [
     sector: "Mobilität",
     names: { city: "Wien", competitor: "Velocity", partner: "die Stadtwerke Nord", acquirer: "Velocity", customer: "Mediwerk Kliniken" },
     stake: 12,
+    capTable: [
+      { id: "ceo", name: "Lena Hoffmann", kind: "founder", pct: 46 },
+      { id: "cto", name: "Jonas Weber", kind: "cofounder", pct: 24 },
+      { id: "vc", name: "Nordlicht Ventures", kind: "vc", pct: 18 },
+      { id: "angel", name: "Harald Brenner", kind: "angel", pct: 6 },
+      { id: "esop", name: "Mitarbeiterpool", kind: "esop", pct: 6 },
+    ],
     arrives: 1,
     mail: {
       from: "Lena Hoffmann, Pendelwerk",
@@ -70,6 +79,13 @@ export const STARTUPS: StartupDefinition[] = [
     sector: "Software für Firmen",
     names: { city: "Düsseldorf", competitor: "MenuMax", partner: "der Großhändler Kessler Gastro", acquirer: "die Großküchen AG Westfalen", customer: "Kantinenring West" },
     stake: 12,
+    capTable: [
+      { id: "ceo", name: "Sven Petersen", kind: "founder", pct: 52 },
+      { id: "cto", name: "Aylin Demir", kind: "cofounder", pct: 18 },
+      { id: "vc", name: "Rheinkapital", kind: "vc", pct: 20 },
+      { id: "angel", name: "Mia Krause", kind: "angel", pct: 4 },
+      { id: "esop", name: "Mitarbeiterpool", kind: "esop", pct: 6 },
+    ],
     arrives: 1,
     mail: {
       from: "Clara Stein, Rheinkapital",
@@ -111,6 +127,13 @@ export const STARTUPS: StartupDefinition[] = [
     sector: "Software für Firmen",
     names: { city: "Dresden", competitor: "FleetPilot", partner: "die Einkaufsgenossenschaft der Handwerker", acquirer: "FleetPilot", customer: "die Elektro Krüger Gruppe" },
     stake: 10,
+    capTable: [
+      { id: "ceo", name: "Deniz Arslan", kind: "founder", pct: 50 },
+      { id: "cto", name: "Paula Richter", kind: "cofounder", pct: 25 },
+      { id: "vc", name: "Brückenfonds", kind: "vc", pct: 15 },
+      { id: "angel", name: "Werner Scholz", kind: "angel", pct: 5 },
+      { id: "esop", name: "Mitarbeiterpool", kind: "esop", pct: 5 },
+    ],
     arrives: 3,
     mail: {
       from: "Deniz Arslan, Flottenfunk",
@@ -145,6 +168,150 @@ export const STARTUPS: StartupDefinition[] = [
       debt: 0,
     },
   },
+  {
+    id: "gruenblatt",
+    name: "Grünblatt",
+    tagline: "Frische Kräuter aus der Indoor-Farm für Restaurants",
+    sector: "Lebensmittel",
+    names: { city: "München", competitor: "GreenStack", partner: "die Gastro-Gruppe Alpenhof", acquirer: "die Frischeland AG", customer: "die Alpenhof Gastro-Gruppe" },
+    stake: 10,
+    capTable: [
+      { id: "ceo", name: "Nora Fischer", kind: "founder", pct: 44 },
+      { id: "cto", name: "Ben Okafor", kind: "cofounder", pct: 22 },
+      { id: "vc", name: "Saatgut Ventures", kind: "vc", pct: 22 },
+      { id: "angel", name: "Ute Hansen", kind: "angel", pct: 6 },
+      { id: "esop", name: "Mitarbeiterpool", kind: "esop", pct: 6 },
+    ],
+    arrives: 6,
+    mail: {
+      from: "Nora Fischer, Grünblatt",
+      subject: "Kräuter vom Dach statt aus Spanien",
+      body:
+        "Hallo! Grünblatt baut Kräuter und Salate in einer Halle in München an und liefert am selben Tag an Restaurants. 18.000 € Umsatz im Monat, 5 % Wachstum. Wir suchen einen Angel für 10 % und einen Platz in unserem Beirat. Wenn du magst, zeige ich dir die Farm.",
+    },
+    diligence: [
+      { label: "Kunden", text: "Köche lieben die Qualität. Die Alpenhof-Gruppe bringt allein 30 % des Umsatzes.", tone: "warn" },
+      { label: "Kosten", text: "Strom ist der größte Kostenblock. Steigt der Preis, schrumpft die Marge sofort.", tone: "bad" },
+      { label: "Marge", text: "45 % Rohertrag, mit der zweiten Halle sollen es 55 % werden.", tone: "good" },
+      { label: "Kasse", text: "300.000 € auf dem Konto, das reicht knapp zwei Jahre bei heutigem Verbrauch.", tone: "good" },
+    ],
+    board: [
+      { seat: "ceo", name: "Nora Fischer", short: "Nora", title: "Gründerin & CEO", personality: "visionary", interests: ["growth", "product"] },
+      { seat: "cto", name: "Ben Okafor", short: "Ben", title: "Mitgründer & Farm-Technik", personality: "doer", interests: ["product", "team"] },
+      { seat: "vc", name: "Katharina Roth", short: "Katharina", title: "Saatgut Ventures", personality: "numbers", interests: ["cash", "control"] },
+      { seat: "indep", name: "Dr. Peter Lang", short: "Peter", title: "Unabhängiger Beirat", personality: "diplomat", interests: ["team", "customer"] },
+      { seat: "angel", name: "Ute Hansen", short: "Ute", title: "Business Angel, Köchin", personality: "practical", interests: ["customer", "cash"] },
+    ],
+    metrics: {
+      cash: 300_000,
+      revenue: 18_000,
+      growth: 0.05,
+      grossMargin: 0.45,
+      opex: 21_500,
+      team: 8,
+      morale: 68,
+      trust: 60,
+      axes: { management: 55, product: 70, market: 55, edge: 50, finance: 45 },
+      topCustomer: 0.3,
+      debt: 0,
+    },
+  },
+  {
+    id: "lernwerk",
+    name: "Lernwerk",
+    tagline: "Lern-App für Auszubildende und ihre Betriebe",
+    sector: "Bildung",
+    names: { city: "Hamburg", competitor: "AzubiPro", partner: "die Handelskammer Nord", acquirer: "der Fachverlag Brandes", customer: "die Handelskammer Nord" },
+    stake: 12,
+    capTable: [
+      { id: "ceo", name: "Jan Petersen", kind: "founder", pct: 42 },
+      { id: "cto", name: "Lisa Wagner", kind: "cofounder", pct: 30 },
+      { id: "vc", name: "Lernkapital", kind: "vc", pct: 16 },
+      { id: "angel", name: "Kemal Yilmaz", kind: "angel", pct: 7 },
+      { id: "esop", name: "Mitarbeiterpool", kind: "esop", pct: 5 },
+    ],
+    arrives: 10,
+    mail: {
+      from: "Jan Petersen, Lernwerk",
+      subject: "Azubis lernen in der Pause: Lernwerk sucht Angel",
+      body:
+        "Moin aus Hamburg. Lernwerk bereitet Auszubildende mit kurzen Lerneinheiten auf die Prüfung vor, die Betriebe zahlen pro Kopf. 9.000 € Umsatz im Monat, 8 % Wachstum, 82 % Marge. Wir suchen 12 % Angel-Kapital und Erfahrung im Beirat.",
+    },
+    diligence: [
+      { label: "Wachstum", text: "8 % im Monat, getrieben von Empfehlungen zwischen Ausbildungsleitern.", tone: "good" },
+      { label: "Saison", text: "Neue Azubis starten im August und September. In den übrigen Monaten wächst wenig.", tone: "warn" },
+      { label: "Team", text: "Jan verkauft gut, Lisa hält das Produkt zusammen. Ein Vertrieb fehlt.", tone: "warn" },
+      { label: "Kasse", text: "Das Geld reicht etwa 9 Monate. Eine Runde wird bald nötig.", tone: "warn" },
+    ],
+    board: [
+      { seat: "ceo", name: "Jan Petersen", short: "Jan", title: "Gründer & CEO", personality: "doer", interests: ["growth", "customer"] },
+      { seat: "cto", name: "Lisa Wagner", short: "Lisa", title: "Mitgründerin & CTO", personality: "numbers", interests: ["product", "cash"] },
+      { seat: "vc", name: "Omar Saleh", short: "Omar", title: "Lernkapital", personality: "visionary", interests: ["growth", "control"] },
+      { seat: "indep", name: "Gisela Brandt", short: "Gisela", title: "Unabhängige Beirätin", personality: "diplomat", interests: ["team", "customer"] },
+      { seat: "angel", name: "Kemal Yilmaz", short: "Kemal", title: "Business Angel, Ausbilder", personality: "practical", interests: ["customer", "team"] },
+    ],
+    metrics: {
+      cash: 180_000,
+      revenue: 9_000,
+      growth: 0.08,
+      grossMargin: 0.82,
+      opex: 27_000,
+      team: 6,
+      morale: 75,
+      trust: 64,
+      axes: { management: 55, product: 72, market: 62, edge: 58, finance: 45 },
+      topCustomer: 0.18,
+      debt: 0,
+    },
+  },
+  {
+    id: "pfandpilot",
+    name: "Pfandpilot",
+    tagline: "Mehrwegboxen für Lieferdienste und Kantinen",
+    sector: "Logistik",
+    names: { city: "Köln", competitor: "ReBox", partner: "die Kreislaufinitiative Rhein", acquirer: "der Verpackungskonzern Hallmann", customer: "der Lieferdienst Schnellteller" },
+    stake: 8,
+    capTable: [
+      { id: "ceo", name: "Svenja Koch", kind: "founder", pct: 40 },
+      { id: "cto", name: "Mehmet Aydin", kind: "cofounder", pct: 20 },
+      { id: "vc", name: "Kreislauf Fonds", kind: "vc", pct: 28 },
+      { id: "angel", name: "Frank Meier", kind: "angel", pct: 5 },
+      { id: "esop", name: "Mitarbeiterpool", kind: "esop", pct: 7 },
+    ],
+    arrives: 14,
+    mail: {
+      from: "Svenja Koch, Pfandpilot",
+      subject: "Mehrweg statt Müll: Pfandpilot sucht einen Angel",
+      body:
+        "Hallo, Pfandpilot vermietet Mehrwegboxen an Lieferdienste und holt sie wieder ab. 30.000 € Umsatz im Monat, die Pflicht zum Mehrwegangebot hilft uns. Wir geben 8 % an einen Angel, der uns im Beirat hilft, sauber zu wachsen.",
+    },
+    diligence: [
+      { label: "Markt", text: "Die Mehrwegpflicht treibt die Nachfrage. Jeder größere Lieferdienst sucht eine Lösung.", tone: "good" },
+      { label: "Kunden", text: "Schnellteller bringt 45 % des Umsatzes und verhandelt hart.", tone: "bad" },
+      { label: "Marge", text: "Nur 30 % Rohertrag: Spülen und Transport kosten viel.", tone: "warn" },
+      { label: "Team", text: "Svenja hat schon einmal ein Logistik-Startup verkauft. Mehmet folgt ihr in allem.", tone: "warn" },
+    ],
+    board: [
+      { seat: "ceo", name: "Svenja Koch", short: "Svenja", title: "Gründerin & CEO", personality: "visionary", interests: ["growth", "control"] },
+      { seat: "cto", name: "Mehmet Aydin", short: "Mehmet", title: "Mitgründer & Betrieb", personality: "loyal", interests: ["team", "product"] },
+      { seat: "vc", name: "Robert Klein", short: "Robert", title: "Kreislauf Fonds", personality: "doer", interests: ["growth", "cash"] },
+      { seat: "indep", name: "Dr. Hanna Weiß", short: "Hanna", title: "Unabhängige Beirätin", personality: "numbers", interests: ["cash", "control"] },
+      { seat: "angel", name: "Frank Meier", short: "Frank", title: "Business Angel, Spediteur", personality: "practical", interests: ["customer", "cash"] },
+    ],
+    metrics: {
+      cash: 260_000,
+      revenue: 30_000,
+      growth: 0.04,
+      grossMargin: 0.3,
+      opex: 24_000,
+      team: 10,
+      morale: 66,
+      trust: 56,
+      axes: { management: 62, product: 58, market: 66, edge: 45, finance: 50 },
+      topCustomer: 0.45,
+      debt: 0,
+    },
+  },
 ];
 
 export function definitionOf(id: string): StartupDefinition {
@@ -168,6 +335,7 @@ export function offerStartup(def: StartupDefinition, month: number): Startup {
     metrics,
     phase: phaseOf(metrics),
     stake: 0,
+    capTable: def.capTable.map((h) => ({ ...h })),
     joined: 0,
     offer: { ticket, stake: def.stake, expires: month + 2, ddDone: false },
     flags: [],

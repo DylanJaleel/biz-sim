@@ -157,6 +157,57 @@ export const LESSONS: Lesson[] = [
     example: "Kündigt der einzige Entwickler, der den Code versteht, stehen neue Funktionen monatelang still.",
     inGame: "Kündigungen von Schlüsselpersonen senken die Produktstärke deutlich.",
   },
+  {
+    id: "pre_post_money",
+    title: "Pre-Money und Post-Money",
+    summary:
+      "Die Bewertung vor dem Geld (Pre-Money) ist der Preis der Firma, bevor Investoren einzahlen. Dazu kommt das neue Geld, das ergibt die Bewertung nach dem Geld (Post-Money). Der Anteil der Investoren ist ihr Geld geteilt durch Post-Money.",
+    rule: "Post-Money = Pre-Money + neues Geld; Anteil neuer Investoren = neues Geld ÷ Post-Money",
+    example: "2 Mio. € Pre-Money und 500.000 € frisches Geld: 2,5 Mio. € Post-Money. Die neuen Investoren halten 20 %.",
+    inGame: "Jede Finanzierungsrunde zeigt Pre-Money, Post-Money und was mit deinem Anteil passiert.",
+  },
+  {
+    id: "pro_rata",
+    title: "Pro-rata-Recht",
+    summary:
+      "Wer schon beteiligt ist, darf in einer neuen Runde meist so viel nachlegen, dass sein Anteil gleich bleibt. Das kostet Geld, schützt aber vor Verwässerung. Wer nicht mitzieht, behält seine Anteile, aber einen kleineren Prozentsatz.",
+    rule: "Nachschuss für gleichen Anteil = dein Anteil × Rundengröße",
+    example: "Du hältst 10 %, die Runde ist 400.000 € groß: Mit 40.000 € bleibst du bei 10 %.",
+    inGame: "In jeder Runde kannst du nicht mitziehen, pro rata nachlegen oder die Runde anführen.",
+  },
+  {
+    id: "down_round",
+    title: "Down Round",
+    summary:
+      "Eine Runde zu einem niedrigeren Preis als zuvor heißt Down Round. Frühe Gesellschafter verlieren dabei besonders viel. Trotzdem kann sie richtig sein: Ein kleineres Stück einer lebenden Firma ist mehr wert als ein großes Stück einer insolventen.",
+    example: "Die Firma war 2 Mio. € wert und bekommt Geld nur zu 1,4 Mio. €. Alte Angels werden deutlich stärker verwässert als geplant.",
+    inGame: "Brückenrunden mit niedrigem Preis stoßen in der Gesellschafterversammlung auf Widerstand der frühen Investoren.",
+  },
+  {
+    id: "stimmrechte",
+    title: "Stimmrechte und Mehrheit",
+    summary:
+      "Im Beirat zählt jede Stimme gleich. In der Gesellschafterversammlung zählt das Kapital: Wer mehr Anteile hat, hat mehr Stimmen. Über 50 % entscheidest du die meisten Fragen allein, für Satzungsänderungen braucht es oft 75 %.",
+    rule: "Einfache Mehrheit: mehr als die Hälfte der abgegebenen Stimmen; qualifizierte Mehrheit: meist 75 %",
+    example: "Gründerin 45 %, Fonds 30 %, du 15 %, Angels 10 %: Gründerin und Fonds zusammen setzen alles durch.",
+    inGame: "Finanzierungsrunden brauchen die Zustimmung der Gesellschafterversammlung. Ab über 50 % bist du Mehrheitsgesellschafter.",
+  },
+  {
+    id: "secondary",
+    title: "Anteile kaufen (Secondary)",
+    summary:
+      "Nicht jede Beteiligung entsteht in einer Runde. Bestehende Gesellschafter können ihre Anteile verkaufen, meist mit Abschlag, weil sie Liquidität wollen. Für Käufer ist das ein Weg zu mehr Einfluss, ohne dass die Firma Geld bekommt.",
+    example: "Ein Angel will nach fünf Jahren aussteigen und verkauft seine 4 % mit 15 % Abschlag auf die letzte Bewertung.",
+    inGame: "Angebote kommen von selbst oder über dein Netzwerk. Mit genug Vertrauen verkaufen auch Gründer einen Teil.",
+  },
+  {
+    id: "netzwerk",
+    title: "Netzwerk als Kapital",
+    summary:
+      "Ein guter Kontakt bringt Kunden, Personal, Kredite oder Investoren schneller als jede Anzeige. Beziehungen brauchen Pflege: Wer nur anruft, wenn er etwas will, verbraucht sein Netzwerk.",
+    example: "Eine Empfehlung an den richtigen Einkäufer verkürzt einen Verkauf von neun Monaten auf sechs Wochen.",
+    inGame: "Kontakte pflegen kostet einen Tag. Einen Kontakt in eine Firma einbringen kostet Wärme, und erst ab einem guten Ruf öffnen sich die äußeren Ringe.",
+  },
 ];
 
 /** Order in which "Weiterbildung" unlocks cards. */
@@ -178,6 +229,12 @@ export const CURRICULUM = [
   "pmf",
   "burggraben",
   "schluesselpersonen",
+  "pre_post_money",
+  "pro_rata",
+  "stimmrechte",
+  "down_round",
+  "secondary",
+  "netzwerk",
 ];
 
 export function lessonOf(id: string): Lesson {

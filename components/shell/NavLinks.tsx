@@ -7,6 +7,7 @@ const LINKS = [
   { href: "/", label: "Büro" },
   { href: "/portfolio", label: "Portfolio" },
   { href: "/post", label: "Post" },
+  { href: "/netzwerk", label: "Netzwerk", wide: true },
   { href: "/kalender", label: "Kalender", wide: true },
   { href: "/notizbuch", label: "Notizbuch", wide: true },
 ];
@@ -16,7 +17,7 @@ export function NavLinks({ unread }: { unread: number }) {
   return (
     <nav className="topbar__nav" aria-label="Hauptnavigation">
       {LINKS.map((l) => {
-        const active = l.href === "/" ? path === "/" : path.startsWith(l.href) || (l.href === "/portfolio" && /^\/(firma|sitzung)/.test(path));
+        const active = l.href === "/" ? path === "/" : path.startsWith(l.href) || (l.href === "/portfolio" && /^\/(firma|sitzung|gv)/.test(path));
         return (
           <Link
             key={l.href}

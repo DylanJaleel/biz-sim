@@ -78,6 +78,10 @@ export const analystBot = (prefer?: string): Bot => ({
       if (swing) actions.push({ type: "pretalk", itemId: item.id, seat: swing.seat });
       actions.push({ type: "meeting", itemId: item.id, argument: argument.id, vote: best });
     }
+    for (const round of s.rounds.filter((r) => r.status === "open")) {
+      actions.push({ type: "round", roundId: round.id, take: "prorata", vote: "go" });
+      actions.push({ type: "round", roundId: round.id, take: "half", vote: "go" });
+    }
     for (const startup of s.startups.filter((x) => x.status === "active" && x.metrics.trust < 55)) {
       actions.push({ type: "founderCall", startupId: startup.id });
     }

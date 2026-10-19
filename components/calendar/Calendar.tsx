@@ -13,6 +13,11 @@ const KIND_LABEL: Partial<Record<ActionKind, string>> = {
   meeting: "Beiratssitzung",
   founderCall: "Gespräch mit Gründung",
   learn: "Weiterbildung",
+  round: "Gesellschafterversammlung",
+  buyShares: "Anteilskauf",
+  askShares: "Anteile anfragen",
+  meetContact: "Kontakt treffen",
+  introContact: "Kontakt einbringen",
 };
 
 const WEEKDAYS = ["Mo", "Di", "Mi", "Do", "Fr"];

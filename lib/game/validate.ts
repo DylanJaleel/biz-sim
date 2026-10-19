@@ -1,10 +1,12 @@
-import type { GameAction, SeatId, Vote } from "./types";
+import type { GameAction, GvVote, RoundTake, SeatId, Vote } from "./types";
 
 // Server actions receive whatever the browser sends. This turns it into a
 // GameAction or nothing; the engine then checks the game rules.
 
 const SEATS: readonly SeatId[] = ["ceo", "cto", "vc", "indep", "angel"];
 const VOTES: readonly Vote[] = ["go", "conditions", "no"];
+const TAKES: readonly RoundTake[] = ["none", "half", "prorata", "lead"];
+const GV_VOTES: readonly GvVote[] = ["go", "no"];
 
 function id(value: unknown): value is string {
   return typeof value === "string" && value.length > 0 && value.length <= 64 && /^[\w-]+$/.test(value);
@@ -14,11 +16,24 @@ export function parseAction(input: unknown): GameAction | null {
   if (typeof input !== "object" || input === null) return null;
   const a = input as Record<string, unknown>;
   switch (a.type) {
-    case "dd":
     case "invest":
+      if (!id(a.startupId)) return null;
+      return a.size === "half" ? { type: "invest", startupId: a.startupId, size: "half" } : { type: "invest", startupId: a.startupId };
+    case "dd":
     case "decline":
     case "founderCall":
+    case "askShares":
       return id(a.startupId) ? { type: a.type, startupId: a.startupId } : null;
+    case "round":
+      return id(a.roundId) && TAKES.includes(a.take as RoundTake) && GV_VOTES.includes(a.vote as GvVote)
+        ? { type: "round", roundId: a.roundId, take: a.take as RoundTake, vote: a.vote as GvVote }
+        : null;
+    case "buyShares":
+      return id(a.offerId) ? { type: "buyShares", offerId: a.offerId } : null;
+    case "meetContact":
+      return id(a.contactId) ? { type: "meetContact", contactId: a.contactId } : null;
+    case "introContact":
+      return id(a.contactId) && id(a.startupId) ? { type: "introContact", contactId: a.contactId, startupId: a.startupId } : null;
     case "question":
       return id(a.itemId) && id(a.questionId) ? { type: "question", itemId: a.itemId, questionId: a.questionId } : null;
     case "cfo":

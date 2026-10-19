@@ -59,4 +59,14 @@ Größte Risiken: Umfang, Inhaltsaufwand, Grafik für das Büro in 3. Person.
 - **Spiellogik** (`lib/game`): drei Startups (Pendelwerk, Kantinenkasse, Flottenfunk), 26 Vorlagen in drei Themen (Wachstum, Finanzen, Menschen), 17 Lernkarten, Monatssimulation mit Wachstum, Kosten, Klumpenrisiko, Notfinanzierung und Insolvenz, verzögerte und riskante Folgen von Beschlüssen, Urteil nach erwartetem Wert (halb Basisfall, halb schwacher Markt). Balancing ist per Skript-Spieler getestet: Nur zuschauen verliert Geld, gut vorbereitet schlägt Ja-Sagen deutlich.
 - **Datenmodell:** ein `Game` pro Spieler mit dem Spielstand als JSON, `revision` gegen veraltete Tabs. Die Migration `boardroom` löscht die Tabellen des Handwerksspiels.
 - **Sitzung:** Ablauf Eröffnung, Statements, dein Argument, Debatte (Reaktionen als Linien), Abstimmung, Beschluss. Die Vorschau im Browser ist identisch mit dem, was der Server danach abspielt (gleicher Zufall).
-- **Offen für Phase 2:** Finanzierungsrunden mit Verwässerung als eigene Entscheidung, Nachschuss und Mehrheit, Netzwerk, mehrere Mandate gleichzeitig mit eigenen Agenden, Exit-Verhandlungen.
+
+## Umsetzung Phase 2
+
+- **Cap Table** pro Firma (`lib/game/captable.ts`), Verwässerung landet beim richtigen Gesellschafter.
+- **Runden:** ausgelöst bei weniger als 6 Monaten Reichweite, nur bei finanzierbaren Firmen (Wachstum, Finanzen, Vertrauen, Investoren-Kontakt). Preis aus heutiger Bewertung mal Faktor; unter 0,9 ist es eine Brückenrunde (Down Round). Optionen: nicht mitziehen, halb pro rata, pro rata, anführen (ab 40 Ruf, halbe Runde).
+- **Gesellschafterversammlung** nach Anteilen (Optionspool stimmt nicht). Gründer stimmen zu; bei Down Rounds stimmen Angels und Fonds dagegen, außer das Geld reicht unter 3 Monate. Ohne Teilnahme stimmt sie am Monatsende ohne den Spieler ab.
+- **Anteile:** Verkaufsangebote von Angels (10 % Chance pro Monat, 15 % Abschlag), selbst anfragen (2 Tage; Gründer nur ab 70 Vertrauen, 25 % Aufschlag), Leistungsanteile (0,5 % pro Quartal bei starkem Urteil und Vertrauen ab 60). Über 50 % = Mehrheitsgesellschafter.
+- **Netzwerk** (`lib/game/network.ts`): 11 Kontakte in drei Ringen mit Wärme, Abkühlung und Pause nach einem Gefallen.
+- **Karriere** (`lib/game/career.ts`) und drei weitere Startups.
+- Spielstände von Phase 1 werden beim Laden auf Version 2 gehoben (`upgradeState`).
+- **Offen für Phase 3:** Exit-Verhandlungen in der Gesellschafterversammlung, Liquidationspräferenzen, Büro-Stufen, Konzern-Pfad, mehrere offene Vorlagen pro Firma.

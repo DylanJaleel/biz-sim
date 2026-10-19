@@ -1,7 +1,7 @@
 import { randomInt } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import { getDb } from "../db";
-import { applyAction, GameRuleError, newGame, planAgenda, type ActionResult } from "../game/engine";
+import { applyAction, GameRuleError, newGame, planAgenda, upgradeState, type ActionResult } from "../game/engine";
 import type { GameAction, GameState } from "../game/types";
 
 export { GameRuleError } from "../game/engine";
@@ -13,7 +13,7 @@ export interface StoredGame {
 }
 
 function toStored(row: { id: string; state: Prisma.JsonValue; revision: number }): StoredGame {
-  return { id: row.id, state: row.state as unknown as GameState, revision: row.revision };
+  return { id: row.id, state: upgradeState(row.state as unknown as GameState), revision: row.revision };
 }
 
 function freshState(): GameState {
@@ -60,7 +60,7 @@ export async function performAction(
     if (!quiet && row.revision !== expectedRevision) {
       throw new GameRuleError("Der Spielstand hat sich inzwischen geändert. Die Ansicht wurde aktualisiert.");
     }
-    const { state, result } = applyAction(row.state as unknown as GameState, action);
+    const { state, result } = applyAction(upgradeState(row.state as unknown as GameState), action);
     const updated = await tx.game.update({
       where: { id: row.id },
       data: { state: state as unknown as Prisma.InputJsonValue, month: state.month, revision: quiet ? undefined : { increment: 1 } },

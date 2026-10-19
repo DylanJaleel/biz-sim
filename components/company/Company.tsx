@@ -7,6 +7,8 @@ import { ActionButton } from "@/components/game/ActionButton";
 import { eur, pct, runwayText } from "@/components/game/format";
 import { INTEREST_LABEL, PERSONALITY_LABEL, peopleOf } from "@/components/boardroom/people";
 import { VOTE_LABEL } from "@/components/boardroom/derive";
+import { CapTableBar } from "@/components/shares/CapTableBar";
+import { fmtPct } from "@/components/shares/holders";
 import { ForecastTool } from "./ForecastTool";
 import { LEANING_LABEL, PHASE_LABEL } from "./labels";
 import { Sparkline } from "./Sparkline";
@@ -194,6 +196,65 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
               )}
             </div>
             <Sparkline history={s.history} current={m.revenue} />
+          </section>
+
+          <section className="panel" id="anteile" aria-labelledby="shares-title">
+            <div className="panel__row">
+              <div>
+                <p className="eyebrow">Gesellschafter</p>
+                <h2 id="shares-title" className="panel__title">
+                  Wem {s.name} gehört
+                </h2>
+              </div>
+              {active && (
+                <ActionButton action={{ type: "askShares", startupId: s.id }} revision={revision} days={ACTION_DAYS.askShares} size="sm" disabled={view.askedThisMonth}>
+                  {view.askedThisMonth ? "Diesen Monat gefragt" : "Anteile anfragen"}
+                </ActionButton>
+              )}
+            </div>
+            <CapTableBar holders={s.capTable} stake={s.stake} />
+            {view.round && (
+              <Link href={`/gv/${view.round.id}`} className="banner">
+                <span>
+                  <b>{view.round.label} läuft:</b> {eur(view.round.amount)} von {view.round.lead}. Die Gesellschafterversammlung entscheidet bis Monatsende.
+                </span>
+                <span className="banner__cta">Zur Versammlung</span>
+              </Link>
+            )}
+            {view.offers.map((o) => (
+              <div key={o.id} className="offer">
+                <span>
+                  <b>{o.sellerName}</b> verkauft {fmtPct(o.pct)} für {eur(o.price)}
+                  <small className="muted"> · gilt bis Ende nächsten Monats</small>
+                </span>
+                <ActionButton action={{ type: "buyShares", offerId: o.id }} revision={revision} days={ACTION_DAYS.buyShares} size="sm" variant="primary">
+                  Kaufen
+                </ActionButton>
+              </div>
+            ))}
+            {view.rounds.length > 0 && (
+              <ul className="rounds">
+                {view.rounds.map((r) => (
+                  <li key={r.id}>
+                    <Link href={`/gv/${r.id}`}>
+                      <span className="decision__month">{monthLabel(r.month)}</span>
+                      <span>
+                        {r.label} · {eur(r.amount)}
+                      </span>
+                      <span className={`tag tag--${r.status === "closed" ? "go" : "no"}`}>{r.status === "closed" ? "angenommen" : "abgelehnt"}</span>
+                      {r.stakeBefore !== undefined && r.stakeAfter !== undefined && (
+                        <span className="muted small">
+                          {fmtPct(r.stakeBefore)} → {fmtPct(r.stakeAfter)}
+                        </span>
+                      )}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <p className="muted small">
+              Über 50 % machen dich zum Mehrheitsgesellschafter. Anteile bekommst du in Runden, als Leistungsanteile für gute Beiratsarbeit oder durch Kauf von anderen Gesellschaftern.
+            </p>
           </section>
 
           {active && <ForecastTool startup={s} />}
