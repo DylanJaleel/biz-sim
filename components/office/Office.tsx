@@ -131,7 +131,7 @@ export async function Office() {
         </ul>
         <div className="career" aria-label="Aufträge">
           <p className="eyebrow">Aufträge diesen Monat</p>
-          <GigList gigs={state.gigs.filter((g) => g.month === state.month)} revision={revision} reputation={state.reputation} daysLeft={desk.daysLeft} compact />
+          <GigList gigs={state.gigs.filter((g) => g.month === state.month)} reputation={state.reputation} daysLeft={desk.daysLeft} compact />
         </div>
         <div className="career office-level" aria-label="Büro">
           <p className="eyebrow">Büro</p>

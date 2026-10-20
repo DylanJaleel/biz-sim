@@ -284,6 +284,36 @@ export interface Gig {
   contactId?: string;
   warmth?: number;
   status: "offered" | "booked" | "expired";
+  /** Where the job takes place (missing in older games: derived from the kind). */
+  city?: string;
+  /** How you got there and how it went; set when booked with a trip. */
+  trip?: GigTrip;
+}
+
+export type GigApproach = "safe" | "thorough" | "bold";
+
+export interface GigTrip {
+  travel: string;
+  travelName: string;
+  approach: GigApproach;
+  travelDays: number;
+  travelCost: number;
+  /** Fee before the outcome; the gig's fee is the final one. */
+  offeredFee: number;
+  reputation: number;
+  success: boolean;
+  head: string;
+  text: string;
+}
+
+/** A tombstone in the display cabinet. */
+export interface TrophyRecord {
+  id: string;
+  month: number;
+  /** The player saw the announcement. */
+  seen: boolean;
+  /** A detail engraved on it, e.g. the sale price. */
+  detail?: string;
 }
 
 export type AssetId = "tagesgeld" | "anleihen" | "dividenden" | "tech";
@@ -314,6 +344,8 @@ export interface IncomeLines {
   dividends?: number;
   loans?: number;
   lockups?: number;
+  /** Phase 5: upkeep of cars, driver and jet. */
+  vehicles?: number;
 }
 
 export type ExitChoice = "accept" | "negotiate" | "reject";
@@ -431,7 +463,7 @@ export interface MonthReport {
 }
 
 export interface GameState {
-  version: 5;
+  version: 6;
   seed: number;
   month: number;
   daysUsed: number;
@@ -468,6 +500,10 @@ export interface GameState {
   loans: Loan[];
   /** Net worth at the start of the current game year. */
   yearWorth: number;
+  /** Tombstones earned so far. */
+  trophies: TrophyRecord[];
+  /** Ids of owned vehicles (see travel.ts). */
+  garage: string[];
 }
 
 export type ActionKind =
@@ -515,7 +551,10 @@ export type GameAction =
   | { type: "askShares"; startupId: string }
   | { type: "meetContact"; contactId: string }
   | { type: "introContact"; contactId: string; startupId: string }
-  | { type: "gig"; gigId: string }
+  | { type: "gig"; gigId: string; travel?: string; approach?: GigApproach }
+  | { type: "buyVehicle"; vehicleId: string }
+  | { type: "sellVehicle"; vehicleId: string }
+  | { type: "seenTrophies" }
   | { type: "trade"; assetId: AssetId; amount: number }
   | { type: "exit"; exitId: string; choice: ExitChoice }
   | { type: "moveOffice"; level: number }

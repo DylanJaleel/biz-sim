@@ -1,4 +1,4 @@
-import type { AssetId, ExitChoice, GameAction, GvVote, RoundTake, SeatId, TeamRole, Vote } from "./types";
+import type { AssetId, ExitChoice, GameAction, GigApproach, GvVote, RoundTake, SeatId, TeamRole, Vote } from "./types";
 
 // Server actions receive whatever the browser sends. This turns it into a
 // GameAction or nothing; the engine then checks the game rules.
@@ -31,8 +31,20 @@ export function parseAction(input: unknown): GameAction | null {
       return id(a.roundId) && TAKES.includes(a.take as RoundTake) && GV_VOTES.includes(a.vote as GvVote)
         ? { type: "round", roundId: a.roundId, take: a.take as RoundTake, vote: a.vote as GvVote }
         : null;
-    case "gig":
-      return id(a.gigId) ? { type: "gig", gigId: a.gigId } : null;
+    case "gig": {
+      if (!id(a.gigId)) return null;
+      if (a.travel !== undefined && !id(a.travel)) return null;
+      if (a.approach !== undefined && !["safe", "thorough", "bold"].includes(a.approach as string)) return null;
+      return {
+        type: "gig",
+        gigId: a.gigId,
+        ...(a.travel !== undefined ? { travel: a.travel as string } : {}),
+        ...(a.approach !== undefined ? { approach: a.approach as GigApproach } : {}),
+      };
+    }
+    case "buyVehicle":
+    case "sellVehicle":
+      return id(a.vehicleId) ? { type: a.type, vehicleId: a.vehicleId } : null;
     case "trade": {
       const amount = Number(a.amount);
       if (!ASSET_IDS.includes(a.assetId as AssetId) || !Number.isFinite(amount) || amount === 0 || Math.abs(amount) > 50_000_000) return null;
@@ -58,6 +70,7 @@ export function parseAction(input: unknown): GameAction | null {
       return id(a.startupId) ? { type: "assign", memberId: a.memberId, startupId: a.startupId } : null;
     case "foundFamilyOffice":
     case "raiseFund":
+    case "seenTrophies":
       return { type: a.type };
     case "buyShares":
       return id(a.offerId) ? { type: "buyShares", offerId: a.offerId } : null;

@@ -94,6 +94,8 @@ import { NEWS, targetsOf } from "./news";
 import { monthDays, OFFICES, officeOf } from "./office";
 import { contactDef, initialContacts, ringOpen } from "./network";
 import { boardFee, drawGigs } from "./gigs";
+import { awardTrophies } from "./trophies";
+import { garageUpkeep, garageValue, RESALE, resolveTrip, travelOptions, vehicleBlocker, vehicleOf } from "./travel";
 import { assetOf, holdingsValue, initialMarket, sentimentOf, stepMarket } from "./market";
 import { templateOf, TEMPLATES } from "./content";
 import { judge, bestVote, outlook, VOTES } from "./judge";
@@ -154,7 +156,7 @@ function mail(state: GameState, data: Omit<Mail, "id" | "month" | "read">): void
 
 export function newGame(seed: number): GameState {
   const state: GameState = {
-    version: 5,
+    version: 6,
     seed,
     month: 1,
     daysUsed: 0,
@@ -183,6 +185,8 @@ export function newGame(seed: number): GameState {
     lockups: [],
     loans: [],
     yearWorth: START_CASH,
+    trophies: [],
+    garage: [],
   };
   state.gigs = drawGigs(1, state.reputation, randomFor(seed, "gigs|1"), () => nextId(state, "g"));
   mail(state, {
@@ -214,14 +218,24 @@ function offer(state: GameState, id: string): void {
  */
 export function upgradeState(input: GameState): GameState {
   let state = input as GameState & { version: number };
-  if (state.version >= 5) return state;
+  if (state.version >= 6) return state;
+  if (state.version < 5) state = upgradeToV5(state);
+  // Version 6: display cabinet and garage. What was earned before shows up quietly.
+  const next: GameState = { ...state, version: 6, trophies: state.trophies ?? [], garage: state.garage ?? [] };
+  awardTrophies(next, netWorth(next));
+  for (const t of next.trophies) t.seen = true;
+  return next;
+}
+
+function upgradeToV5(input: GameState): GameState {
+  let state = input as GameState & { version: number };
   if (state.version < 2) {
     for (const s of state.startups) {
       if (!s.capTable) s.capTable = capTableAfterEntry(definitionOf(s.id).capTable, s.stake);
     }
     state = {
       ...state,
-      version: 2 as number as 5,
+      version: 2 as number as 6,
       rounds: state.rounds ?? [],
       shareOffers: state.shareOffers ?? [],
       contacts: state.contacts ?? initialContacts(),
@@ -229,7 +243,7 @@ export function upgradeState(input: GameState): GameState {
     };
   }
   // Version 3: income and the stock market.
-  const next: GameState = { ...state, version: 5, market: state.market ?? initialMarket(), gigs: state.gigs ?? [] };
+  const next: GameState = { ...state, version: 5 as number as 6, market: state.market ?? initialMarket(), gigs: state.gigs ?? [] };
   if (next.gigs.length === 0) next.gigs = drawGigs(next.month, next.reputation, randomFor(next.seed, `gigs|${next.month}`), () => nextId(next, "g"));
   // Version 4: offices, exits, news and the corporate seat.
   next.office = next.office ?? 0;
@@ -271,7 +285,7 @@ export function daysLeft(state: GameState): number {
 
 /** Account, depot and stakes together: what an office landlord looks at. */
 export function netWorth(state: GameState): number {
-  return state.cash + holdingsValue(state.market) + portfolioValue(state);
+  return state.cash + holdingsValue(state.market) + portfolioValue(state) + garageValue(state);
 }
 
 export function portfolioValue(state: GameState): number {
@@ -324,6 +338,13 @@ function requireOpenItem(state: GameState, itemId: string): BoardItem {
 }
 
 export function applyAction(current: GameState, action: GameAction): { state: GameState; result: ActionResult } {
+  const out = playAction(current, action);
+  // New tombstones for the cabinet; the game announces them until seen.
+  if (action.type !== "seenTrophies") awardTrophies(out.state, netWorth(out.state));
+  return out;
+}
+
+function playAction(current: GameState, action: GameAction): { state: GameState; result: ActionResult } {
   const state = clone(current);
   switch (action.type) {
     case "dd": {
@@ -548,9 +569,53 @@ export function applyAction(current: GameState, action: GameAction): { state: Ga
     case "gig": {
       const gig = state.gigs.find((g) => g.id === action.gigId);
       if (!gig || gig.status !== "offered") throw new GameRuleError("Dieser Auftrag ist nicht mehr zu haben.");
-      spendDays(state, "gig", `${gig.title} (${gig.client})`, gig.days);
+      // Without a choice: second class by train, done the safe way.
+      const options = travelOptions(state, gig);
+      const option = options.find((o) => o.id === (action.travel ?? "bahn2"));
+      if (!option) throw new GameRuleError("Diese Anreise gibt es für diesen Auftrag nicht.");
+      if (option.locked) throw new GameRuleError(`${option.name}: ${option.locked}.`);
+      const approach = action.approach ?? "safe";
+      const trip = resolveTrip(gig, option, approach, randomFor(state.seed, `trip|${gig.id}`)());
+      if (state.cash < option.cost) throw new GameRuleError("Für diese Anreise reicht das Konto nicht.");
+      spendDays(state, "gig", `${gig.title} (${gig.client})`, trip.days);
+      state.cash -= option.cost;
+      gig.trip = {
+        travel: option.id,
+        travelName: option.name,
+        approach,
+        travelDays: option.days,
+        travelCost: option.cost,
+        offeredFee: gig.fee,
+        reputation: trip.reputation,
+        success: trip.success,
+        head: trip.head,
+        text: trip.text,
+      };
+      gig.fee = trip.fee;
+      gig.days = trip.days;
+      if (trip.warmth && gig.contactId) gig.warmth = (gig.warmth ?? 0) + trip.warmth;
       gig.status = "booked";
       unlockLesson(state, "opportunitaetskosten");
+      return { state, result: { kind: "none" } };
+    }
+    case "buyVehicle": {
+      const v = vehicleOf(action.vehicleId);
+      if (!v) throw new GameRuleError("Dieses Fahrzeug gibt es nicht.");
+      const blocker = vehicleBlocker(state, v);
+      if (blocker) throw new GameRuleError(blocker);
+      state.cash -= v.price;
+      state.garage = [...state.garage, v.id];
+      return { state, result: { kind: "none" } };
+    }
+    case "sellVehicle": {
+      const v = vehicleOf(action.vehicleId);
+      if (!v || !state.garage.includes(v.id)) throw new GameRuleError("Das hast du nicht.");
+      state.cash += Math.round(v.price * RESALE);
+      state.garage = state.garage.filter((id) => id !== v.id);
+      return { state, result: { kind: "none" } };
+    }
+    case "seenTrophies": {
+      for (const t of state.trophies) t.seen = true;
       return { state, result: { kind: "none" } };
     }
     case "trade": {
@@ -1328,6 +1393,7 @@ export function closeMonth(state: GameState): MonthReport {
     state.cash += gig.fee;
     income.consulting += gig.fee;
     if (gig.reputation) state.reputation = Math.min(100, state.reputation + gig.reputation);
+    if (gig.trip?.reputation) state.reputation = Math.max(0, Math.min(100, state.reputation + gig.trip.reputation));
     if (gig.contactId && gig.warmth) {
       const c = state.contacts.find((x) => x.id === gig.contactId);
       if (c) {
@@ -1369,6 +1435,9 @@ export function closeMonth(state: GameState): MonthReport {
   const rent = officeOf(state).rent;
   state.cash -= rent;
   income.rent = -rent;
+  const upkeep = garageUpkeep(state);
+  state.cash -= upkeep;
+  income.vehicles = -upkeep;
   holdingMonth(state, month, income, notes);
   const regimeBefore = state.market.regime;
   const market = stepMarket(state.market, month, randomFor(state.seed, `market|${month}`));

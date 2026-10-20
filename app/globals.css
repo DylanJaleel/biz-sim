@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "./boardroom.css";
+@import "./glass.css";
 
 /* ---------------------------------------------------------------------------
    Tokens. Ruhig, hell, präzise; im Dunkeln wie ein abendlicher Sitzungssaal.
@@ -528,10 +529,30 @@ body {
   }
 }
 
-@media (max-width: 1180px) {
-  .topbar__hide-sm,
+/* Netzwerk und Börse liegen auch auf dem Schreibtisch; so passt die Leiste aufs Tablet. */
+@media (max-width: 1399px) {
+  .topbar__wide,
   .topbar__name {
+    display: none !important;
+  }
+  .topbar__stats {
+    gap: 16px;
+  }
+}
+
+@media (max-width: 1280px) {
+  .topbar__hide-sm {
     display: none;
+  }
+}
+
+@media (max-width: 1100px) {
+  .topbar__long,
+  .topbar__stats dt {
+    display: none !important;
+  }
+  .topbar__short {
+    display: inline;
   }
 }
 

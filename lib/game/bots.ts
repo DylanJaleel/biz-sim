@@ -5,6 +5,7 @@ import { OFFICES } from "./office";
 import { careerOf } from "./career";
 import { valuation } from "./sim";
 import { bestVote, outlook, VOTES } from "./judge";
+import { travelOptions } from "./travel";
 import type { GameAction, GameState, Vote } from "./types";
 
 // Skript-Spieler für die Balance: Sie spielen das Spiel über die echte Engine.
@@ -24,7 +25,12 @@ function firstAffordable(state: GameState, prefer?: string): string | null {
 
 function investActions(state: GameState, id: string | null, dd: boolean): GameAction[] {
   if (!id || state.startups.some((s) => s.status === "active")) return [];
-  return dd ? [{ type: "dd", startupId: id }, { type: "invest", startupId: id }] : [{ type: "invest", startupId: id }];
+  return dd
+    ? [
+        { type: "dd", startupId: id },
+        { type: "invest", startupId: id },
+      ]
+    : [{ type: "invest", startupId: id }];
 }
 
 /** Never meets: the founders decide everything alone. */
@@ -39,9 +45,14 @@ function gigActions(state: GameState, reserve: number): GameAction[] {
   let free = daysLeft(state) - reserve;
   const out: GameAction[] = [];
   for (const g of state.gigs.filter((x) => x.status === "offered").sort((a, b) => b.fee / b.days - a.fee / a.days)) {
-    if (g.days <= free) {
-      out.push({ type: "gig", gigId: g.id });
-      free -= g.days;
+    // The quickest way there, then the cheapest; done the safe way.
+    const trip = travelOptions(state, g)
+      .filter((o) => !o.locked)
+      .sort((a, b) => a.days - b.days || a.cost - b.cost)[0]!;
+    const days = Math.max(1, g.days + trip.days - (g.days >= 3 ? 1 : 0));
+    if (days <= free) {
+      out.push({ type: "gig", gigId: g.id, travel: trip.id, approach: "safe" });
+      free -= days;
     }
   }
   return out;
@@ -179,9 +190,11 @@ export const mogulBot = (prefer?: string): Bot => {
         if (associates.length < Math.min(3, active.length - 2) && s.cash > 150_000) actions.push({ type: "hire", role: "associate" });
         if (!s.team.some((m) => m.role === "partner") && s.cash > 400_000) actions.push({ type: "hire", role: "partner" });
         const free = active.filter((x) => !s.team.some((m) => m.mandate === x.id));
-        associates.filter((m) => !m.mandate || !active.some((x) => x.id === m.mandate)).forEach((m, i) => {
-          if (free[i]) actions.push({ type: "assign", memberId: m.id, startupId: free[i]!.id });
-        });
+        associates
+          .filter((m) => !m.mandate || !active.some((x) => x.id === m.mandate))
+          .forEach((m, i) => {
+            if (free[i]) actions.push({ type: "assign", memberId: m.id, startupId: free[i]!.id });
+          });
         if (!s.fund) actions.push({ type: "raiseFund" });
       }
       return [...actions, ...base.month(s, random)];

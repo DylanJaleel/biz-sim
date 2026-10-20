@@ -32,7 +32,7 @@ const WEEKDAYS = ["Mo", "Di", "Mi", "Do", "Fr"];
 const dayText = (n: number) => (n === 0 ? "Analyst" : n === 1 ? "1 Tag" : `${n} Tage`);
 
 export async function Calendar() {
-  const { state, revision } = await currentGame();
+  const { state } = await currentGame();
   const total = monthDays(state);
   const office = officeOf(state);
   const days = Array.from({ length: total }, (_, i) => {
@@ -73,7 +73,7 @@ export async function Calendar() {
 
       <section className="page__section">
         <h2 className="section-title">Bezahlte Aufträge</h2>
-        <GigList gigs={state.gigs.filter((g) => g.month === state.month)} revision={revision} reputation={state.reputation} daysLeft={daysLeft(state)} />
+        <GigList gigs={state.gigs.filter((g) => g.month === state.month)} reputation={state.reputation} daysLeft={daysLeft(state)} />
       </section>
 
       <section className="page__section">

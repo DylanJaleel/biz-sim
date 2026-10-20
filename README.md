@@ -4,6 +4,15 @@ Browser-Strategiespiel mit Lerneffekt: Du startest als Business Angel mit 150.00
 
 Konzept und Entscheidungen: [`docs/boardroom-konzept.md`](./docs/boardroom-konzept.md). Deployment: Das Vercel-Projekt `biz-sim` ist mit dem Repo verbunden, jeder Push auf den Branch geht automatisch in Produktion. Details: [`docs/deployment-vercel.md`](./docs/deployment-vercel.md).
 
+## Glas-Cockpit, Vitrine, Fuhrpark und Anreise (Phase 5)
+
+- **Glas-Cockpit**: Das Büro ist jetzt ein Glasfenster vor dem eigenen, unscharfen Büro (Bild je Büro-Stufe). Vermögen mit Verlauf, Tagesordnungen mit Phase, Posteingang, Portfolio, Aufträge, Assistenz mit den Aufgaben des Tages, unten Vitrine, Schlüssel und Notizbuch.
+- **Zurück zur alten Ansicht**: Unter Konto → Ansicht lässt sich jederzeit der klassische Schreibtisch wählen (Cookie `buero`). Am Spielstand ändert das nichts. Der Stand vor dieser Phase ist Commit `ece0f1e` (mit Punkt 2), davor `ff76dc0`.
+- **Vitrine** (`/vitrine`): 15 Tombstones in drei Regalen (Vermögen 1 bis 50 Mio., Deals und Verkäufe, Karriere). Wer einen verdient, bekommt ein Pop-up mit dem Hinweis, dass er ab jetzt in der Vitrine steht. Alte Spielstände bekommen bereits verdiente Stücke still dazu.
+- **Fuhrpark** (`/fuhrpark`): sieben Autos, Fahrer, Jet-Karte, eigener Jet. Kaufpreis, Unterhalt im Monat (Monatsbericht: „Fuhrpark“), Wiederverkauf zu 60 %, Freischaltung über Ruf, Family Office oder Fonds. Fahrzeuge zählen zum Vermögen.
+- **Aufträge mit Anreise** (`/auftrag/[id]`): Jeder Auftrag hat einen Ort. Anreise wählen (Zug 2./1. Klasse, eigenes Auto, Fahrer, Flug Economy/Business/First, Jet), kurze Bildfolge unterwegs, dann vor Ort pragmatisch, gründlich oder mutig. Arbeiten unterwegs, ausgeruht ankommen und Eindruck verschieben die Chancen; Honorar, Tage und Ruf hängen vom Ergebnis ab.
+- **Bilder**: 58 WebP-Bilder in `public/boardroom/` (aus dem Bildmaterial im Repo `boardroom`, verkleinert; Gravuren auf drei Tombstones entfernt und im Spiel neu gesetzt).
+
 ## Einkommen
 
 - **Lebenshaltung** kostet 1.800 € im Monat. Fällt das Konto unter null, laufen Dispozinsen; ab 25.000 € Minus verkauft die Bank erst dein Depot, dann deinen kleinsten Anteil mit 30 % Abschlag.

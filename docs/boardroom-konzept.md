@@ -100,3 +100,11 @@ Größte Risiken: Umfang, Inhaltsaufwand, Grafik für das Büro in 3. Person.
 - **Warteschlange:** 3B (Investoren mit Erwartungen, jährliche Investorenversammlung) kommt, wenn Punkt 3 angegangen wird, dann zusammen mit dem Fondszyklus; derzeit nicht nötig.
 - **In Prüfung:** 1A (isometrische Räume) und 1B (begehbares 3D-Büro) als interaktive Visualisierung, Entscheidung vor dem Einbau.
 
+
+## Umsetzung Phase 5 (Glas-Cockpit)
+
+- Büro als Glas-Cockpit (Variante A), klassischer Schreibtisch bleibt unter Konto wählbar
+- Vitrine mit 15 Tombstones und Pop-up beim Erreichen eines Meilensteins
+- Fuhrpark-Markt und Aufträge mit Anreise, Bildfolge und Entscheidung vor Ort
+- Rhythmus der Tagesordnung (ruhig, normal, viel los) und viele neue Sitzungsthemen
+- Due Diligence als Lernpfad mit dem CFO: Entwurf steht, kommt nach dem Test im Spiel

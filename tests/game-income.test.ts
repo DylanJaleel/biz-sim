@@ -12,11 +12,14 @@ describe("consulting", () => {
     let state = newGame(4);
     const gig = state.gigs[0]!;
     state = act(state, { type: "gig", gigId: gig.id });
-    expect(state.daysUsed).toBe(gig.days);
+    // Booked with the default trip: the travel day counts, the ticket is paid now.
+    const booked = state.gigs.find((g) => g.id === gig.id)!;
+    expect(state.daysUsed).toBe(booked.days);
+    expect(booked.days).toBe(gig.days + booked.trip!.travelDays);
     const cash = state.cash;
     const result = applyAction(state, { type: "closeMonth" });
-    expect(result.state.cash).toBe(cash + gig.fee - LIVING_COSTS);
-    if (result.result.kind === "report") expect(result.result.report.income!.consulting).toBe(gig.fee);
+    expect(result.state.cash).toBe(cash + booked.fee - LIVING_COSTS);
+    if (result.result.kind === "report") expect(result.result.report.income!.consulting).toBe(booked.fee);
     expect(result.state.gigs.some((g) => g.month === 2 && g.status === "offered")).toBe(true);
   });
 

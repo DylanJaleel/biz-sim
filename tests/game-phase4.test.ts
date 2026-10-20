@@ -164,7 +164,7 @@ describe("saved games", () => {
     const v4: Record<string, unknown> = { ...newGame(2), version: 4 };
     for (const key of ["deals", "team", "lockups", "loans", "yearWorth"]) delete v4[key];
     const up = upgradeState(v4 as unknown as GameState);
-    expect(up.version).toBe(5);
+    expect(up.version).toBe(6);
     expect(up.deals).toEqual([]);
     expect(up.team).toEqual([]);
     expect(up.yearWorth).toBeCloseTo(netWorth(up), 0);

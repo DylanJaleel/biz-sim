@@ -1,11 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { signOut } from "@/auth";
 import type { ActionResult } from "@/lib/action-result";
 import { GameRuleError } from "@/lib/repository/game";
 import { createSave, deleteSave, importGame, restoreSave } from "@/lib/repository/saves";
 import { requireUser } from "@/lib/session";
+import { OFFICE_STYLE_COOKIE } from "@/lib/office-style";
 
 export async function signOutAction() {
   await signOut({ redirectTo: "/login" });
@@ -52,4 +54,12 @@ export async function importSaveAction(text: unknown): Promise<ActionResult> {
     return { ok: false, error: "Die Datei ist kein gültiger Spielstand." };
   }
   return run((userId) => importGame(userId, parsed));
+}
+
+/** Glas-Cockpit or the classic desk; kept for a year in this browser. */
+export async function setOfficeStyleAction(style: unknown): Promise<void> {
+  await requireUser();
+  const value = style === "klassisch" ? "klassisch" : "glas";
+  (await cookies()).set(OFFICE_STYLE_COOKIE, value, { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax", httpOnly: true });
+  revalidatePath("/", "layout");
 }

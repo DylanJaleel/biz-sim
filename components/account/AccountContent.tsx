@@ -1,4 +1,6 @@
+import { OfficeStyleCard } from "@/components/account/OfficeStyleCard";
 import { ResetGameCard } from "@/components/account/ResetGameCard";
+import { officeStyle } from "@/lib/office-style";
 import { SaveGames } from "@/components/account/SaveGames";
 import { requireUser } from "@/lib/session";
 import { signOutAction } from "@/app/(app)/konto/actions";
@@ -19,6 +21,8 @@ export async function AccountContent() {
       </section>
 
       <SaveGames userId={user.id!} email={user.email ?? ""} />
+
+      <OfficeStyleCard current={await officeStyle()} />
 
       <ResetGameCard />
 
