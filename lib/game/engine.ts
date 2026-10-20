@@ -68,9 +68,27 @@ import {
   TEAM_MAX,
   AGENDA_MAX,
   AGENDA_THIRD,
+  PACE_BUSY_THIRD,
+  PACE_CALM_QUARTER,
+  PACE_MONTHS,
+  PACE_NEXT,
+  PACE_NORMAL_BETWEEN,
 } from "./config";
 import { FIRST, generateDeal, LAST, type DealStage } from "./dealgen";
-import { applyRound, capTableAfterEntry, exitVote, fundability, playerAmount, roundTerms, sellers, shareholderVote, grantToPlayer, syndicateAmount, transferToPlayer, waterfall } from "./captable";
+import {
+  applyRound,
+  capTableAfterEntry,
+  exitVote,
+  fundability,
+  playerAmount,
+  roundTerms,
+  sellers,
+  shareholderVote,
+  grantToPlayer,
+  syndicateAmount,
+  transferToPlayer,
+  waterfall,
+} from "./captable";
 import { CORPORATE_ID, corporateStartup } from "./corporate";
 import { NEWS, targetsOf } from "./news";
 import { monthDays, OFFICES, officeOf } from "./office";
@@ -84,22 +102,7 @@ import { baseStances, buildMeeting, type MeetingPlayback } from "./meeting";
 import { applyDelta, monthlyCashFlow, runwayMonths, stepMonth, valuation } from "./sim";
 import { definitionOf, offerStartup, STARTUPS, type StartupDefinition } from "./startups";
 import { fill } from "./templates";
-import type {
-  BoardItem,
-  Delta,
-  ExitOffer,
-  GameAction,
-  GameState,
-  GvVote,
-  IncomeLines,
-  Mail,
-  MonthReport,
-  Round,
-  RoundTake,
-  Shares,
-  Startup,
-  Vote,
-} from "./types";
+import type { BoardItem, Delta, ExitOffer, GameAction, GameState, GvVote, IncomeLines, Mail, MonthReport, Pace, PaceKind, Round, RoundTake, Shares, Startup, Vote } from "./types";
 import { voteFromStance } from "./votes";
 
 export class GameRuleError extends Error {
@@ -186,8 +189,7 @@ export function newGame(seed: number): GameState {
     kind: "system",
     from: "Boardroom",
     subject: "Willkommen in deinem Büro",
-    body:
-      "Du hast 150.000 € Privatkapital und den Wunsch, mehr zu bewegen als ein Sparbuch. Zwei Gründer suchen einen Angel. Prüfe die Angebote, investiere in eines und begleite die Firma im Beirat. Jeder Monat hat 20 Arbeitstage. Davon lebst du auch: Rund 1.800 € kostet dein Leben im Monat, Beratungsaufträge bringen Geld, kosten aber Tage. Was nicht gebraucht wird, kann an der Börse arbeiten.",
+    body: "Du hast 150.000 € Privatkapital und den Wunsch, mehr zu bewegen als ein Sparbuch. Zwei Gründer suchen einen Angel. Prüfe die Angebote, investiere in eines und begleite die Firma im Beirat. Jeder Monat hat 20 Arbeitstage. Davon lebst du auch: Rund 1.800 € kostet dein Leben im Monat, Beratungsaufträge bringen Geld, kosten aber Tage. Was nicht gebraucht wird, kann an der Börse arbeiten.",
   });
   for (const def of STARTUPS.filter((d) => d.arrives === 1)) offer(state, def.id);
   return state;
@@ -273,9 +275,7 @@ export function netWorth(state: GameState): number {
 }
 
 export function portfolioValue(state: GameState): number {
-  return state.startups
-    .filter((s) => s.status === "active")
-    .reduce((sum, s) => sum + (s.stake / 100) * valuation(s.metrics), 0);
+  return state.startups.filter((s) => s.status === "active").reduce((sum, s) => sum + (s.stake / 100) * valuation(s.metrics), 0);
 }
 
 export function meetingRandom(state: GameState, item: BoardItem): () => number {
@@ -414,7 +414,9 @@ export function applyAction(current: GameState, action: GameAction): { state: Ga
         argument: action.argument,
         vote: action.vote,
       });
-      const further = state.items.some((i) => i.id !== item.id && i.startupId === s.id && i.decision && !i.decision.lapsed && !i.decision.delegated && i.decision.month === state.month);
+      const further = state.items.some(
+        (i) => i.id !== item.id && i.startupId === s.id && i.decision && !i.decision.lapsed && !i.decision.delegated && i.decision.month === state.month,
+      );
       decide(state, item, playback.outcome!, action.vote, action.argument, playback.stancesAfter.ceo, playback.shares!);
       item.decision!.ballots = playback.ballots;
       // Reputation comes from the sitting, not from the number of items: further items count half.
@@ -497,7 +499,13 @@ export function applyAction(current: GameState, action: GameAction): { state: Ga
       const options = sellers(s);
       const chance = Math.min(0.9, 0.35 + s.metrics.trust / 250 + state.reputation / 250);
       if (options.length === 0 || random() > chance) {
-        mail(state, { kind: "shares", from: s.name, subject: "Niemand will verkaufen", body: "Du hast dich umgehört, aber gerade will niemand Anteile abgeben. Mehr Vertrauen und ein besserer Ruf öffnen Türen.", startupId: s.id });
+        mail(state, {
+          kind: "shares",
+          from: s.name,
+          subject: "Niemand will verkaufen",
+          body: "Du hast dich umgehört, aber gerade will niemand Anteile abgeben. Mehr Vertrauen und ein besserer Ruf öffnen Türen.",
+          startupId: s.id,
+        });
         return { state, result: { kind: "none" } };
       }
       const pick = options[Math.floor(random() * options.length) % options.length]!;
@@ -611,7 +619,10 @@ export function applyAction(current: GameState, action: GameAction): { state: Ga
         kind: "system",
         from: "Boardroom",
         subject: `Umzug: ${target.name}`,
-        body: target.rent > 0 ? `Ab jetzt kostet dein Büro ${target.rent.toLocaleString("de-DE")} € Miete im Monat. ${target.perks.join(". ")}.` : "Zurück an den Küchentisch. Keine Miete mehr, aber auch keine Hilfe.",
+        body:
+          target.rent > 0
+            ? `Ab jetzt kostet dein Büro ${target.rent.toLocaleString("de-DE")} € Miete im Monat. ${target.perks.join(". ")}.`
+            : "Zurück an den Küchentisch. Keine Miete mehr, aber auch keine Hilfe.",
       });
       return { state, result: { kind: "none" } };
     }
@@ -625,7 +636,14 @@ export function applyAction(current: GameState, action: GameAction): { state: Ga
       spendDays(state, "buyout", `Übernahme ${s.name}`);
       state.cash -= price - loan;
       if (loan > 0) {
-        state.loans.push({ id: nextId(state, "k"), startupId: s.id, label: `Kaufkredit ${s.name}`, balance: loan, rate: BUYOUT_LOAN_RATE, payment: annuity(loan, BUYOUT_LOAN_RATE, BUYOUT_LOAN_MONTHS) });
+        state.loans.push({
+          id: nextId(state, "k"),
+          startupId: s.id,
+          label: `Kaufkredit ${s.name}`,
+          balance: loan,
+          rate: BUYOUT_LOAN_RATE,
+          payment: annuity(loan, BUYOUT_LOAN_RATE, BUYOUT_LOAN_MONTHS),
+        });
         unlockLesson(state, "lbo");
       }
       s.status = "active";
@@ -789,7 +807,13 @@ function fundCoInvest(state: GameState, s: Startup, ticket: number, pct: number,
   holder.cost = (holder.cost ?? 0) + used;
   f.cash -= used;
   f.invested += used;
-  mail(state, { kind: "system", from: f.name, subject: `${f.name} steigt bei ${s.name} mit ein`, body: `Der Fonds investiert ${used.toLocaleString("de-DE")} € und hält ${fundPct.toLocaleString("de-DE", { maximumFractionDigits: 1 })} %. Er stimmt wie du; am Gewinn bist du mit 20 % Carry beteiligt.`, startupId: s.id });
+  mail(state, {
+    kind: "system",
+    from: f.name,
+    subject: `${f.name} steigt bei ${s.name} mit ein`,
+    body: `Der Fonds investiert ${used.toLocaleString("de-DE")} € und hält ${fundPct.toLocaleString("de-DE", { maximumFractionDigits: 1 })} %. Er stimmt wie du; am Gewinn bist du mit 20 % Carry beteiligt.`,
+    startupId: s.id,
+  });
   return next;
 }
 
@@ -808,11 +832,25 @@ function negotiate(state: GameState, offer: ExitOffer, s: Startup): void {
   const chance = Math.min(0.85, NEGOTIATE_CHANCE + (state.reputation - 50) / 200 + (s.stake > 25 ? 0.1 : 0));
   if (random() < chance) {
     offer.price = Math.round((offer.price * (1 + NEGOTIATE_GAIN)) / 10_000) * 10_000;
-    mail(state, { kind: "exit", from: offer.buyer, subject: `${s.name}: ${offer.buyer} legt nach`, body: `Neues Angebot: ${offer.price.toLocaleString("de-DE")} €. Mehr gibt es nicht. Jetzt muss die Gesellschafterversammlung entscheiden.`, startupId: s.id, exitId: offer.id });
+    mail(state, {
+      kind: "exit",
+      from: offer.buyer,
+      subject: `${s.name}: ${offer.buyer} legt nach`,
+      body: `Neues Angebot: ${offer.price.toLocaleString("de-DE")} €. Mehr gibt es nicht. Jetzt muss die Gesellschafterversammlung entscheiden.`,
+      startupId: s.id,
+      exitId: offer.id,
+    });
   } else {
     offer.status = "withdrawn";
     replaceStartup(state, applyDelta(s, { trust: -4 }));
-    mail(state, { kind: "exit", from: offer.buyer, subject: `${s.name}: ${offer.buyer} steigt aus`, body: "Der Käufer hat das Interesse verloren. Die Gründung ist enttäuscht, das Geld war zum Greifen nah.", startupId: s.id, exitId: offer.id });
+    mail(state, {
+      kind: "exit",
+      from: offer.buyer,
+      subject: `${s.name}: ${offer.buyer} steigt aus`,
+      body: "Der Käufer hat das Interesse verloren. Die Gründung ist enttäuscht, das Geld war zum Greifen nah.",
+      startupId: s.id,
+      exitId: offer.id,
+    });
   }
 }
 
@@ -895,7 +933,7 @@ function createShareOffer(state: GameState, s: Startup, sellerId: string, pct: n
   if (!seller) return;
   const share = Math.round(Math.min(pct, seller.pct) * 10) / 10;
   if (share < 0.5) return;
-  const price = Math.round(((valuation(s.metrics) * share) / 100) * factor / 1000) * 1000;
+  const price = Math.round((((valuation(s.metrics) * share) / 100) * factor) / 1000) * 1000;
   const id = nextId(state, "a");
   state.shareOffers.push({ id, startupId: s.id, sellerId, sellerName: seller.name, pct: share, price, expires: state.month + 1, status: "open" });
   mail(state, {
@@ -912,7 +950,13 @@ function checkMajority(state: GameState, s: Startup, before: number): void {
   if (before <= 50 && s.stake > 50) {
     state.reputation = Math.min(100, state.reputation + MAJORITY_REPUTATION_GAIN);
     unlockLesson(state, "stimmrechte");
-    mail(state, { kind: "system", from: "Boardroom", subject: `Mehrheit an ${s.name}`, body: `Du hältst jetzt ${s.stake.toLocaleString("de-DE", { maximumFractionDigits: 1 })} % an ${s.name}. In der Gesellschafterversammlung entscheidest du ab sofort die meisten Fragen allein.`, startupId: s.id });
+    mail(state, {
+      kind: "system",
+      from: "Boardroom",
+      subject: `Mehrheit an ${s.name}`,
+      body: `Du hältst jetzt ${s.stake.toLocaleString("de-DE", { maximumFractionDigits: 1 })} % an ${s.name}. In der Gesellschafterversammlung entscheidest du ab sofort die meisten Fragen allein.`,
+      startupId: s.id,
+    });
   }
 }
 
@@ -998,15 +1042,7 @@ function applyFull(state: GameState, s: Startup, input: Delta, texts: string[], 
   return applyDelta(s, delta);
 }
 
-function decide(
-  state: GameState,
-  item: BoardItem,
-  outcome: Vote,
-  vote: Vote,
-  argument: string | null,
-  ceoStance: number,
-  shares: Shares,
-): void {
+function decide(state: GameState, item: BoardItem, outcome: Vote, vote: Vote, argument: string | null, ceoStance: number, shares: Shares): void {
   const t = templateOf(item.templateId);
   let s = startupOf(state, item.startupId);
   const values = mapValues(outlook(t, s));
@@ -1143,7 +1179,7 @@ function hasUrgent(state: GameState, s: Startup): boolean {
   return candidatesFor(state, s).some((t) => t.urgent);
 }
 
-function pickTemplate(state: GameState, s: Startup, random: () => number, index = 0): string | null {
+function pickTemplate(state: GameState, s: Startup, random: () => number): string | null {
   const age = state.month - s.joined;
   // The supervisory board meets once a quarter.
   if (s.corporate && age % 3 !== 1) return null;
@@ -1151,28 +1187,96 @@ function pickTemplate(state: GameState, s: Startup, random: () => number, index 
   const urgent = candidates.filter((t) => t.urgent);
   if (urgent.length > 0) return urgent[0]!.id;
   if (candidates.length === 0) return null;
-  const quarterly = state.month % 3 === 0;
-  if (index === 0 && !s.corporate && age > 1 && !quarterly && random() > 0.6) return null;
-  return candidates[Math.floor(random() * candidates.length)]!.id;
+  // Two items of one meeting should not be the same.
+  const taken = new Set(
+    openItems(state)
+      .filter((i) => i.startupId === s.id)
+      .map((i) => i.templateId),
+  );
+  const fresh = candidates.filter((t) => !taken.has(t.id));
+  if (fresh.length === 0) return null;
+  return fresh[Math.floor(random() * fresh.length) % fresh.length]!.id;
 }
 
 /**
- * Puts new items on the agenda of each mandate: usually one per month, two or
- * three in a quarterly meeting, urgent ones on top. At most three are open.
+ * What makes a company busy right now, if anything. Money trouble, a round or
+ * a buyer always do; news and unrest only sometimes.
+ */
+function busyReason(state: GameState, s: Startup, random: () => number): { text: string; hard: boolean } | null {
+  if (s.crisisMonths > 0 || s.metrics.cash < 0) return { text: "Die Kasse ist knapp.", hard: true };
+  if (runwayMonths(s.metrics) < 2) return { text: "Das Geld reicht nur noch wenige Monate.", hard: true };
+  if (state.rounds.some((r) => r.startupId === s.id && r.status === "open")) return { text: "Eine Finanzierungsrunde läuft.", hard: true };
+  if (state.exits.some((e) => e.startupId === s.id && (e.status === "open" || e.status === "negotiating"))) return { text: "Ein Käufer klopft an.", hard: true };
+  const soft = random() < 0.12;
+  if (soft && state.news.some((n) => n.month === state.month - 1 && n.startupIds.includes(s.id))) return { text: "Die Nachrichten bewegen die Firma.", hard: false };
+  if (soft && s.metrics.morale < 35) return { text: "Im Team rumort es.", hard: false };
+  if (soft && s.metrics.trust < 30) return { text: "Das Vertrauen im Beirat bröckelt.", hard: false };
+  return null;
+}
+
+/**
+ * Companies have calm and busy stretches. A phase lasts a few months; a
+ * crisis, a round, a buyer or a news story makes a company busy at once.
+ */
+export function updatePace(state: GameState, s: Startup): Pace {
+  const random = randomFor(state.seed, `pace|${s.id}|${state.month}`);
+  const length = (kind: PaceKind) => {
+    const [lo, hi] = PACE_MONTHS[kind];
+    return lo + Math.floor(random() * (hi - lo + 1));
+  };
+  const reason = busyReason(state, s, random);
+  let pace: Pace = s.pace ?? { kind: "normal", until: state.month + length("normal") };
+  if (reason && pace.kind !== "busy") {
+    pace = { kind: "busy", until: state.month + length("busy"), reason: reason.text };
+  } else if (state.month >= pace.until) {
+    let next: PaceKind;
+    if (reason?.hard) next = random() < 0.5 ? "busy" : "normal";
+    else {
+      // A healthy company calms down more often than a shaky one.
+      const stable = runwayMonths(s.metrics) > 6 && s.metrics.morale >= 45;
+      const [calm, normal] = PACE_NEXT[pace.kind];
+      const calmChance = calm * (stable ? 1.3 : 0.8);
+      const roll = random();
+      next = roll < calmChance ? "calm" : roll < calmChance + normal ? "normal" : "busy";
+    }
+    pace = { kind: next, until: state.month + length(next), ...(next === "busy" ? { reason: reason?.text ?? "Viele Themen kommen auf einmal." } : {}) };
+  } else if (pace.kind === "busy" && reason) {
+    pace = { ...pace, reason: reason.text };
+  }
+  return pace;
+}
+
+/**
+ * Puts new items on the agenda of each mandate, following the company's
+ * rhythm: calm phases bring little or nothing, normal ones an item every month
+ * or two and a fuller quarterly meeting, busy ones two or three. Urgent items
+ * always come. At most three are open.
  */
 export function planAgenda(state: GameState): void {
-  for (const s of state.startups.filter((x) => x.status === "active")) {
-    if (state.month - s.joined < 1) continue;
+  for (const active of state.startups.filter((x) => x.status === "active")) {
+    const age = state.month - active.joined;
+    if (age < 1) continue;
+    let s = active;
+    if (!s.corporate) {
+      s = { ...s, pace: updatePace(state, s) };
+      replaceStartup(state, s);
+    }
     const open = openItems(state).filter((i) => i.startupId === s.id).length;
     if (open >= AGENDA_MAX) continue;
     const random = randomFor(state.seed, `agenda|${s.id}|${state.month}`);
-    const quarterly = s.corporate ? (state.month - s.joined) % 3 === 1 : state.month % 3 === 0;
-    // Between quarters a single open item is enough; urgent ones still come.
-    const wanted = quarterly ? 2 + (random() < AGENDA_THIRD ? 1 : 0) : open > 0 ? 0 : 1;
+    const quarterly = s.corporate ? age % 3 === 1 : state.month % 3 === 0;
+    const pace = s.pace?.kind ?? "normal";
+    let wanted: number;
+    if (s.corporate) wanted = quarterly ? 2 + (random() < AGENDA_THIRD ? 1 : 0) : 0;
+    else if (pace === "busy") wanted = Math.max(0, 2 + (random() < PACE_BUSY_THIRD ? 1 : 0) - open);
+    else if (pace === "calm") wanted = quarterly && open === 0 && random() < PACE_CALM_QUARTER ? 1 : 0;
+    else if (quarterly) wanted = 2 + (random() < AGENDA_THIRD ? 1 : 0);
+    // The first month of a new mandate always brings something to decide.
+    else wanted = open === 0 && (age === 1 || random() < PACE_NORMAL_BETWEEN) ? 1 : 0;
     const added: BoardItem[] = [];
     const slots = Math.min(Math.max(wanted, hasUrgent(state, s) ? 1 : 0), AGENDA_MAX - open);
     for (let k = 0; k < slots; k++) {
-      const templateId = pickTemplate(state, s, random, k);
+      const templateId = pickTemplate(state, s, random);
       if (!templateId) break;
       const item: BoardItem = { id: nextId(state, "v"), startupId: s.id, templateId, month: state.month, status: "open", asked: [], pretalks: [], cfo: false };
       state.items.push(item);
@@ -1188,7 +1292,7 @@ export function planAgenda(state: GameState): void {
       subject: agenda.length > 1 ? `Tagesordnung für den ${s.corporate ? "Aufsichtsrat" : "Beirat"}: ${agenda.length} Punkte` : `Vorlage für den Beirat: ${fill(first.title, s)}`,
       body:
         agenda.length > 1
-          ? `${agenda.map((i, n) => `TOP ${n + 1}: ${fill(templateOf(i.templateId).title, s)}${i.postponed ? " (vertagt)" : ""}`).join(". ")}. ${fill(first.pitch, s)} Alle Punkte werden in einer Sitzung beraten. Was bis Monatsende nicht entschieden ist, wird einmal vertagt; Dringendes entscheide ich sonst allein.`
+          ? `${s.pace?.kind === "busy" && s.pace.reason ? `Gerade ist viel los. ${s.pace.reason} ` : ""}${agenda.map((i, n) => `TOP ${n + 1}: ${fill(templateOf(i.templateId).title, s)}${i.postponed ? " (vertagt)" : ""}`).join(". ")}. ${fill(first.pitch, s)} Alle Punkte werden in einer Sitzung beraten. Was bis Monatsende nicht entschieden ist, wird einmal vertagt; Dringendes entscheide ich sonst allein.`
           : `${fill(first.pitch, s)} Bitte entscheidet bis Monatsende. Sonst wird der Punkt einmal vertagt${first.urgent ? ", und weil es dringend ist, entscheide ich allein" : ""}.`,
       startupId: s.id,
     });
@@ -1250,7 +1354,10 @@ export function closeMonth(state: GameState): MonthReport {
       state.cash += fee;
       income.boardFees += fee;
     }
-    next = { ...next, history: [...next.history, { month: month + 1, revenue: next.metrics.revenue, cash: next.metrics.cash, valuation: valuation(next.metrics), stake: next.stake }].slice(-36) };
+    next = {
+      ...next,
+      history: [...next.history, { month: month + 1, revenue: next.metrics.revenue, cash: next.metrics.cash, valuation: valuation(next.metrics), stake: next.stake }].slice(-36),
+    };
     replaceStartup(state, next);
   }
 
@@ -1386,9 +1493,7 @@ function forceLiquidity(state: GameState, notes: string[]): void {
 /** Every quarter, strong board work earns a few new shares. */
 function grantAdvisorShares(state: GameState, month: number, notes: string[]): void {
   for (const s of state.startups.filter((x) => x.status === "active" && !x.corporate)) {
-    const strong = state.items.filter(
-      (i) => i.startupId === s.id && i.decision && !i.decision.lapsed && i.decision.judgment === "strong" && i.decision.month > month - 3,
-    ).length;
+    const strong = state.items.filter((i) => i.startupId === s.id && i.decision && !i.decision.lapsed && i.decision.judgment === "strong" && i.decision.month > month - 3).length;
     if (strong === 0 || s.metrics.trust < 60) continue;
     replaceStartup(state, grantToPlayer(s, ADVISOR_SHARES));
     const text = `${s.name}: Für deine Arbeit im Beirat bekommst du ${ADVISOR_SHARES.toLocaleString("de-DE")} % Leistungsanteile.`;
@@ -1401,9 +1506,7 @@ function grantAdvisorShares(state: GameState, month: number, notes: string[]): v
 function planRounds(state: GameState): void {
   for (const s of state.startups.filter((x) => x.status === "active" && !x.corporate)) {
     if (state.month - s.joined < 2) continue;
-    const blocked = state.rounds.some(
-      (r) => r.startupId === s.id && (r.status === "open" || state.month - r.month < (r.amount === 0 ? FAILED_SEARCH_COOLDOWN : ROUND_COOLDOWN)),
-    );
+    const blocked = state.rounds.some((r) => r.startupId === s.id && (r.status === "open" || state.month - r.month < (r.amount === 0 ? FAILED_SEARCH_COOLDOWN : ROUND_COOLDOWN)));
     if (blocked) continue;
     const runway = runwayMonths(s.metrics);
     if (!(runway < ROUND_RUNWAY && runway >= 1)) continue;
@@ -1411,7 +1514,18 @@ function planRounds(state: GameState): void {
     const mood = sentimentOf(state.market.regime);
     if (random() > fundability(s, mood)) {
       // Nobody wants in: the founders keep looking, the money keeps running out.
-      state.rounds.push({ id: nextId(state, "r"), startupId: s.id, month: state.month, status: "failed", label: "Investorensuche", amount: 0, preMoney: 0, leadId: "", lead: "", down: false });
+      state.rounds.push({
+        id: nextId(state, "r"),
+        startupId: s.id,
+        month: state.month,
+        status: "failed",
+        label: "Investorensuche",
+        amount: 0,
+        preMoney: 0,
+        leadId: "",
+        lead: "",
+        down: false,
+      });
       mail(state, {
         kind: "round",
         from: s.name,

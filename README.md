@@ -14,7 +14,9 @@ Konzept und Entscheidungen: [`docs/boardroom-konzept.md`](./docs/boardroom-konze
 
 ## Tagesordnung (2A)
 
-- Sitzungen haben jetzt eine Tagesordnung: zwischen den Quartalen meist ein Punkt, in Quartalsmonaten zwei, manchmal drei, Dringendes kommt dazu (höchstens drei offen pro Firma; der Aufsichtsrat tagt quartalsweise mit zwei bis drei Punkten).
+- Sitzungen haben eine Tagesordnung mit höchstens drei offenen Punkten pro Firma; Dringendes kommt immer dazu, der Aufsichtsrat tagt quartalsweise mit zwei bis drei Punkten.
+- **Takt der Firmen:** Jede Firma hat ruhige, normale und heiße Phasen von ein bis vier Monaten. Ruhig: oft gar kein Punkt, höchstens einer zum Quartal. Normal: ein Punkt alle ein, zwei Monate und eine vollere Quartalssitzung. Viel los: zwei bis drei Punkte. Krise, knappe Kasse, eine laufende Runde oder ein Käufer machen eine Firma sofort heiß, Nachrichten und Unruhe im Team manchmal. Gesunde Firmen beruhigen sich öfter. Firmenseite und Portfolio zeigen „Ruhige Phase“ oder „Viel los“ mit Grund.
+- **Mehr Themen:** 18 neue Vorlagen (zehn für Startups, z. B. Großkunde kündigt, Streit an der Spitze, KI im Service, Patentklage, Dienstleister pleite, Teilverkauf, CO₂-Bilanz, Büro aufgeben, strategischer Investor, Sicherheitszertifikat, Abwerbung; fünf für den Mittelstand, z. B. Tarifvertrag, verletzte Kreditbedingung, Lieferantenausfall, Seniorchef, Lehrwerkstatt; drei für den Aufsichtsrat: Cyberangriff, Spartenverkauf, KI-Programm) und neun neue Nachrichten. Bei den neuen Vorlagen ist nicht immer der Mittelweg richtig: Mal ist Gehenlassen, mal Kämpfen, mal ein klares Ja am besten.
 - Alle Punkte werden in einer Sitzung beraten: Der erste kostet einen Tag, jeder weitere keinen. Rückfragen, CFO-Gespräch und Vorgespräche kosten pro Punkt Tage. Deine Zeit reicht selten für alles; du entscheidest, was du gründlich vorbereitest und was du einem Associate überlässt.
 - Was bis Monatsende offen bleibt, wird einmal vertagt; erst danach (oder bei Dringendem sofort) entscheidet die Geschäftsführung allein.
 - Ruf entsteht aus der Sitzung, nicht aus der Zahl der Punkte: Weitere Punkte derselben Sitzung zählen halb.

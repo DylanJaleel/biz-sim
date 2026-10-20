@@ -135,7 +135,11 @@ body {
   text-decoration: none;
   white-space: nowrap;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, transform 0.15s, opacity 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    transform 0.15s,
+    opacity 0.15s;
 }
 
 .btn:hover {
@@ -763,20 +767,24 @@ body {
   overflow: hidden;
   border-radius: 28px;
   background:
-    repeating-linear-gradient(97deg, rgba(255, 255, 255, 0.05) 0 2px, transparent 2px 11px),
-    repeating-linear-gradient(93deg, rgba(0, 0, 0, 0.035) 0 1px, transparent 1px 23px),
+    repeating-linear-gradient(97deg, rgba(255, 255, 255, 0.05) 0 2px, transparent 2px 11px), repeating-linear-gradient(93deg, rgba(0, 0, 0, 0.035) 0 1px, transparent 1px 23px),
     linear-gradient(135deg, #dcc6a6, #c9ab84 60%, #bf9f78);
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06), inset 0 -30px 60px rgba(0, 0, 0, 0.08), var(--shadow);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.06),
+    inset 0 -30px 60px rgba(0, 0, 0, 0.08),
+    var(--shadow);
   container-type: inline-size;
 }
 
 @media (prefers-color-scheme: dark) {
   .desk__surface {
     background:
-      repeating-linear-gradient(97deg, rgba(255, 255, 255, 0.025) 0 2px, transparent 2px 11px),
-      repeating-linear-gradient(93deg, rgba(0, 0, 0, 0.12) 0 1px, transparent 1px 23px),
+      repeating-linear-gradient(97deg, rgba(255, 255, 255, 0.025) 0 2px, transparent 2px 11px), repeating-linear-gradient(93deg, rgba(0, 0, 0, 0.12) 0 1px, transparent 1px 23px),
       linear-gradient(135deg, #3d2e23, #2e2219 60%, #261c15);
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04), inset 0 -30px 60px rgba(0, 0, 0, 0.3), var(--shadow);
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+      inset 0 -30px 60px rgba(0, 0, 0, 0.3),
+      var(--shadow);
   }
 }
 
@@ -785,7 +793,9 @@ body {
   display: block;
   color: inherit;
   text-decoration: none;
-  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.25s;
+  transition:
+    transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+    filter 0.25s;
   filter: drop-shadow(0 6px 10px rgba(40, 24, 10, 0.25));
 }
 
@@ -897,12 +907,17 @@ a.desk__item:focus-visible {
   margin: 0 -1.6cqw;
   border-radius: 0.6cqw 0.6cqw 1.8cqw 1.8cqw;
   background:
-    radial-gradient(ellipse 22% 26% at 50% 78%, rgba(0, 0, 0, 0.12), transparent 70%),
-    repeating-linear-gradient(90deg, transparent 0 0.4cqw, rgba(0, 0, 0, 0.08) 0.4cqw 2.4cqw),
+    radial-gradient(ellipse 22% 26% at 50% 78%, rgba(0, 0, 0, 0.12), transparent 70%), repeating-linear-gradient(90deg, transparent 0 0.4cqw, rgba(0, 0, 0, 0.08) 0.4cqw 2.4cqw),
     linear-gradient(#c9ccd3, #b9bdc6);
-  background-size: 100% 100%, 100% 62%, 100% 100%;
+  background-size:
+    100% 100%,
+    100% 62%,
+    100% 100%;
   background-repeat: no-repeat;
-  background-position: center, center 18%, center;
+  background-position:
+    center,
+    center 18%,
+    center;
 }
 
 .phone {
@@ -1224,7 +1239,9 @@ a.desk__item:focus-visible {
   color: var(--ink);
   text-decoration: none;
   box-shadow: var(--shadow);
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
 }
 
 .company-card:hover {
@@ -2540,11 +2557,15 @@ a.desk__item:focus-visible {
   color: #fff;
   font-size: max(11px, 3cqw);
   font-weight: 700;
-  box-shadow: 0 0 0 3px var(--room-bg), 0 6px 14px rgba(0, 0, 0, 0.18);
+  box-shadow:
+    0 0 0 3px var(--room-bg),
+    0 6px 14px rgba(0, 0, 0, 0.18);
 }
 
 .net__contact.is-selected .net__avatar {
-  box-shadow: 0 0 0 3px var(--room-bg), 0 0 0 6px var(--member);
+  box-shadow:
+    0 0 0 3px var(--room-bg),
+    0 0 0 6px var(--member);
 }
 
 .net__contact.is-new .net__avatar {
@@ -2753,6 +2774,24 @@ a.desk__item:focus-visible {
 .pill--weak {
   background: var(--maybe-soft);
   color: var(--maybe);
+}
+
+/* Rhythm of a company: busy months stand out, calm ones recede. */
+.pill--pace-busy {
+  border-color: transparent;
+  background: var(--maybe-soft);
+  color: var(--maybe);
+}
+
+.pill--pace-calm {
+  color: var(--muted);
+}
+
+.company-card__pills {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
 }
 
 .pill--crash {

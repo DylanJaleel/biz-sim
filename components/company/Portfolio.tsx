@@ -4,7 +4,7 @@ import { CORPORATE_FEE } from "@/lib/game/config";
 import { openItems } from "@/lib/game/engine";
 import { runwayMonths, valuation } from "@/lib/game/sim";
 import { eur, pct, runwayText } from "@/components/game/format";
-import { PHASE_LABEL } from "./labels";
+import { PACE_LABEL, PHASE_LABEL } from "./labels";
 
 export async function Portfolio() {
   const { state } = await currentGame();
@@ -20,7 +20,8 @@ export async function Portfolio() {
         <p className="eyebrow">Portfolio</p>
         <h1 className="page__title">Deine Mandate</h1>
         <p className="page__lead">
-          Jede Beteiligung ist ein Sitz im Beirat. Dein Anteil steigt im Wert, wenn die Firma wächst und gesund bleibt. Team, Fonds und Kredite verwaltest du in der <Link href="/holding">Holding</Link>.
+          Jede Beteiligung ist ein Sitz im Beirat. Dein Anteil steigt im Wert, wenn die Firma wächst und gesund bleibt. Team, Fonds und Kredite verwaltest du in der{" "}
+          <Link href="/holding">Holding</Link>.
         </p>
       </header>
 
@@ -28,7 +29,9 @@ export async function Portfolio() {
         <div className="panel">
           <p className="panel__title">Noch keine Beteiligung</p>
           <p>
-            {offered.length > 0 ? "In deiner Post liegen Angebote. Prüfe sie und steig ein." : "Gerade liegt kein Angebot vor. Schließe den Monat ab, dann melden sich neue Gründungen."}
+            {offered.length > 0
+              ? "In deiner Post liegen Angebote. Prüfe sie und steig ein."
+              : "Gerade liegt kein Angebot vor. Schließe den Monat ab, dann melden sich neue Gründungen."}
           </p>
           {offered.length > 0 && (
             <Link className="btn btn--primary" href="/post">
@@ -48,7 +51,10 @@ export async function Portfolio() {
                   <b className="company-card__name">{s.name}</b>
                   <span className="company-card__tag">{s.tagline}</span>
                 </span>
-                <span className="pill">{s.flags.includes("mittelstand") ? "Nachfolge" : PHASE_LABEL[s.phase]}</span>
+                <span className="company-card__pills">
+                  <span className="pill">{s.flags.includes("mittelstand") ? "Nachfolge" : PHASE_LABEL[s.phase]}</span>
+                  {s.pace && s.pace.kind !== "normal" && <span className={`pill pill--pace-${s.pace.kind}`}>{PACE_LABEL[s.pace.kind]}</span>}
+                </span>
               </span>
               <span className="kpis kpis--compact">
                 <span>
@@ -117,7 +123,9 @@ export async function Portfolio() {
             {closed.map((s) => (
               <li key={s.id} className="list__row">
                 <Link href={`/firma/${s.id}`}>{s.name}</Link>
-                <span className={`tag tag--${s.status === "exited" ? "go" : "no"}`}>{s.status === "exited" ? "verkauft" : s.status === "sold" ? "Anteil verkauft" : "insolvent"}</span>
+                <span className={`tag tag--${s.status === "exited" ? "go" : "no"}`}>
+                  {s.status === "exited" ? "verkauft" : s.status === "sold" ? "Anteil verkauft" : "insolvent"}
+                </span>
                 {s.exitValue !== undefined && <span className="muted">Verkauf für {eur(s.exitValue)}</span>}
               </li>
             ))}

@@ -10,7 +10,7 @@ import { VOTE_LABEL } from "@/components/boardroom/derive";
 import { CapTableBar } from "@/components/shares/CapTableBar";
 import { fmtPct } from "@/components/shares/holders";
 import { ForecastTool } from "./ForecastTool";
-import { LEANING_LABEL, PHASE_LABEL } from "./labels";
+import { LEANING_LABEL, PACE_LABEL, PHASE_LABEL } from "./labels";
 import { Sparkline } from "./Sparkline";
 
 const JUDGMENT_LABEL = {
@@ -54,6 +54,11 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
           <span className="company__pills">
             {s.stage && <span className="pill">{s.stage}</span>}
             <span className="pill">{PHASE_LABEL[s.phase]}</span>
+            {active && s.pace && s.pace.kind !== "normal" && (
+              <span className={`pill pill--pace-${s.pace.kind}`} title={s.pace.kind === "busy" ? s.pace.reason : "Gerade stehen wenige Themen an."}>
+                {PACE_LABEL[s.pace.kind]}
+              </span>
+            )}
           </span>
         </div>
         {s.status === "dead" && <p className="notice notice--bad">Insolvent. Dein Anteil ist verloren. Was hätte man früher sehen können?</p>}
@@ -111,7 +116,10 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
         <div className="company__main">
           {view.agenda.length > 1 && (
             <section className="panel agenda-head" aria-label="Tagesordnung">
-              <p className="eyebrow">Tagesordnung · {view.agenda.length} Punkte</p>
+              <p className="eyebrow">
+                Tagesordnung · {view.agenda.length} Punkte{s.pace?.kind === "busy" ? ` · ${PACE_LABEL.busy}` : ""}
+              </p>
+              {s.pace?.kind === "busy" && s.pace.reason && <p className="agenda-head__reason">{s.pace.reason}</p>}
               <ol className="agenda-head__list">
                 {view.agenda.map((a) => (
                   <li key={a.id}>
@@ -264,7 +272,9 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
                   <p className="muted">
                     {corporate
                       ? "Der Aufsichtsrat tagt einmal im Quartal. Bis dahin führt der Vorstand."
-                      : "Neue Themen kommen mit dem nächsten Monat. Du kannst die Zeit nutzen, um mit der Gründung zu sprechen."}
+                      : s.pace?.kind === "calm"
+                        ? "Eine ruhige Phase: Die Firma arbeitet, der Beirat wird gerade kaum gebraucht. Das kann ein, zwei Monate so bleiben."
+                        : "Nicht jeden Monat gibt es etwas zu entscheiden. Du kannst die Zeit nutzen, um mit der Gründung zu sprechen."}
                   </p>
                 </section>
               )}

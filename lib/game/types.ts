@@ -19,6 +19,16 @@ export type Shares = Record<ShareOption, number>;
 
 export type StartupPhase = "beta" | "launch" | "scale" | "profit";
 
+/** How much is going on at a company: calm months bring few items, busy ones several. */
+export type PaceKind = "calm" | "normal" | "busy";
+export interface Pace {
+  kind: PaceKind;
+  /** First month of the next phase. */
+  until: number;
+  /** Why it is busy, for the UI. */
+  reason?: string;
+}
+
 export interface BoardMember {
   seat: SeatId;
   name: string;
@@ -100,6 +110,8 @@ export interface Startup {
   exitValue?: number;
   /** Names used in the texts of board items. */
   names: StartupNames;
+  /** Current rhythm of the board; missing in older games (= normal). */
+  pace?: Pace;
 }
 
 export interface StartupNames {

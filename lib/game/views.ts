@@ -39,6 +39,7 @@ import type {
   TeamMember,
   TeamRole,
   Vote,
+  PaceKind,
 } from "./types";
 
 // Was eine Seite vom Spielstand braucht, als einfache Daten für den Browser.
@@ -133,7 +134,7 @@ export interface DeskView {
   daysLeft: number;
   unread: number;
   offers: number;
-  mandates: { id: string; name: string; value: number; open: boolean }[];
+  mandates: { id: string; name: string; value: number; open: boolean; pace: PaceKind }[];
   openItems: { id: string; startupId: string; startupName: string; title: string }[];
   lessons: number;
   lessonsTotal: number;
@@ -184,7 +185,7 @@ export function deskView(state: GameState, lessonsTotal: number): DeskView {
     tasks.push({
       text:
         agenda.length > 1
-          ? `${s.name}: ${agenda.length} Punkte auf der Tagesordnung (${titles}). Deine Tage reichen kaum für alles: Was bereitest du vor?`
+          ? `${s.name}: ${agenda.length} Punkte auf der Tagesordnung (${titles}).${s.pace?.kind === "busy" ? ` Gerade ist viel los. ${s.pace.reason ?? ""}` : ""} Deine Tage reichen kaum für alles: Was bereitest du vor?`
           : `${s.name}: ${titles} liegt vor. ${prep ? "Wenn du so weit bist, berufe die Sitzung ein." : `Bereite dich vor, bevor der ${board} tagt.`}`,
       href: `/firma/${s.id}`,
       tone: urgent ? "urgent" : "normal",
@@ -204,14 +205,20 @@ export function deskView(state: GameState, lessonsTotal: number): DeskView {
     tasks.push({ text: "Gerade liegt kein Angebot vor. Schließe den Monat ab, neue Anfragen kommen.", href: "/post", tone: "calm" });
   }
   if (tasks.length === 0) {
-    tasks.push({ text: "Alles erledigt. Nutze freie Tage für Gespräche mit den Gründungen oder eine Weiterbildung, dann schließe den Monat ab.", href: "/notizbuch", tone: "calm" });
+    tasks.push({
+      text: "Alles erledigt. Nutze freie Tage für Gespräche mit den Gründungen oder eine Weiterbildung, dann schließe den Monat ab.",
+      href: "/notizbuch",
+      tone: "calm",
+    });
   }
   return {
     month: state.month,
     daysLeft: daysLeft(state),
     unread,
     offers: offered.length,
-    mandates: active.filter((s) => !s.corporate).map((s) => ({ id: s.id, name: s.name, value: (s.stake / 100) * valuationOf(s), open: open.some((i) => i.startupId === s.id) })),
+    mandates: active
+      .filter((s) => !s.corporate)
+      .map((s) => ({ id: s.id, name: s.name, value: (s.stake / 100) * valuationOf(s), open: open.some((i) => i.startupId === s.id), pace: s.pace?.kind ?? "normal" })),
     openItems: open.map((i) => {
       const s = startupOf(state, i.startupId);
       return { id: i.id, startupId: s.id, startupName: s.name, title: fill(templateOf(i.templateId).title, s) };

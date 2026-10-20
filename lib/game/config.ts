@@ -2,20 +2,7 @@
 // balance tests in tests/game-balance.test.ts.
 
 export const DAYS_PER_MONTH = 20;
-export const MONTH_NAMES = [
-  "Januar",
-  "Februar",
-  "März",
-  "April",
-  "Mai",
-  "Juni",
-  "Juli",
-  "August",
-  "September",
-  "Oktober",
-  "November",
-  "Dezember",
-] as const;
+export const MONTH_NAMES = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"] as const;
 /** The game starts in October of year 1. */
 export const START_MONTH_INDEX = 9;
 
@@ -94,6 +81,17 @@ export const DEALS_MAX_OPEN = 3;
 export const AGENDA_MAX = 3;
 /** Chance of a third item in a quarterly meeting. */
 export const AGENDA_THIRD = 0.2;
+
+// Rhythm: each company goes through calm, normal and busy phases.
+/** How long a phase lasts, in months [min, max]. */
+export const PACE_MONTHS = { calm: [2, 4], normal: [2, 4], busy: [1, 2] } as const;
+/** Next phase when one ends, as chances [calm, normal, busy]. */
+export const PACE_NEXT = { calm: [0.35, 0.55, 0.1], normal: [0.45, 0.45, 0.1], busy: [0.5, 0.5, 0] } as const;
+/** Chance of a single item in a calm quarter, and between quarters in a normal phase. */
+export const PACE_CALM_QUARTER = 0.5;
+export const PACE_NORMAL_BETWEEN = 0.4;
+/** Chance of a third item in a busy phase. */
+export const PACE_BUSY_THIRD = 0.4;
 
 /** Syndicate partners cool off a little each time they are asked for money. */
 export const SYNDICATE_WARMTH_COST = 15;
