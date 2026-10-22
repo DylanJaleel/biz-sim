@@ -5,7 +5,7 @@ import { daysLeft, netWorth, portfolioValue } from "@/lib/game/engine";
 import { holdingsValue } from "@/lib/game/market";
 import { monthDays, OFFICES, officeOf } from "@/lib/game/office";
 import { LESSONS } from "@/lib/game/lessons";
-import { deskView } from "@/lib/game/views";
+import { deskView, nextStepView } from "@/lib/game/views";
 import { cityOf, garageOf } from "@/lib/game/travel";
 import { TROPHIES } from "@/lib/game/trophies";
 import type { PaceKind } from "@/lib/game/types";
@@ -13,6 +13,7 @@ import { currentGame } from "@/lib/current-game";
 import { ActionButton } from "@/components/game/ActionButton";
 import { eur } from "@/components/game/format";
 import { sceneStyle } from "@/components/glass/Tomb";
+import { NextStepCard } from "./NextStepCard";
 
 // Das Glas-Cockpit: Man sitzt am Schreibtisch und sieht durch die Brille auf
 // schwebende Fenster; dahinter das eigene Büro, unscharf. Welches Büro, hängt
@@ -71,6 +72,7 @@ export async function GlassOffice() {
   const garage = garageOf(state);
   const ride = [...garage].sort((a, b) => b.price - a.price)[0];
   const earned = state.trophies.length;
+  const step = nextStepView(state);
 
   return (
     <div className="glass-page">
@@ -101,6 +103,8 @@ export async function GlassOffice() {
               </Link>
             </div>
           </header>
+
+          {step && <NextStepCard step={step} revision={revision} />}
 
           <div className="cockpit__grid">
             <div className="cockpit__col">

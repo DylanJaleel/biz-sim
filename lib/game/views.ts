@@ -1,6 +1,9 @@
 import { playerAmount, postMoney, stakeAfter, syndicateAmount, waterfall } from "./captable";
 import { outcomeViews, type OutcomeView } from "./cfo";
 import {
+  ACTION_DAYS,
+  BUYOUT_REPUTATION,
+  CORPORATE_REPUTATION,
   FAMILY_OFFICE_COST,
   FAMILY_OFFICE_REPUTATION,
   FAMILY_OFFICE_WORTH,
@@ -9,13 +12,15 @@ import {
   RING_REPUTATION,
   SYNDICATE_REPUTATION,
   TEAM_MAX,
+  FUND_REPUTATION,
   WARMTH_INTRO_MIN,
 } from "./config";
+import { careerOf } from "./career";
 import { CONTACTS, RING_LABEL, ringOpen, type ContactDef, type Ring } from "./network";
 import { templateOf } from "./content";
 import { daysLeft, fundBlocker, fundSize, itemOf, netWorth, previewMeeting, sittingToday, startupOf, syndicateBlocker } from "./engine";
 import { lessonOf } from "./lessons";
-import { officeOf } from "./office";
+import { OFFICES, officeOf } from "./office";
 import type { MeetingEvent } from "./meeting";
 import { monthlyCashFlow, runwayMonths } from "./sim";
 import { fill, valueOf as valuationOf } from "./templates";
@@ -24,6 +29,7 @@ import type {
   BoardMember,
   ExitOffer,
   FundState,
+  GameAction,
   GameState,
   Holder,
   Interest,
@@ -558,4 +564,110 @@ export function holdingView(state: GameState): HoldingView {
       .map((s) => ({ id: s.id, name: s.name, stake: s.stake })),
     daysLeft: daysLeft(state),
   };
+}
+
+// ---------------------------------------------------------------------------
+// Nächster Karriereschritt: was fehlt, wie weit du bist, und der Knopf.
+// ---------------------------------------------------------------------------
+
+export interface NextStepView {
+  title: string;
+  text: string;
+  requirements: Requirement[];
+  /** The move that takes the step, once everything is there. */
+  action?: { move: GameAction; label: string; days: number };
+  /** Where to go instead, when the step comes from outside (a mail, a round). */
+  link?: { href: string; label: string };
+  /** A step on the way that the player can take now (e.g. moving offices). */
+  side?: { move: GameAction; label: string; text: string; ready: boolean };
+}
+
+export function nextStepView(state: GameState): NextStepView | null {
+  const worth = netWorth(state);
+  const eur = (n: number) => `${Math.round(n).toLocaleString("de-DE")} €`;
+  const career = careerOf(state);
+  const next = career.steps.find((s) => !s.done && !s.later);
+  if (!next) return null;
+  switch (next.title) {
+    case "Business Angel":
+      return {
+        title: next.title,
+        text: "Steig bei einem Startup ein. Angebote liegen in der Post, prüfe sie vorher.",
+        requirements: [{ label: "Ein Angebot annehmen", done: false }],
+        link: { href: "/post", label: "Zur Post" },
+      };
+    case "Lead-Investor": {
+      const round = state.rounds.find((r) => r.status === "open");
+      return {
+        title: next.title,
+        text: "Führe eine Finanzierungsrunde an. Runden kommen, wenn einer deiner Firmen das Geld ausgeht.",
+        requirements: [
+          { label: `${LEAD_REPUTATION} Ruf (du: ${state.reputation})`, done: state.reputation >= LEAD_REPUTATION },
+          { label: "Eine Runde in deinem Portfolio ist offen", done: !!round },
+        ],
+        link: round ? { href: `/gv/${round.id}`, label: "Zur Runde" } : undefined,
+      };
+    }
+    case "Mehrheitsgesellschafter":
+      return {
+        title: next.title,
+        text: "Kauf die Mehrheit an einem Familienbetrieb, der eine Nachfolge sucht. Solche Angebote kommen in die Post.",
+        requirements: [
+          { label: `${BUYOUT_REPUTATION} Ruf (du: ${state.reputation})`, done: state.reputation >= BUYOUT_REPUTATION },
+          { label: "Ein Nachfolge-Angebot liegt vor", done: state.startups.some((s) => s.status === "offered" && s.offer?.buyout) },
+        ],
+        link: { href: "/post", label: "Zur Post" },
+      };
+    case "Konzern-Aufsichtsrat": {
+      const record = state.ledRounds > 0 || state.startups.some((s) => s.stake > 50) || state.exits.some((e) => e.status === "accepted");
+      return {
+        title: next.title,
+        text: "Die Nordhafen AG fragt an, sobald du genug Ruf und Erfolge hast. Die Anfrage kommt per Post.",
+        requirements: [
+          { label: `${CORPORATE_REPUTATION} Ruf (du: ${state.reputation})`, done: state.reputation >= CORPORATE_REPUTATION },
+          { label: "Eine Runde angeführt, eine Mehrheit oder ein Verkauf", done: record },
+        ],
+        link: state.corporateSeat === "offered" ? { href: "/post", label: "Anfrage beantworten" } : undefined,
+      };
+    }
+    case "Family Office": {
+      const requirements: Requirement[] = [
+        { label: `${FAMILY_OFFICE_REPUTATION} Ruf (du: ${state.reputation})`, done: state.reputation >= FAMILY_OFFICE_REPUTATION },
+        { label: `${eur(FAMILY_OFFICE_WORTH)} Vermögen (du: ${eur(worth)})`, done: worth >= FAMILY_OFFICE_WORTH },
+        { label: "Büroetage mit Analyst (Stufe 3) oder höher", done: state.office >= 3 },
+        { label: `${eur(FAMILY_OFFICE_COST)} auf dem Konto für Notar und Anwälte`, done: state.cash >= FAMILY_OFFICE_COST },
+      ];
+      const floor = OFFICES[3]!;
+      const side =
+        state.office < 3
+          ? {
+              move: { type: "moveOffice", level: 3 } as GameAction,
+              label: `Umziehen: ${floor.name}`,
+              text: `Braucht ${floor.reputation} Ruf und ${eur(floor.worth)} Vermögen, ${eur(floor.rent)} Miete im Monat.`,
+              ready: state.reputation >= floor.reputation && worth >= floor.worth && state.cash >= floor.rent,
+            }
+          : undefined;
+      return {
+        title: next.title,
+        text: "Mit einem Family Office arbeitest du nicht mehr allein: Associates übernehmen Mandate, eine Partnerin bringt Zeit und Deals.",
+        requirements,
+        action: requirements.every((r) => r.done) ? { move: { type: "foundFamilyOffice" }, label: "Family Office gründen", days: ACTION_DAYS.foundFamilyOffice } : undefined,
+        side,
+      };
+    }
+    case "Investment-Mogul": {
+      const blocker = fundBlocker(state);
+      return {
+        title: next.title,
+        text: "Leg einen eigenen Fonds auf. Fremdes Geld investiert neben dir, du bekommst Gebühr und Carry.",
+        requirements: [
+          { label: `${FUND_REPUTATION} Ruf (du: ${state.reputation})`, done: state.reputation >= FUND_REPUTATION },
+          { label: "Mindestens ein erfolgreicher Verkauf", done: state.exits.some((e) => e.status === "accepted") },
+        ],
+        action: blocker === null ? { move: { type: "raiseFund" }, label: `Fonds auflegen (${eur(fundSize(state))})`, days: ACTION_DAYS.raiseFund } : undefined,
+      };
+    }
+    default:
+      return null;
+  }
 }

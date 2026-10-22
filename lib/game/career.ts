@@ -26,8 +26,16 @@ export function careerOf(state: GameState): Career {
     { title: "Business Angel", requirement: "Bei einem Startup einsteigen", done: invested },
     { title: "Lead-Investor", requirement: `Eine Finanzierungsrunde anführen (ab ${LEAD_REPUTATION} Ruf)`, done: led },
     { title: "Mehrheitsgesellschafter", requirement: "Mehr als 50 % an einer Firma halten", done: majority },
-    { title: "Konzern-Aufsichtsrat", requirement: `Ein Mandat im Aufsichtsrat eines Konzerns (ab ${CORPORATE_REPUTATION} Ruf, mit angeführter Runde oder Mehrheit)`, done: state.corporateSeat === "joined" },
-    { title: "Family Office", requirement: `Family Office gründen (ab ${FAMILY_OFFICE_REPUTATION} Ruf, ${(FAMILY_OFFICE_WORTH / 1_000_000).toLocaleString("de-DE")} Mio. € Vermögen, Büroetage)`, done: state.familyOffice !== undefined },
+    {
+      title: "Konzern-Aufsichtsrat",
+      requirement: `Ein Mandat im Aufsichtsrat eines Konzerns (ab ${CORPORATE_REPUTATION} Ruf, mit angeführter Runde oder Mehrheit)`,
+      done: state.corporateSeat === "joined",
+    },
+    {
+      title: "Family Office",
+      requirement: `Family Office gründen (ab ${FAMILY_OFFICE_REPUTATION} Ruf, ${(FAMILY_OFFICE_WORTH / 1_000_000).toLocaleString("de-DE")} Mio. € Vermögen, Büroetage mit Analyst)`,
+      done: state.familyOffice !== undefined,
+    },
     { title: "Investment-Mogul", requirement: `Eigenen Fonds auflegen (ab ${FUND_REPUTATION} Ruf, mit einem erfolgreichen Verkauf)`, done: state.fund !== undefined },
   ];
   let level = -1;
