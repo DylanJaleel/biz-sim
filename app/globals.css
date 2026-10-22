@@ -595,11 +595,28 @@ body {
 
 @media (max-height: 500px) {
   :root {
-    --topbar: 50px;
+    --topbar: 44px;
   }
 
   .app__main {
-    padding-top: 14px;
+    padding-top: 12px;
+  }
+
+  .topbar {
+    gap: 12px;
+  }
+
+  .topbar__nav a {
+    min-height: 32px;
+    padding: 0 8px;
+  }
+
+  .topbar__stats {
+    gap: 12px;
+  }
+
+  .topbar__close {
+    min-height: 32px;
   }
 }
 
@@ -1824,6 +1841,7 @@ a.desk__item:focus-visible {
 
 .inbox__list {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 4px;
   margin: 0;
   padding: 6px;
@@ -1833,11 +1851,17 @@ a.desk__item:focus-visible {
   background: var(--surface);
 }
 
+.inbox__list > li {
+  min-width: 0;
+}
+
 .inbox__item {
   display: flex;
   flex-direction: column;
   gap: 2px;
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
   padding: 10px 12px;
   border: 0;
   border-radius: 14px;
@@ -1856,8 +1880,11 @@ a.desk__item:focus-visible {
 }
 
 .inbox__from {
+  overflow: hidden;
   font-size: 13px;
   font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .inbox__subject {
@@ -2341,9 +2368,8 @@ a.desk__item:focus-visible {
 }
 
 .cap__name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .cap__kind {
@@ -2939,4 +2965,656 @@ a.desk__item:focus-visible {
   margin: 0;
   font-weight: 650;
   font-variant-numeric: tabular-nums;
+}
+
+/* ---------------------------------------------------------------------------
+   Schmale Bildschirme: Telefon quer und Tablet (bis 1100 px).
+   Der Desktop bleibt, wie er war: Alles Aufklappbare ist dort offen.
+   --------------------------------------------------------------------------- */
+
+.disc__row {
+  display: block;
+}
+
+.disc__chev,
+.disc__hint,
+.disc__actions,
+.xp__btn,
+.ctabs__bar,
+.company__bar {
+  display: none;
+}
+
+.disc--quiet > .disc__row {
+  display: none;
+}
+
+.disc--contents,
+.disc--contents > .disc__body {
+  display: contents;
+}
+
+@media (max-width: 1100px) {
+  .disc__row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .disc__head {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+  }
+
+  .disc--quiet > .disc__row {
+    display: flex;
+  }
+
+  .disc--contents {
+    display: block;
+  }
+
+  .disc--contents > .disc__body {
+    display: block;
+  }
+
+  .disc__toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    letter-spacing: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  span.disc__toggle {
+    cursor: default;
+  }
+
+  .disc__title {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .disc__hint {
+    display: block;
+    flex: 0 1 auto;
+    max-width: 45%;
+    overflow: hidden;
+    color: var(--muted);
+    font-size: 12.5px;
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .disc__chev {
+    display: block;
+    flex: none;
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: var(--muted);
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: transform 0.2s;
+  }
+
+  .disc[data-open="true"] > .disc__row .disc__chev {
+    transform: rotate(180deg);
+  }
+
+  .disc[data-open="false"] > .disc__body {
+    display: none;
+  }
+
+  .disc[data-open="true"] > .disc__row {
+    margin-bottom: 6px;
+  }
+
+  .disc__actions {
+    display: block;
+    flex: none;
+  }
+
+  .disc[data-open="true"] > .disc__row .disc__actions {
+    display: none;
+  }
+
+  /* Gruppen mit "nicht verfügbar"-Karten: Zugeklappt bleibt nur das Wichtige stehen. */
+  .xp[data-open="false"] .is-secondary {
+    display: none;
+  }
+
+  .xp__btn {
+    display: inline-flex;
+    margin-top: 10px;
+  }
+
+  /* Seiten insgesamt etwas dichter */
+  .page__head {
+    margin-bottom: 14px;
+  }
+
+  .page__title {
+    font-size: clamp(26px, 3.4vw, 36px);
+  }
+
+  .page__lead {
+    margin-top: 4px;
+    font-size: 14.5px;
+  }
+
+  .panel {
+    padding: 16px;
+  }
+
+  .panel + .panel {
+    margin-top: 12px;
+  }
+
+  .crumbs {
+    margin-bottom: 4px;
+  }
+
+  /* Notizbuch: Gesperrtes als kleine Kacheln */
+  .lessons {
+    gap: 12px;
+  }
+
+  .lesson {
+    padding: 16px;
+  }
+
+  .lesson__title {
+    font-size: 21px;
+  }
+
+  .lessons__locked {
+    grid-column: 1 / -1;
+  }
+
+  .lessons__locked > .disc__row .disc__toggle {
+    min-height: 44px;
+    padding: 0 16px;
+    border: 1px dashed var(--line-strong);
+    border-radius: 14px;
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .lessons__locked[data-open="true"] > .disc__body {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
+    gap: 6px;
+  }
+
+  .lessons__locked .lesson--locked {
+    min-height: 44px;
+    padding: 0;
+    border-radius: 12px;
+    font-size: 18px;
+  }
+
+  /* Konto: Abschnitte als Ziehharmonika */
+  .panel > .eyebrow + .disc > .disc__row {
+    margin-top: -4px;
+  }
+
+  .panel > .eyebrow + .disc[data-open="true"] > .disc__row {
+    margin-bottom: 6px;
+  }
+
+  .panel > .disc > .disc__head.panel__title {
+    margin: 0;
+  }
+
+  /* Firma: ein Bereich nach dem anderen */
+  .company .page__head {
+    margin-bottom: 10px;
+  }
+
+  .company .company__title {
+    align-items: center;
+    gap: 10px;
+  }
+
+  .company .page__title {
+    font-size: 28px;
+  }
+
+  .company .page__lead {
+    margin-top: 2px;
+    font-size: 13.5px;
+  }
+
+  .company .notice {
+    margin-top: 6px;
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+
+  .ctabs__bar {
+    display: flex;
+    gap: 2px;
+    width: 100%;
+    margin: 0 0 12px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .ctabs__bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .ctabs__bar button {
+    flex: 1 0 auto;
+    min-height: 36px;
+    padding: 0 14px;
+    white-space: nowrap;
+  }
+
+  .ctabs[data-active="agenda"] [data-pane]:not([data-pane="agenda"]),
+  .ctabs[data-active="zahlen"] [data-pane]:not([data-pane="zahlen"]),
+  .ctabs[data-active="anteile"] [data-pane]:not([data-pane="anteile"]),
+  .ctabs[data-active="rechner"] [data-pane]:not([data-pane="rechner"]),
+  .ctabs[data-active="entscheidungen"] [data-pane]:not([data-pane="entscheidungen"]),
+  .ctabs[data-active="beirat"] [data-pane]:not([data-pane="beirat"]) {
+    display: none;
+  }
+
+  .company__grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .company__main {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .company__main > .panel,
+  .company__main > .panel + .panel {
+    margin-top: 0;
+  }
+
+  .company__side {
+    position: static;
+  }
+
+  .company .kpis {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .company .kpis > div {
+    padding: 10px 12px;
+  }
+
+  .company .kpis b {
+    font-size: 17px;
+  }
+
+  .company .kpis span {
+    font-size: 12px;
+  }
+
+  .company .panel {
+    padding: 14px 16px;
+  }
+
+  .agenda-head__list,
+  .agenda-head > p.muted {
+    display: none;
+  }
+
+  .agenda-head .eyebrow {
+    margin: 0;
+  }
+
+  .agenda-head:not(:has(.agenda-head__reason)) {
+    display: none;
+  }
+
+  .agenda-head__reason {
+    margin: 4px 0 0;
+    font-size: 13px;
+  }
+
+  .item > .eyebrow {
+    margin: 0;
+  }
+
+  .item .panel__title--serif {
+    font-size: 19px;
+    line-height: 1.25;
+  }
+
+  .item .disc__toggle {
+    min-height: 40px;
+  }
+
+  .item__motion {
+    margin: 0 0 6px;
+    font-size: 15px;
+  }
+
+  .item__options {
+    gap: 6px;
+    margin-top: 10px;
+  }
+
+  .item__prep {
+    margin-top: 12px;
+  }
+
+  .item__prep > .disc__row .disc__toggle {
+    min-height: 40px;
+    padding: 0 14px;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .item__prep[data-open="true"] > .disc__row {
+    margin-bottom: 0;
+  }
+
+  .item__h {
+    margin: 16px 0 8px;
+  }
+
+  .item__cta--dup {
+    display: none;
+  }
+
+  .item__cta {
+    margin-top: 14px;
+    padding-top: 12px;
+  }
+
+  .company .spark {
+    height: 64px;
+  }
+
+  .company__bar {
+    position: sticky;
+    bottom: max(10px, env(safe-area-inset-bottom));
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 12px;
+    padding: 8px 8px 8px 16px;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--surface) 90%, transparent);
+    -webkit-backdrop-filter: saturate(180%) blur(18px);
+    backdrop-filter: saturate(180%) blur(18px);
+    box-shadow: var(--shadow-lift);
+  }
+
+  .company__bar-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    line-height: 1.3;
+  }
+
+  .company__bar-text small {
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .cap__legend {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  }
+
+  /* Post: Liste und Lesefenster */
+  .inbox__list {
+    gap: 2px;
+    padding: 4px;
+  }
+
+  .inbox__item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 8px;
+    row-gap: 0;
+    padding: 7px 10px;
+    border-radius: 12px;
+  }
+
+  .inbox__subject {
+    grid-column: 1 / -1;
+    font-size: 13px;
+  }
+
+  .inbox__meta {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
+
+  .inbox__when {
+    display: none;
+  }
+
+  .inbox__body {
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  /* Kalender */
+  .cal {
+    gap: 5px;
+  }
+
+  .cal__day {
+    min-height: 52px;
+    padding: 5px 8px;
+    border-radius: 12px;
+  }
+
+  .list__row {
+    padding: 8px 14px;
+  }
+}
+
+@media (max-width: 1100px) and (orientation: portrait) {
+  .inbox__list {
+    max-height: 38dvh;
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 1100px) and (orientation: landscape) {
+  .post .page__head {
+    margin-bottom: 8px;
+  }
+
+  .post .page__head .eyebrow {
+    display: none;
+  }
+
+  .post .page__title {
+    font-size: 24px;
+  }
+
+  .inbox {
+    grid-template-columns: minmax(230px, 300px) minmax(0, 1fr);
+    align-items: stretch;
+    height: calc(100dvh - var(--topbar) - 130px);
+    min-height: 280px;
+  }
+
+  .inbox__list,
+  .inbox__read {
+    min-height: 0;
+    max-height: 100%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .inbox__read {
+    align-self: stretch;
+  }
+
+  .cal-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    gap: 20px;
+    align-items: start;
+  }
+
+  .cal-layout .gig__text {
+    display: none;
+  }
+
+  .cal-layout__side {
+    display: contents;
+  }
+
+  .cal-layout > .cal {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .cal-layout__side > .page__section:nth-child(1) {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    margin-top: 0;
+  }
+
+  .cal-layout__side > .page__section:nth-child(2) {
+    grid-column: 1;
+    grid-row: 2;
+    margin-top: 6px;
+  }
+
+  .cal-layout .cal__wd {
+    font-size: 11px;
+  }
+}
+
+@media (max-height: 500px) {
+  .app__main {
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  }
+
+  .page__head {
+    margin-bottom: 10px;
+  }
+
+  .page__title {
+    font-size: 26px;
+  }
+
+  .page__lead {
+    font-size: 13.5px;
+  }
+
+  .page--narrow {
+    max-width: none;
+  }
+
+  .page--narrow > * + * {
+    margin-top: 8px;
+  }
+
+  .inbox {
+    height: calc(100dvh - var(--topbar) - 104px);
+  }
+
+  .page__section {
+    margin-top: 20px;
+  }
+
+  .assets {
+    gap: 12px;
+  }
+}
+
+/* Kleine Telefone quer (667 px und schmaler): Die Leiste muss in eine Zeile passen. */
+@media (max-width: 860px) {
+  .topbar__stats > div:last-child {
+    display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .topbar {
+    gap: 8px;
+  }
+
+  .topbar__stats {
+    gap: 10px;
+  }
+
+  .topbar__stats .days {
+    display: none;
+  }
+
+  .topbar__saved,
+  .topbar__brand {
+    display: none;
+  }
+}
+
+/* Touch: Ziele mindestens 40 px hoch */
+@media (pointer: coarse) {
+  .btn,
+  .btn--sm,
+  .segmented button,
+  .topbar__nav a,
+  .topbar__close {
+    min-height: 40px;
+  }
+
+  .topbar__saved {
+    width: 40px;
+    height: 40px;
+  }
+
+  .crumbs a,
+  .crumbs > span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+  }
+
+  .crumbs {
+    margin-bottom: 0;
+    gap: 0 6px;
+  }
+
+  .list__row a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+  }
+
+  .net__contact {
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  .asset__trade input {
+    min-height: 40px;
+  }
 }

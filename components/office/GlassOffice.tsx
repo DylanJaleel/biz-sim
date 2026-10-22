@@ -13,6 +13,7 @@ import { currentGame } from "@/lib/current-game";
 import { ActionButton } from "@/components/game/ActionButton";
 import { eur } from "@/components/game/format";
 import { sceneStyle } from "@/components/glass/Tomb";
+import { Disclosure } from "@/components/ui/Disclosure";
 import { NextStepCard } from "./NextStepCard";
 
 // Das Glas-Cockpit: Man sitzt am Schreibtisch und sieht durch die Brille auf
@@ -55,10 +56,10 @@ export async function GlassOffice() {
   const total = monthDays(state);
   const free = daysLeft(state);
   const career = careerOf(state);
-  const next = career.steps.find((s) => !s.done);
+  const next = career.steps.find((s) => !s.done && !s.side);
   const yearChange = state.yearWorth > 0 ? (worth - state.yearWorth) / state.yearWorth : 0;
-  const history = state.reports.slice(-11).map((r) => ({ month: r.month, value: r.playerCash + r.portfolioValue }));
-  history.push({ month: state.month, value: state.cash + portfolioValue(state) });
+  const history = state.reports.slice(-11).map((r) => ({ month: r.month, value: r.worth ?? r.playerCash + r.portfolioValue }));
+  history.push({ month: state.month, value: worth });
   const max = Math.max(1, ...history.map((h) => h.value));
   const min = Math.min(...history.map((h) => h.value));
   // Bars start a little below the lowest month, so changes stay visible.
@@ -178,8 +179,8 @@ export async function GlassOffice() {
                   </Link>
                 </div>
                 {mails.length === 0 && <p className="glbl">Noch keine Post.</p>}
-                {mails.map((m) => (
-                  <Link key={m.id} href={`/post?mail=${m.id}`} className="grow" style={{ alignItems: "flex-start" }}>
+                {mails.map((m, i) => (
+                  <Link key={m.id} href={`/post?mail=${m.id}`} className={i >= 3 ? "grow grow--mail grow--extra" : "grow grow--mail"} style={{ alignItems: "flex-start" }}>
                     <span className="gav" style={{ background: colorOf(m.from) }}>
                       {initials(m.from)}
                     </span>
@@ -192,6 +193,11 @@ export async function GlassOffice() {
                     </span>
                   </Link>
                 ))}
+                {mails.length > 3 && (
+                  <Link href="/post" className="grow grow--more">
+                    Alle Post ansehen
+                  </Link>
+                )}
               </div>
             </div>
 
@@ -228,18 +234,18 @@ export async function GlassOffice() {
                 {gigs.length === 0 && <p className="glbl">Diesen Monat liegen keine Aufträge vor.</p>}
                 {gigs.map((g) => (
                   <div key={g.id} className="gig-mini">
-                    <span className="glbl">
+                    <span className="glbl gig-mini__client">
                       {g.client} · {cityOf(g).name}
                     </span>
-                    <b style={{ fontSize: 14 }}>{g.title}</b>
+                    <b className="gig-mini__title">{g.title}</b>
                     <div className="gig-mini__foot">
                       <span className="money">{eur(g.fee)}</span>
                       {g.status === "booked" ? (
-                        <Link className="gbtn" href={`/auftrag/${g.id}`} style={{ height: 30, fontSize: 12 }}>
+                        <Link className="gbtn gbtn--sm" href={`/auftrag/${g.id}`}>
                           {g.trip ? g.trip.head : "Gebucht"}
                         </Link>
                       ) : (
-                        <Link className="gbtn gbtn--go" href={`/auftrag/${g.id}`} style={{ height: 30, fontSize: 12 }}>
+                        <Link className="gbtn gbtn--go gbtn--sm" href={`/auftrag/${g.id}`}>
                           Reise planen
                         </Link>
                       )}
@@ -292,66 +298,73 @@ export async function GlassOffice() {
           )}
           {ride ? `Schlüssel · ${ride.name}` : "Fuhrpark"}
         </Link>
+        <Link href="/holding" className="gbtn">
+          Holding
+        </Link>
         <Link href="/notizbuch" className="gbtn">
           Notizbuch · {desk.lessons} / {desk.lessonsTotal}
         </Link>
         <Link href="/netzwerk" className="gbtn">
           Netzwerk
         </Link>
-        <Link href="/boerse" className="gbtn">
-          {state.news.find((n) => n.month >= state.month - 1)?.title ?? state.market.headline}
+        <Link href="/boerse" className="gbtn ornament__news">
+          <span>{state.news.find((n) => n.month >= state.month - 1)?.title ?? state.market.headline}</span>
         </Link>
       </nav>
 
-      <section className="gwin" aria-labelledby="buero-title" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
-        <div>
-          <div className="glbl">Büro</div>
-          <h2 id="buero-title" style={{ margin: "2px 0 6px", fontSize: 18 }}>
-            {office.name}
-          </h2>
-          <p className="glbl" style={{ margin: 0 }}>
-            {office.rent > 0 ? `${eur(office.rent)} Miete im Monat. ` : "Keine Miete. "}
-            {office.perks.join(". ")}.
-          </p>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
-            {upgrade && (
-              <ActionButton
-                action={{ type: "moveOffice", level: upgrade.level }}
-                revision={revision}
-                size="sm"
-                disabled={state.reputation < upgrade.reputation || worth < upgrade.worth || state.cash < upgrade.rent}
-              >
-                {`Umziehen: ${upgrade.name}`}
-              </ActionButton>
-            )}
-            {office.level > 0 && (
-              <ActionButton action={{ type: "moveOffice", level: office.level - 1 }} revision={revision} size="sm" variant="ghost">
-                {`Kleiner ziehen: ${OFFICES[office.level - 1]!.name}`}
-              </ActionButton>
-            )}
+      <section className="gwin" aria-label="Büro und Karriere">
+        <Disclosure title="Büro und Karriere" hint={`${office.name} · ${career.title}`} quietOnWide className="gdisc">
+          <div className="buero-grid">
+            <div>
+              <div className="glbl">Büro</div>
+              <h2 id="buero-title" style={{ margin: "2px 0 6px", fontSize: 18 }}>
+                {office.name}
+              </h2>
+              <p className="glbl" style={{ margin: 0 }}>
+                {office.rent > 0 ? `${eur(office.rent)} Miete im Monat. ` : "Keine Miete. "}
+                {office.perks.join(". ")}.
+              </p>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+                {upgrade && (
+                  <ActionButton
+                    action={{ type: "moveOffice", level: upgrade.level }}
+                    revision={revision}
+                    size="sm"
+                    disabled={state.reputation < upgrade.reputation || worth < upgrade.worth || state.cash < upgrade.rent}
+                  >
+                    {`Umziehen: ${upgrade.name}`}
+                  </ActionButton>
+                )}
+                {office.level > 0 && (
+                  <ActionButton action={{ type: "moveOffice", level: office.level - 1 }} revision={revision} size="sm" variant="ghost">
+                    {`Kleiner ziehen: ${OFFICES[office.level - 1]!.name}`}
+                  </ActionButton>
+                )}
+              </div>
+              {upgrade && (
+                <p className="glbl" style={{ marginTop: 8 }}>
+                  Nächste Stufe braucht {upgrade.reputation} Ruf{upgrade.worth > 0 && ` und ${eur(upgrade.worth)} Vermögen`}. Umzug kostet eine Monatsmiete.
+                </p>
+              )}
+            </div>
+            <div>
+              <div className="glbl">Karriere</div>
+              <h2 style={{ margin: "2px 0 6px", fontSize: 18 }}>{career.title}</h2>
+              {next && (
+                <p className="glbl" style={{ margin: 0 }}>
+                  Nächster Schritt: {next.requirement}
+                </p>
+              )}
+              <div className="career-line">
+                {career.steps.map((s) => (
+                  <span key={s.title} className={s.done ? "is-done" : s === next ? "is-next" : undefined}>
+                    {s.title}
+                  </span>
+                ))}
+              </div>
+            </div>
           </div>
-          {upgrade && (
-            <p className="glbl" style={{ marginTop: 8 }}>
-              Nächste Stufe braucht {upgrade.reputation} Ruf{upgrade.worth > 0 && ` und ${eur(upgrade.worth)} Vermögen`}. Umzug kostet eine Monatsmiete.
-            </p>
-          )}
-        </div>
-        <div>
-          <div className="glbl">Karriere</div>
-          <h2 style={{ margin: "2px 0 6px", fontSize: 18 }}>{career.title}</h2>
-          {next && (
-            <p className="glbl" style={{ margin: 0 }}>
-              Nächster Schritt: {next.requirement}
-            </p>
-          )}
-          <div className="career-line">
-            {career.steps.map((s) => (
-              <span key={s.title} className={s.done ? "is-done" : s === next ? "is-next" : undefined}>
-                {s.title}
-              </span>
-            ))}
-          </div>
-        </div>
+        </Disclosure>
       </section>
     </div>
   );

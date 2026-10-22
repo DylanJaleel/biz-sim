@@ -2,6 +2,7 @@ import { currentGame } from "@/lib/current-game";
 import { ACTION_DAYS } from "@/lib/game/config";
 import { CURRICULUM, lessonOf } from "@/lib/game/lessons";
 import { ActionButton } from "@/components/game/ActionButton";
+import { Disclosure } from "@/components/ui/Disclosure";
 
 export async function Notebook() {
   const { state, revision } = await currentGame();
@@ -39,11 +40,15 @@ export async function Notebook() {
             </p>
           </article>
         ))}
-        {Array.from({ length: missing }, (_, i) => (
-          <article key={`locked-${i}`} className="lesson lesson--locked" aria-label="Noch nicht freigeschaltet">
-            <span aria-hidden="true">?</span>
-          </article>
-        ))}
+        {missing > 0 && (
+          <Disclosure title={missing === 1 ? "1 weiterer Begriff noch gesperrt" : `${missing} weitere Begriffe noch gesperrt`} quietOnWide wideContents className="lessons__locked">
+            {Array.from({ length: missing }, (_, i) => (
+              <article key={`locked-${i}`} className="lesson lesson--locked" aria-label="Noch nicht freigeschaltet">
+                <span aria-hidden="true">?</span>
+              </article>
+            ))}
+          </Disclosure>
+        )}
       </div>
     </div>
   );

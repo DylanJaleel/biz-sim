@@ -60,7 +60,7 @@ export function ForecastTool({ startup }: { startup: Startup }) {
   const set = (patch: Partial<Levers>) => setLevers((l) => ({ ...l, ...patch }));
 
   return (
-    <section className="panel forecast" aria-labelledby="forecast-title">
+    <section className="panel forecast" aria-labelledby="forecast-title" data-pane="rechner">
       <p className="eyebrow">Mit dem CFO rechnen</p>
       <h2 id="forecast-title" className="panel__title">
         Was wäre, wenn …

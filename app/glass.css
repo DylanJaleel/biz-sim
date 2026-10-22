@@ -683,12 +683,25 @@ a.grow:hover {
   width: auto;
 }
 
-@media (max-width: 1000px) {
+@media (max-width: 1000px) and (orientation: portrait) {
   .cabinet {
     grid-template-columns: minmax(0, 1fr);
   }
   .cabinet__detail {
     position: static;
+  }
+}
+
+@media (max-width: 1000px) and (orientation: landscape) {
+  .cabinet {
+    grid-template-columns: minmax(0, 1fr) 250px;
+    gap: 14px;
+  }
+  .cabinet__stage {
+    height: 190px;
+  }
+  .cabinet__stage .tomb {
+    height: 170px;
   }
 }
 
@@ -1171,11 +1184,504 @@ a.grow:hover {
   grid-column: 1 / -1;
 }
 
-@media (max-width: 1180px) {
+@media (max-width: 760px) {
   .nextstep {
     grid-template-columns: minmax(0, 1fr);
   }
   .nextstep__actions {
     justify-content: flex-start;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Schmale Bildschirme (bis 1100 px): dichter, kürzer, eine Hand am Handy.
+   --------------------------------------------------------------------------- */
+
+.gig-mini__title {
+  font-size: 14px;
+}
+
+.gbtn--sm {
+  height: 30px;
+  font-size: 12px;
+}
+
+.grow--more {
+  display: none;
+}
+
+.trip__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ride__buy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.gdisc .disc__toggle {
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.gdisc .disc__hint,
+.gwin .disc__chev {
+  color: var(--g-muted);
+  stroke: var(--g-muted);
+}
+
+.buero-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 1100px) {
+  .glass-page {
+    gap: 12px;
+  }
+
+  .gwin {
+    padding: 14px 16px;
+    border-radius: 26px;
+  }
+
+  .gcard {
+    padding: 14px;
+    border-radius: 18px;
+  }
+
+  .gcard__head {
+    margin-bottom: 2px;
+  }
+
+  .gchip {
+    min-height: 36px;
+    padding: 6px 12px;
+  }
+
+  .gdisc .disc__row {
+    margin: 0;
+  }
+
+  .gdisc[data-open="true"] > .disc__row {
+    margin-bottom: 10px;
+  }
+
+  .gdisc .disc__toggle {
+    min-height: 40px;
+  }
+
+  .gdisc .disc__hint {
+    max-width: 60%;
+  }
+
+  /* Büro: drei Spalten werden zwei Spalten, Karten rutschen nach oben */
+  .cockpit {
+    gap: 12px;
+  }
+
+  .cockpit__head {
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .cockpit__head h1 {
+    font-size: 26px;
+  }
+
+  .cockpit__chips {
+    gap: 6px;
+  }
+
+  .cockpit__grid {
+    display: block;
+    column-count: 2;
+    column-gap: 12px;
+  }
+
+  .cockpit__grid > .cockpit__col,
+  .cockpit__col {
+    display: contents;
+  }
+
+  .cockpit__grid .gcard {
+    display: block;
+    margin: 0 0 12px;
+    break-inside: avoid;
+  }
+
+  .cockpit__grid .gcard[style*="flex"] {
+    display: block !important;
+  }
+
+  .nextstep {
+    gap: 6px 14px;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    border-radius: 18px;
+  }
+
+  .nextstep__head b {
+    font-size: 15px;
+  }
+
+  .nextstep__reqs li {
+    padding: 3px 9px;
+  }
+
+  .worth .bars {
+    height: 56px;
+    margin-top: 8px;
+  }
+
+  .grow {
+    padding: 7px 0;
+  }
+
+  .grow--mail {
+    gap: 10px;
+  }
+
+  .grow--mail .gav {
+    width: 30px;
+    height: 30px;
+    font-size: 11px;
+  }
+
+  .grow--mail .grow__main > span:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .grow--extra {
+    display: none;
+  }
+
+  .grow--more {
+    display: flex;
+    justify-content: center;
+    min-height: 40px;
+    color: var(--g-info) !important;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .gig-mini {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 10px;
+    align-items: center;
+    padding: 8px 10px;
+    margin-top: 6px;
+  }
+
+  .gig-mini__client {
+    overflow: hidden;
+    font-size: 11.5px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .gig-mini__title {
+    font-size: 13px;
+  }
+
+  .gig-mini__client,
+  .gig-mini__title {
+    grid-column: 1;
+  }
+
+  .gbtn--sm {
+    padding: 0 12px;
+  }
+
+  .gig-mini__foot {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    flex-direction: column;
+    align-items: flex-end;
+    margin: 0;
+    gap: 4px;
+  }
+
+  .ornament {
+    padding: 6px;
+    gap: 6px;
+  }
+
+  .ornament .gbtn {
+    max-width: 100%;
+  }
+
+  .ornament__news span {
+    display: block;
+    max-width: 240px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .assist {
+    padding: 14px 16px;
+    gap: 8px;
+    border-radius: 26px;
+  }
+
+  .assist__face {
+    width: 40px;
+    height: 40px;
+    font-size: 14px;
+  }
+
+  .assist__tasks a {
+    padding: 8px 12px;
+  }
+
+  /* Fuhrpark: schlanker Kopf, Karten als Zeilen */
+  .garage__head {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .garage__tray {
+    display: none;
+  }
+
+  .garage__title {
+    margin: 2px 0 4px !important;
+    font-size: 24px !important;
+  }
+
+  .garage__head .gchip {
+    min-height: 32px;
+    padding: 4px 10px;
+    font-size: 12px;
+  }
+
+  .garage__head .gchip img {
+    width: 20px;
+    height: 20px;
+  }
+
+  .garage__grid {
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 10px;
+  }
+
+  .ride {
+    display: grid;
+    grid-template-columns: 92px minmax(0, 1fr) auto;
+    grid-template-areas:
+      "img top buy"
+      "img text buy"
+      "img stats buy";
+    align-items: center;
+    gap: 2px 12px;
+    padding: 10px;
+  }
+
+  .ride__img {
+    grid-area: img;
+    align-self: start;
+    border-radius: 12px;
+    aspect-ratio: 4 / 3;
+  }
+
+  .ride__top {
+    grid-area: top;
+    flex-direction: column;
+    gap: 0 !important;
+    align-items: flex-start !important;
+  }
+
+  .ride__text {
+    grid-area: text;
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: 11.5px;
+    line-height: 1.35 !important;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  .ride__stats {
+    grid-area: stats;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .ride__stats div {
+    display: inline-flex;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+  }
+
+  .ride__stats .glbl {
+    font-size: 11px;
+  }
+
+  .ride__stats b {
+    display: inline;
+    font-size: 11px;
+  }
+
+  .ride__trip {
+    display: none;
+  }
+
+  .ride__buy {
+    grid-area: buy;
+    align-self: center;
+    align-items: flex-end;
+    max-width: 150px;
+    text-align: right;
+  }
+
+  .ride__buy .glbl {
+    font-size: 11px;
+  }
+
+  .garage__grid + .xp__btn,
+  .xp > .xp__btn {
+    margin-top: 10px;
+  }
+
+  /* Auftrag: Anreise als schmale Karten, "Losfahren" bleibt am unteren Rand */
+  .trip {
+    gap: 12px;
+  }
+
+  .trip__hint {
+    display: none;
+  }
+
+  .trip__options {
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 8px;
+  }
+
+  .topt {
+    display: grid;
+    grid-template-columns: 64px minmax(0, 1fr);
+    align-content: center;
+    gap: 1px 10px;
+    padding: 8px;
+    border-radius: 16px;
+  }
+
+  .topt__img {
+    grid-row: 1 / span 3;
+    align-self: start;
+    border-radius: 10px;
+    aspect-ratio: 1;
+  }
+
+  .topt > b,
+  .topt > .glbl,
+  .topt > .tags {
+    padding: 0;
+  }
+
+  .topt .tag-g {
+    padding: 2px 7px;
+    font-size: 10px;
+  }
+
+  .trip__bar {
+    position: sticky;
+    bottom: max(10px, env(safe-area-inset-bottom));
+    z-index: 20;
+    flex-wrap: nowrap;
+    gap: 14px;
+    margin-top: 2px;
+    padding: 8px 8px 8px 18px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 999px;
+    background: rgba(24, 19, 16, 0.86);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    backdrop-filter: blur(24px) saturate(160%);
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+  }
+
+  .trip__bar .glbl {
+    font-size: 11.5px;
+    line-height: 1.3;
+  }
+
+  .trip__bar .gbtn--go {
+    flex: none;
+    height: 44px;
+    padding: 0 24px;
+    font-size: 14px;
+  }
+
+  .onsite__hero {
+    aspect-ratio: 21 / 6;
+  }
+}
+
+@media (max-width: 1100px) and (orientation: landscape) {
+  .trip {
+    grid-template-columns: minmax(230px, 280px) minmax(0, 1fr);
+  }
+
+  .trip__options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .journey__bar {
+    bottom: max(12px, env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-height: 500px) {
+  .garage__lead {
+    display: none;
+  }
+
+  .assist__bubble {
+    display: none;
+  }
+
+  .assist__tasks li:nth-child(n + 4) {
+    display: none;
+  }
+
+  .cockpit__head .glbl {
+    font-size: 11px;
+  }
+
+  .glass-page > .gwin > .garage__head,
+  .garage__head {
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+}
+
+@media (pointer: coarse) {
+  .gbtn,
+  .gbtn--sm {
+    height: auto;
+    min-height: 40px;
+  }
+
+  .gchip {
+    min-height: 40px;
+  }
+
+  a.glbl {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
   }
 }

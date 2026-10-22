@@ -160,7 +160,7 @@ export function TripPlanner({ revision, gig, city, options, approaches, brief, c
               <b>{city.km} km</b>
             </div>
           </div>
-          <div className="gcard" style={{ background: "rgba(10,132,255,.14)", borderColor: "rgba(10,132,255,.35)", fontSize: 13, lineHeight: 1.5 }}>
+          <div className="gcard trip__hint" style={{ background: "rgba(10,132,255,.14)", borderColor: "rgba(10,132,255,.35)", fontSize: 13, lineHeight: 1.5 }}>
             <b>Vor Ort entscheidest du, wie du den Auftrag angehst.</b> Wer unterwegs arbeiten konnte und ausgeruht ankommt, hat beim mutigen Weg bessere Karten. Ein großer
             Auftritt bringt etwas mehr Honorar.
           </div>
@@ -210,7 +210,9 @@ export function TripPlanner({ revision, gig, city, options, approaches, brief, c
               </button>
             ))}
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          {tooBusy && <p className="action__error">Dafür fehlen dir diesen Monat Tage. Wähle eine schnellere Anreise oder lass den Auftrag liegen.</p>}
+          {tooPoor && <p className="action__error">Für diese Anreise reicht das Konto nicht.</p>}
+          <div className="trip__bar">
             <span className="glbl">
               {chosen.name}: {eur(chosen.cost)} sofort, {chosen.days === 0 ? "kein Reisetag" : "ein Reisetag"}. Mutiger Weg vor Ort: {chosen.chance} % Chance.
             </span>
@@ -226,8 +228,6 @@ export function TripPlanner({ revision, gig, city, options, approaches, brief, c
               Losfahren
             </button>
           </div>
-          {tooBusy && <p className="action__error">Dafür fehlen dir diesen Monat Tage. Wähle eine schnellere Anreise oder lass den Auftrag liegen.</p>}
-          {tooPoor && <p className="action__error">Für diese Anreise reicht das Konto nicht.</p>}
         </section>
       </div>
     </div>

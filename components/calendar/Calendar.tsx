@@ -52,41 +52,45 @@ export async function Calendar() {
         </p>
       </header>
 
-      <div className="cal" role="grid" aria-label={`Arbeitstage im ${monthLabel(state.month)}`}>
-        {WEEKDAYS.map((w) => (
-          <span key={w} className="cal__wd" role="columnheader">
-            {w}
-          </span>
-        ))}
-        {days.map(({ day, entry, start }) => (
-          <div key={day} role="gridcell" className={`cal__day${entry ? ` cal__day--${entry.kind}` : ""}${start ? " is-start" : ""}`}>
-            <span className="cal__num">{day}</span>
-            {start && entry && (
-              <span className="cal__label">
-                <b>{KIND_LABEL[entry.kind] ?? entry.kind}</b>
-                <span>{entry.label}</span>
-              </span>
-            )}
-          </div>
-        ))}
-      </div>
-
-      <section className="page__section">
-        <h2 className="section-title">Bezahlte Aufträge</h2>
-        <GigList gigs={state.gigs.filter((g) => g.month === state.month)} reputation={state.reputation} daysLeft={daysLeft(state)} />
-      </section>
-
-      <section className="page__section">
-        <h2 className="section-title">Was wie lange dauert</h2>
-        <ul className="costs">
-          {(Object.keys(ACTION_DAYS) as (keyof typeof ACTION_DAYS)[]).map((k) => (
-            <li key={k}>
-              <span className={`cal__swatch cal__day--${k}`} aria-hidden="true" />
-              {KIND_LABEL[k]} <b>{dayText(k === "dd" ? office.ddDays : office.analyst && (k === "cfo" || k === "question") ? 0 : ACTION_DAYS[k])}</b>
-            </li>
+      <div className="cal-layout">
+        <div className="cal" role="grid" aria-label={`Arbeitstage im ${monthLabel(state.month)}`}>
+          {WEEKDAYS.map((w) => (
+            <span key={w} className="cal__wd" role="columnheader">
+              {w}
+            </span>
           ))}
-        </ul>
-      </section>
+          {days.map(({ day, entry, start }) => (
+            <div key={day} role="gridcell" className={`cal__day${entry ? ` cal__day--${entry.kind}` : ""}${start ? " is-start" : ""}`}>
+              <span className="cal__num">{day}</span>
+              {start && entry && (
+                <span className="cal__label">
+                  <b>{KIND_LABEL[entry.kind] ?? entry.kind}</b>
+                  <span>{entry.label}</span>
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="cal-layout__side">
+          <section className="page__section">
+            <h2 className="section-title">Bezahlte Aufträge</h2>
+            <GigList gigs={state.gigs.filter((g) => g.month === state.month)} reputation={state.reputation} daysLeft={daysLeft(state)} />
+          </section>
+
+          <section className="page__section">
+            <h2 className="section-title">Was wie lange dauert</h2>
+            <ul className="costs">
+              {(Object.keys(ACTION_DAYS) as (keyof typeof ACTION_DAYS)[]).map((k) => (
+                <li key={k}>
+                  <span className={`cal__swatch cal__day--${k}`} aria-hidden="true" />
+                  {KIND_LABEL[k]} <b>{dayText(k === "dd" ? office.ddDays : office.analyst && (k === "cfo" || k === "question") ? 0 : ACTION_DAYS[k])}</b>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </div>
+      </div>
 
       {reports.length > 0 && (
         <section className="page__section">

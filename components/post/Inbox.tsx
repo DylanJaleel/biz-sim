@@ -88,7 +88,7 @@ export function Inbox({
               <span className="inbox__from">{m.from}</span>
               <span className="inbox__subject">{m.subject}</span>
               <span className="inbox__meta">
-                <span className={`tag tag--kind-${m.kind}`}>{KIND_LABEL[m.kind]}</span> {m.when}
+                <span className={`tag tag--kind-${m.kind}`}>{KIND_LABEL[m.kind]}</span> <span className="inbox__when">{m.when}</span>
               </span>
             </button>
           </li>
@@ -220,7 +220,8 @@ function Deal({ deal, revision, cash, ddDays }: { deal: DealView; revision: numb
       )}
       {deal.buyout && (
         <p className="notice">
-          Nachfolge: Du kaufst die Mehrheit von der Inhaberfamilie. Mit der Mehrheit schüttet die Firma jedes Quartal aus, was sie nicht braucht. Ein Kaufkredit über 40 % läuft acht Jahre über dein Konto.
+          Nachfolge: Du kaufst die Mehrheit von der Inhaberfamilie. Mit der Mehrheit schüttet die Firma jedes Quartal aus, was sie nicht braucht. Ein Kaufkredit über 40 % läuft
+          acht Jahre über dein Konto.
           {!deal.canBuyout && ` Firmen übernehmen kannst du ab ${BUYOUT_REPUTATION} Ruf.`}
         </p>
       )}
@@ -234,10 +235,21 @@ function Deal({ deal, revision, cash, ddDays }: { deal: DealView; revision: numb
         )}
         {deal.buyout ? (
           <>
-            <ActionButton action={{ type: "buyout", startupId: deal.id, leverage: true }} revision={revision} days={ACTION_DAYS.buyout} variant="primary" disabled={!deal.canBuyout || cash < deal.ticket - deal.loan}>
+            <ActionButton
+              action={{ type: "buyout", startupId: deal.id, leverage: true }}
+              revision={revision}
+              days={ACTION_DAYS.buyout}
+              variant="primary"
+              disabled={!deal.canBuyout || cash < deal.ticket - deal.loan}
+            >
               {`Mit Kaufkredit: ${eur(deal.ticket - deal.loan)} selbst, ${eur(deal.loan)} Bank`}
             </ActionButton>
-            <ActionButton action={{ type: "buyout", startupId: deal.id, leverage: false }} revision={revision} days={ACTION_DAYS.buyout} disabled={!deal.canBuyout || cash < deal.ticket}>
+            <ActionButton
+              action={{ type: "buyout", startupId: deal.id, leverage: false }}
+              revision={revision}
+              days={ACTION_DAYS.buyout}
+              disabled={!deal.canBuyout || cash < deal.ticket}
+            >
               {`Ganz aus eigenem Geld: ${eur(deal.ticket)}`}
             </ActionButton>
           </>

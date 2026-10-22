@@ -1909,3 +1909,64 @@
   color: var(--maybe);
   font-weight: 600;
 }
+
+/* Querformat am Handy: Die Wiedergabe-Knöpfe rücken neben den Tisch, oben in die rechte Spalte. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .room__body {
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 390px);
+    grid-template-rows: auto minmax(0, 1fr);
+    height: calc(100dvh - var(--topbar) - 146px);
+    min-height: 180px;
+  }
+
+  .room__stage > .room__bar .btn {
+    padding: 0 10px;
+  }
+
+  .room__stage {
+    display: contents;
+  }
+
+  .room__stage > .stage {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+  }
+
+  .room__stage > .room__bar {
+    grid-column: 2;
+    grid-row: 1;
+    justify-content: flex-start;
+    margin: 0;
+  }
+
+  .rt {
+    width: min(100%, calc((100dvh - var(--topbar) - 150px) * 200 / 146));
+  }
+
+  .room__side {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: stretch;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
+  }
+}
+
+@media (pointer: coarse) {
+  .room__agenda li {
+    padding: 0;
+  }
+
+  .room__agenda li > a,
+  .room__agenda li > span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 0 12px;
+  }
+
+  .room__agenda li > a {
+    min-height: 40px;
+  }
+}

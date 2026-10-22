@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { restartGameAction } from "@/app/(app)/actions";
+import { Disclosure } from "@/components/ui/Disclosure";
 
 /** Two-step confirmation: a reset deletes the whole game and can't be undone. */
 export function ResetGameCard() {
@@ -11,24 +12,27 @@ export function ResetGameCard() {
   return (
     <section className="panel">
       <p className="eyebrow">Neues Spiel</p>
-      <p className="panel__title">Von vorn beginnen</p>
-      <p className="muted">Du startest wieder als Business Angel im Oktober des ersten Jahres. Dein bisheriger Spielstand bleibt als Sicherung erhalten und lässt sich oben wieder laden.</p>
-      {confirming ? (
-        <div className="panel__actions">
-          <button type="button" className="btn" disabled={pending} onClick={() => setConfirming(false)}>
-            Abbrechen
-          </button>
-          <button type="button" className="btn btn--danger" disabled={pending} onClick={() => startTransition(() => restartGameAction())}>
-            {pending ? "Setze zurück…" : "Ja, neu beginnen"}
-          </button>
-        </div>
-      ) : (
-        <div className="panel__actions">
-          <button type="button" className="btn" onClick={() => setConfirming(true)}>
-            Neues Spiel starten
-          </button>
-        </div>
-      )}
+      <Disclosure as="h2" headingClass="panel__title" title="Von vorn beginnen">
+        <p className="muted">
+          Du startest wieder als Business Angel im Oktober des ersten Jahres. Dein bisheriger Spielstand bleibt als Sicherung erhalten und lässt sich oben wieder laden.
+        </p>
+        {confirming ? (
+          <div className="panel__actions">
+            <button type="button" className="btn" disabled={pending} onClick={() => setConfirming(false)}>
+              Abbrechen
+            </button>
+            <button type="button" className="btn btn--danger" disabled={pending} onClick={() => startTransition(() => restartGameAction())}>
+              {pending ? "Setze zurück…" : "Ja, neu beginnen"}
+            </button>
+          </div>
+        ) : (
+          <div className="panel__actions">
+            <button type="button" className="btn" onClick={() => setConfirming(true)}>
+              Neues Spiel starten
+            </button>
+          </div>
+        )}
+      </Disclosure>
     </section>
   );
 }
