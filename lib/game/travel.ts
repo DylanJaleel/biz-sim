@@ -201,7 +201,7 @@ export const VEHICLES: VehicleDef[] = [
     upkeep: 0,
     fast: true,
     impress: 3,
-    trip: { local: 3_000, national: 8_400, international: 9_800 },
+    trip: { local: 1_500, national: 3_500, international: 4_500 },
     reputation: 85,
     image: "jet-light",
     key: "key-jet",
@@ -215,7 +215,7 @@ export const VEHICLES: VehicleDef[] = [
     upkeep: 45_000,
     fast: true,
     impress: 3,
-    trip: { local: 1_000, national: 2_000, international: 2_800 },
+    trip: { local: 600, national: 1_200, international: 1_800 },
     reputation: 85,
     needs: "fund",
     image: "jet-long",
@@ -358,7 +358,8 @@ export function travelOptions(state: GameState, gig: Gig): TravelOption[] {
       days: far && !v.fast ? 1 : 0,
       cost: v.trip[d],
       prep: false,
-      rest: !far,
+      // Fast cars are comfortable: you arrive rested even from far away.
+      rest: !far || v.fast,
       impress: v.impress,
       duration: hours(city.km, v.fast ? 120 : 105),
       scenes: [
@@ -499,7 +500,7 @@ export function approachesFor(gig: Gig): { id: GigApproach; label: string; text:
 
 /** Chance that the bold way works, given how you arrive. */
 export function boldChance(option: Pick<TravelOption, "prep" | "rest" | "impress">): number {
-  return Math.min(0.9, 0.4 + (option.prep ? 0.15 : 0) + (option.rest ? 0.1 : 0) + option.impress * 0.05);
+  return Math.min(0.9, 0.35 + (option.prep ? 0.15 : 0) + (option.rest ? 0.1 : 0) + option.impress * 0.05);
 }
 
 export interface TripResult {
@@ -541,7 +542,7 @@ export function resolveTrip(gig: Gig, option: TravelOption, approach: GigApproac
       : "Du lieferst mehr als verlangt und bekommst einen Aufschlag. Weitererzählt hat es leider niemand.";
   } else {
     success = roll < boldChance(option);
-    feeMul = success ? 1.3 : 1;
+    feeMul = success ? 1.3 : 0.8;
     reputation = success ? 2 : -1;
     head = success ? (stage ? "Das Zitat des Tages" : "Volltreffer") : stage ? "Das kam nicht gut an" : "Der Kunde ist verstimmt";
     text = success
@@ -549,8 +550,8 @@ export function resolveTrip(gig: Gig, option: TravelOption, approach: GigApproac
         ? "Deine These steht am nächsten Tag in der Zeitung. Danach klingelt das Telefon."
         : "Deine Empfehlung sitzt. Der Kunde zahlt einen Bonus, und die Branche spricht über dich."
       : stage
-        ? "Ein Verbandschef widerspricht scharf, die Presse schreibt von einem Eklat."
-        : "Der Kunde fühlt sich überrumpelt. Er zahlt, aber ein zweites Mal ruft er nicht an.";
+        ? "Ein Verbandschef widerspricht scharf, die Presse schreibt von einem Eklat. Der Veranstalter kürzt das Honorar."
+        : "Der Kunde fühlt sich überrumpelt und kürzt das Honorar. Ein zweites Mal ruft er nicht an.";
   }
   if (option.impress >= 2) feeMul += 0.05;
   if (option.impress >= 3 && success) reputation += 1;

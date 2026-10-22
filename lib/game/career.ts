@@ -1,4 +1,4 @@
-import { CORPORATE_REPUTATION, FAMILY_OFFICE_REPUTATION, FAMILY_OFFICE_WORTH, FUND_REPUTATION, LEAD_REPUTATION } from "./config";
+import { BUYOUT_REPUTATION, CORPORATE_REPUTATION, FAMILY_OFFICE_REPUTATION, FAMILY_OFFICE_WORTH, FUND_REPUTATION, LEAD_REPUTATION } from "./config";
 import type { GameState } from "./types";
 
 // Die Karriereleiter vom Angel zum Investment-Mogul. Danach geht das Spiel
@@ -10,6 +10,8 @@ export interface CareerStep {
   done: boolean;
   /** Not playable yet. */
   later?: boolean;
+  /** A goal beside the main path: nice to have, not needed for the next step. */
+  side?: boolean;
 }
 
 export interface Career {
@@ -25,11 +27,17 @@ export function careerOf(state: GameState): Career {
   const steps: CareerStep[] = [
     { title: "Business Angel", requirement: "Bei einem Startup einsteigen", done: invested },
     { title: "Lead-Investor", requirement: `Eine Finanzierungsrunde anführen (ab ${LEAD_REPUTATION} Ruf)`, done: led },
-    { title: "Mehrheitsgesellschafter", requirement: "Mehr als 50 % an einer Firma halten", done: majority },
+    {
+      title: "Mehrheitsgesellschafter",
+      requirement: `Mehr als 50 % an einer Firma halten: eine Nachfolge kaufen (Angebote ab ${BUYOUT_REPUTATION} Ruf und 600.000 € Vermögen)`,
+      done: majority,
+      side: true,
+    },
     {
       title: "Konzern-Aufsichtsrat",
       requirement: `Ein Mandat im Aufsichtsrat eines Konzerns (ab ${CORPORATE_REPUTATION} Ruf, mit angeführter Runde oder Mehrheit)`,
       done: state.corporateSeat === "joined",
+      side: true,
     },
     {
       title: "Family Office",

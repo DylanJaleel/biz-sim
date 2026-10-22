@@ -103,7 +103,7 @@ export const TROPHIES: TrophyDef[] = [
       accepted(s).some((x) => {
         const startup = s.startups.find((t) => t.id === x.startupId);
         const mine = x.payouts?.find((p) => p.id === "you")?.amount ?? 0;
-        const cost = startup?.playerPref ?? 0;
+        const cost = startup?.playerCost ?? startup?.playerPref ?? 0;
         return cost > 0 && mine >= cost * 10;
       }),
   },

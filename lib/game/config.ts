@@ -43,7 +43,7 @@ export const CORPORATE_FEE = 4_000;
 export const NEWS_FROM_MONTH = 3;
 // Phase 4: family office, team, buyouts, fund, IPO
 export const FAMILY_OFFICE_REPUTATION = 70;
-export const FAMILY_OFFICE_WORTH = 1_000_000;
+export const FAMILY_OFFICE_WORTH = 750_000;
 export const FAMILY_OFFICE_COST = 40_000;
 export const SALARY = { associate: 5_000, partner: 9_000 } as const;
 export const TEAM_MAX = { associate: 3, partner: 1 } as const;
@@ -198,3 +198,6 @@ export function monthLabel(month: number): string {
 export function monthName(month: number): string {
   return MONTH_NAMES[(START_MONTH_INDEX + month - 1) % 12];
 }
+
+/** Above this reputation, gains are halved. */
+export const REPUTATION_SOFT_CAP = 80;

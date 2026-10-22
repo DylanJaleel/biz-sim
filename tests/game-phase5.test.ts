@@ -126,3 +126,37 @@ describe("trips to a job", () => {
     expect(parseAction({ type: "seenTrophies" })).toEqual({ type: "seenTrophies" });
   });
 });
+
+describe("audit fixes", () => {
+  it("the next step skips side goals and leads to the Family Office", async () => {
+    const { nextStepView } = await import("../lib/game/views");
+    const state: GameState = { ...act(newGame(3), { type: "invest", startupId: "pendelwerk" }), ledRounds: 1, reputation: 72, cash: 900_000, office: 3 };
+    const step = nextStepView(state)!;
+    expect(step.title).toBe("Family Office");
+    expect(step.action?.move).toEqual({ type: "foundFamilyOffice" });
+    const low = nextStepView({ ...state, office: 1 })!;
+    expect(low.action).toBeUndefined();
+    expect(low.side?.move).toEqual({ type: "moveOffice", level: 3 });
+  });
+
+  it("loans count against net worth, locked shares for it", () => {
+    const base = newGame(4);
+    const withLoan: GameState = { ...base, loans: [{ id: "k1", startupId: "x", label: "Kredit", balance: 100_000, payment: 1_000, rate: 0.05 }] };
+    expect(netWorth(withLoan)).toBe(netWorth(base) - 100_000);
+    const withLock: GameState = { ...base, lockups: [{ id: "l1", name: "X", amount: 50_000, index: base.market.prices.tech, due: 9 }] };
+    expect(netWorth(withLock)).toBeCloseTo(netWorth(base) + 50_000, 0);
+  });
+
+  it("writes once when the Family Office is within reach", () => {
+    let state: GameState = { ...act(newGame(5), { type: "invest", startupId: "pendelwerk" }), reputation: 75, cash: 900_000, office: 3 };
+    state = act(state, { type: "closeMonth" });
+    state = act(state, { type: "closeMonth" });
+    expect(state.mails.filter((m) => m.subject === "Du kannst jetzt ein Family Office gründen")).toHaveLength(1);
+  });
+
+  it("a declined supervisory seat comes back a year later", () => {
+    let state: GameState = { ...newGame(6), corporateSeat: "declined", corporateDeclined: 1, reputation: 80, ledRounds: 1 };
+    for (let m = 0; m < 12; m++) state = act(state, { type: "closeMonth" });
+    expect(state.corporateSeat).toBe("offered");
+  });
+});

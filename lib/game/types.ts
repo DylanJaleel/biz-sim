@@ -108,6 +108,8 @@ export interface Startup {
   crisisMonths: number;
   history: StartupHistoryPoint[];
   exitValue?: number;
+  /** Everything the player paid for the stake (ticket, rounds, bought shares). */
+  playerCost?: number;
   /** Names used in the texts of board items. */
   names: StartupNames;
   /** Current rhythm of the board; missing in older games (= normal). */
@@ -458,6 +460,8 @@ export interface MonthReport {
   reputationBefore: number;
   portfolioValue: number;
   portfolioValueBefore: number;
+  /** Net worth at month end (from Phase 5). */
+  worth?: number;
   notes: string[];
   income?: IncomeLines;
 }
@@ -504,6 +508,10 @@ export interface GameState {
   trophies: TrophyRecord[];
   /** Ids of owned vehicles (see travel.ts). */
   garage: string[];
+  /** Month the corporate seat was turned down; it is offered again a year later. */
+  corporateDeclined?: number;
+  /** One-time hints already sent (e.g. "familyOffice", "fund"). */
+  notices?: string[];
 }
 
 export type ActionKind =

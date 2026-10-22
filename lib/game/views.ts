@@ -205,6 +205,8 @@ export function deskView(state: GameState, lessonsTotal: number): DeskView {
       tone: expires <= 0 ? "urgent" : "normal",
     });
   }
+  const step = nextStepView(state);
+  if (step?.action) tasks.unshift({ text: `Alles bereit: ${step.action.label}. Das ist dein nächster Karriereschritt.`, href: "/holding", tone: "urgent" });
   const unread = state.mails.filter((m) => !m.read).length;
   if (unread > 0 && offered.length === 0) tasks.push({ text: `${unread} ungelesene Nachrichten in der Post.`, href: "/post", tone: "calm" });
   if (active.length === 0 && offered.length === 0) {
@@ -586,7 +588,7 @@ export function nextStepView(state: GameState): NextStepView | null {
   const worth = netWorth(state);
   const eur = (n: number) => `${Math.round(n).toLocaleString("de-DE")} €`;
   const career = careerOf(state);
-  const next = career.steps.find((s) => !s.done && !s.later);
+  const next = career.steps.find((s) => !s.done && !s.later && !s.side);
   if (!next) return null;
   switch (next.title) {
     case "Business Angel":

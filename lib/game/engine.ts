@@ -1,5 +1,7 @@
 import {
   ACTION_DAYS,
+  CARRY,
+  REPUTATION_SOFT_CAP,
   FIRE_SALE,
   LIVING_COSTS,
   OVERDRAFT_LIMIT,
@@ -285,7 +287,9 @@ export function daysLeft(state: GameState): number {
 
 /** Account, depot and stakes together: what an office landlord looks at. */
 export function netWorth(state: GameState): number {
-  return state.cash + holdingsValue(state.market) + portfolioValue(state) + garageValue(state);
+  const debt = state.loans.reduce((sum, l) => sum + l.balance, 0);
+  const locked = state.lockups.reduce((sum, l) => sum + l.amount * (state.market.prices.tech / l.index), 0);
+  return state.cash + holdingsValue(state.market) + portfolioValue(state) + garageValue(state) + locked - debt;
 }
 
 export function portfolioValue(state: GameState): number {
@@ -370,6 +374,7 @@ function playAction(current: GameState, action: GameAction): { state: GameState;
       s.stake = stake;
       s.capTable = capTableAfterEntry(s.capTable, stake);
       s.joined = state.month;
+      s.playerCost = (s.playerCost ?? 0) + ticket;
       if (!s.offer.ddDone) s.flags.push("blind");
       s.history.push({ month: state.month, revenue: s.metrics.revenue, cash: s.metrics.cash, valuation: valuation(s.metrics), stake: s.stake });
       replaceStartup(state, fundCoInvest(state, s, ticket, stake, false));
@@ -503,6 +508,7 @@ function playAction(current: GameState, action: GameAction): { state: GameState;
       spendDays(state, "buyShares", `Anteilskauf ${s.name}`);
       state.cash -= offer.price;
       offer.status = "bought";
+      s.playerCost = (s.playerCost ?? 0) + offer.price;
       const before = s.stake;
       replaceStartup(state, transferToPlayer(s, offer.sellerId, Math.min(offer.pct, seller.pct)));
       unlockLesson(state, "secondary");
@@ -561,7 +567,7 @@ function playAction(current: GameState, action: GameAction): { state: GameState;
       spendDays(state, "introContact", `${def.name} für ${s.name}`);
       c.warmth = Math.max(0, c.warmth - WARMTH_INTRO_COST);
       c.lastIntro = state.month;
-      state.reputation = Math.min(100, state.reputation + 1);
+      state.reputation = Math.min(100, state.reputation + reputationGain(state, 1));
       unlockLesson(state, "netzwerk");
       introduce(state, s, def.id);
       return { state, result: { kind: "none" } };
@@ -700,6 +706,7 @@ function playAction(current: GameState, action: GameAction): { state: GameState;
       if (state.cash < price - loan) throw new GameRuleError(`Dafür reicht dein Kapital nicht: ${(price - loan).toLocaleString("de-DE")} € nötig.`);
       spendDays(state, "buyout", `Übernahme ${s.name}`);
       state.cash -= price - loan;
+      s.playerCost = (s.playerCost ?? 0) + price;
       if (loan > 0) {
         state.loans.push({
           id: nextId(state, "k"),
@@ -792,6 +799,7 @@ function playAction(current: GameState, action: GameAction): { state: GameState;
       if (state.corporateSeat !== "offered") throw new GameRuleError("Dieses Mandat liegt nicht vor.");
       if (!action.accept) {
         state.corporateSeat = "declined";
+        state.corporateDeclined = state.month;
         return { state, result: { kind: "none" } };
       }
       spendDays(state, "joinCorporate", "Antrittsbesuch Nordhafen AG");
@@ -937,7 +945,9 @@ function settleExit(state: GameState, offer: ExitOffer, vote: GvVote | "abstain"
   offer.status = "accepted";
   const own = result.payouts.find((p) => p.id === "you")?.amount ?? 0;
   const mine = own + result.carry;
-  const fundMoney = result.payouts.filter((p) => p.kind === "fund").reduce((sum, p) => sum + p.amount, 0);
+  // The fund keeps its proceeds minus the player's carry on its gain.
+  const fundCost = (id: string) => s.capTable.find((h) => h.id === id)?.cost ?? 0;
+  const fundMoney = result.payouts.filter((p) => p.kind === "fund").reduce((sum, p) => sum + p.amount - Math.max(0, p.amount - fundCost(p.id)) * CARRY, 0);
   if (state.fund && fundMoney > 0) {
     state.fund.cash += fundMoney;
     state.fund.returned += fundMoney;
@@ -950,7 +960,7 @@ function settleExit(state: GameState, offer: ExitOffer, vote: GvVote | "abstain"
     unlockLesson(state, "ipo");
   } else state.cash += mine;
   repayLoans(state, s.id, notes);
-  state.reputation = Math.min(100, state.reputation + 6);
+  state.reputation = Math.min(100, state.reputation + reputationGain(state, 6));
   if (result.carry > 0) unlockLesson(state, "carry");
   replaceStartup(state, { ...s, status: "exited", exitValue: offer.price, flags: [...s.flags.filter((f) => f !== "round_open"), "offered_exit"] });
   state.items = state.items.filter((i) => !(i.startupId === s.id && i.status === "open"));
@@ -1013,7 +1023,7 @@ function createShareOffer(state: GameState, s: Startup, sellerId: string, pct: n
 
 function checkMajority(state: GameState, s: Startup, before: number): void {
   if (before <= 50 && s.stake > 50) {
-    state.reputation = Math.min(100, state.reputation + MAJORITY_REPUTATION_GAIN);
+    state.reputation = Math.min(100, state.reputation + reputationGain(state, MAJORITY_REPUTATION_GAIN));
     unlockLesson(state, "stimmrechte");
     mail(state, {
       kind: "system",
@@ -1067,7 +1077,7 @@ function settleRound(state: GameState, round: Round, take: RoundTake, vote: GvVo
   round.stakeAfter = s.stake;
   if (take === "lead" || take === "syndicate") {
     state.ledRounds += 1;
-    state.reputation = Math.min(100, state.reputation + LEAD_REPUTATION_GAIN);
+    state.reputation = Math.min(100, state.reputation + reputationGain(state, LEAD_REPUTATION_GAIN));
   }
   if (take === "syndicate") {
     const club = state.contacts.find((c) => c.id === "angels");
@@ -1100,7 +1110,7 @@ function applyFull(state: GameState, s: Startup, input: Delta, texts: string[], 
     const payout = (split.payouts.find((p) => p.id === "you")?.amount ?? 0) + split.carry;
     state.cash += payout;
     unlockLesson(state, "liquidationspraeferenz");
-    state.reputation = Math.min(100, state.reputation + 6);
+    state.reputation = Math.min(100, state.reputation + reputationGain(state, 6));
     texts.push(`Verkauf abgeschlossen. Dein Anteil bringt dir ${Math.round(payout).toLocaleString("de-DE")} €.`);
     return { ...applyDelta(s, delta), status: "exited", exitValue: delta.exit };
   }
@@ -1115,7 +1125,7 @@ function decide(state: GameState, item: BoardItem, outcome: Vote, vote: Vote, ar
   const judgment = judge(values, vote);
   const ceoVote = voteFromStance(ceoStance);
   const trustDelta = outcome === ceoVote ? 2 : outcome === "no" ? OVERRULED_TRUST.no : OVERRULED_TRUST.conditions;
-  const reputationDelta = JUDGMENT_REPUTATION[judgment];
+  const reputationDelta = reputationGain(state, JUDGMENT_REPUTATION[judgment]);
   state.reputation = Math.min(100, Math.max(0, state.reputation + reputationDelta));
   s = applyDelta(s, { trust: trustDelta });
   replaceStartup(state, s);
@@ -1123,6 +1133,14 @@ function decide(state: GameState, item: BoardItem, outcome: Vote, vote: Vote, ar
   item.decision = { argument, vote, outcome, shares, judgment, best, values, reputationDelta, trustDelta, month: state.month };
   unlockLesson(state, t.lesson);
   scheduleOutcome(state, item, outcome);
+}
+
+/**
+ * Reputation is harder to gain at the top: above 80, gains are halved.
+ * A known name still opens doors; it just doesn't keep growing by itself.
+ */
+export function reputationGain(state: GameState, delta: number): number {
+  return delta > 0 && state.reputation >= REPUTATION_SOFT_CAP ? Math.ceil(delta / 2) : delta;
 }
 
 function mapValues(o: ReturnType<typeof outlook>): Record<Vote, number> {
@@ -1392,8 +1410,8 @@ export function closeMonth(state: GameState): MonthReport {
   for (const gig of state.gigs.filter((g) => g.status === "booked" && g.month === month)) {
     state.cash += gig.fee;
     income.consulting += gig.fee;
-    if (gig.reputation) state.reputation = Math.min(100, state.reputation + gig.reputation);
-    if (gig.trip?.reputation) state.reputation = Math.max(0, Math.min(100, state.reputation + gig.trip.reputation));
+    if (gig.reputation) state.reputation = Math.min(100, state.reputation + reputationGain(state, gig.reputation));
+    if (gig.trip?.reputation) state.reputation = Math.max(0, Math.min(100, state.reputation + reputationGain(state, gig.trip.reputation)));
     if (gig.contactId && gig.warmth) {
       const c = state.contacts.find((x) => x.id === gig.contactId);
       if (c) {
@@ -1480,7 +1498,10 @@ export function closeMonth(state: GameState): MonthReport {
   }
   planRounds(state);
   planExits(state);
+  // Fame fades a little at the very top: a big name needs to keep delivering.
+  if (state.reputation > REPUTATION_SOFT_CAP + 5) state.reputation -= 1;
   offerCorporateSeat(state);
+  announceNextStep(state);
   pruneDeals(state);
   planDeals(state);
   for (const g of state.gigs.filter((x) => x.status === "offered")) g.status = "expired";
@@ -1495,6 +1516,7 @@ export function closeMonth(state: GameState): MonthReport {
 
   const report: MonthReport = {
     month,
+    worth: netWorth(state),
     lines: state.startups
       .filter((s) => s.joined > 0 && (s.status === "active" || lines.has(s.id)))
       .map((s) => {
@@ -1840,7 +1862,37 @@ function publishNews(state: GameState, month: number, lines: Map<string, string[
 }
 
 /** With a strong reputation and a real track record, a corporation calls. */
+/** One letter each when the Family Office, or later the fund, is within reach. */
+function announceNextStep(state: GameState): void {
+  const sent = new Set(state.notices ?? []);
+  const notice = (id: string, subject: string, body: string) => {
+    if (sent.has(id)) return;
+    state.notices = [...(state.notices ?? []), id];
+    mail(state, { kind: "system", from: "Boardroom", subject, body });
+  };
+  if (state.familyOffice === undefined && state.reputation >= FAMILY_OFFICE_REPUTATION && netWorth(state) >= FAMILY_OFFICE_WORTH) {
+    if (state.office < 3) {
+      notice(
+        "familyOffice-office",
+        "Fast bereit für ein Family Office",
+        `Ruf und Vermögen reichen. Es fehlt nur die Büroetage mit Analyst: Zieh um, dann kannst du dein Family Office gründen. Den Umzug findest du im Büro unter „Nächster Schritt“.`,
+      );
+    } else {
+      notice(
+        "familyOffice",
+        "Du kannst jetzt ein Family Office gründen",
+        `Ruf, Vermögen und Büro reichen. Gründung, Notar und Anwälte kosten ${FAMILY_OFFICE_COST.toLocaleString("de-DE")} € und zwei Tage. Den Knopf findest du im Büro unter „Nächster Schritt“ und in der Holding.`,
+      );
+    }
+  }
+  if (fundBlocker(state) === null) {
+    notice("fund", "Investoren warten auf deinen Fonds", "Dein Ruf und dein erster Verkauf überzeugen Geldgeber. In der Holding kannst du jetzt einen eigenen Fonds auflegen.");
+  }
+}
+
 function offerCorporateSeat(state: GameState): void {
+  // A seat turned down is offered again a year later.
+  if (state.corporateSeat === "declined" && state.month >= (state.corporateDeclined ?? 0) + 12) state.corporateSeat = "none";
   if (state.corporateSeat !== "none" || state.reputation < CORPORATE_REPUTATION) return;
   const record = state.ledRounds > 0 || state.startups.some((s) => s.stake > 50) || state.exits.some((e) => e.status === "accepted");
   if (!record) return;

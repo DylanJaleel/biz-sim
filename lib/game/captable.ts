@@ -186,6 +186,7 @@ export function applyRound(s: Startup, r: Round, invested: number, syndicate = 0
     stake,
     capTable,
     playerPref: (s.playerPref ?? 0) + invested,
+    playerCost: (s.playerCost ?? 0) + invested,
     flags,
     metrics: { ...s.metrics, cash: s.metrics.cash + r.amount, axes: { ...s.metrics.axes, finance: Math.min(100, s.metrics.axes.finance + 5) } },
   };
@@ -272,7 +273,13 @@ function holderExitVote(h: Holder, offer: ExitOffer, s: Startup, payout: number)
 export function exitVote(offer: ExitOffer, s: Startup, player: GvVote | "abstain"): { ballots: GvBallot[]; approved: boolean; payouts: Payout[]; carry: number } {
   const { payouts, carry } = waterfall(s, offer.price);
   const paid = (id: string) => payouts.find((p) => p.id === id)?.amount ?? 0;
-  const ballots: GvBallot[] = votingHolders(s).map((h) => ({ id: h.id, name: h.name, kind: h.kind, pct: round2(h.pct), ...withSyndicate(h, player, () => holderExitVote(h, offer, s, paid(h.id))) }));
+  const ballots: GvBallot[] = votingHolders(s).map((h) => ({
+    id: h.id,
+    name: h.name,
+    kind: h.kind,
+    pct: round2(h.pct),
+    ...withSyndicate(h, player, () => holderExitVote(h, offer, s, paid(h.id))),
+  }));
   ballots.push({
     id: "you",
     name: "Du",
