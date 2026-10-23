@@ -43,7 +43,7 @@ console.log(
 const long = Number(process.argv[4] ?? 60);
 console.log(`\nLanges Spiel: ${Math.min(seeds, 40)} Spiele à ${long} Monate`);
 console.log("Spieler".padEnd(12) + "Wert (Median)   P25 / P75            Insolvenz  Karriere  Mandate  Nachfolgen  Börsengänge");
-const STEPS = ["Angel", "Lead", "Mehrheit", "Aufsichtsrat", "Family Office", "Mogul"];
+const STEPS = ["Angel", "Lead", "M&A-Berater", "Mehrheit", "Aufsichtsrat", "Family Office", "Mogul", "Plattform"];
 for (const bot of [passiveBot("pendelwerk"), yesBot("pendelwerk"), analystBot("pendelwerk"), proBot("pendelwerk"), mogulBot("pendelwerk")]) {
   const runs = Array.from({ length: Math.min(seeds, 40) }, (_, i) => runBot(bot, i + 1, long));
   const sorted = runs.map((r) => r.finalValue).sort((a, b) => a - b);

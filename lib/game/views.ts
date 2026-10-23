@@ -16,6 +16,10 @@ import {
   WARMTH_INTRO_MIN,
 } from "./config";
 import { careerOf } from "./career";
+import { annualEbitda } from "./ebitda";
+import { PLATFORM_MIN_EBITDA, PLATFORM_REPUTATION } from "./mna-config";
+import { platformOf } from "./platform";
+import { mnaTasks } from "./mna-views";
 import { CONTACTS, RING_LABEL, ringOpen, type ContactDef, type Ring } from "./network";
 import { templateOf } from "./content";
 import { daysLeft, fundBlocker, fundSize, itemOf, netWorth, previewMeeting, sittingToday, startupOf, syndicateBlocker } from "./engine";
@@ -174,6 +178,7 @@ export function deskView(state: GameState, lessonsTotal: number): DeskView {
     const m = state.mails.find((x) => x.action === "corporate");
     tasks.push({ text: "Die Nordhafen AG bietet dir einen Sitz im Aufsichtsrat an.", href: m ? `/post?mail=${m.id}` : "/post", tone: "normal" });
   }
+  tasks.push(...mnaTasks(state));
   for (const o of state.shareOffers.filter((x) => x.status === "open")) {
     const s = startupOf(state, o.startupId);
     tasks.push({
@@ -667,6 +672,24 @@ export function nextStepView(state: GameState): NextStepView | null {
           { label: "Mindestens ein erfolgreicher Verkauf", done: state.exits.some((e) => e.status === "accepted") },
         ],
         action: blocker === null ? { move: { type: "raiseFund" }, label: `Fonds auflegen (${eur(fundSize(state))})`, days: ACTION_DAYS.raiseFund } : undefined,
+      };
+    }
+    case "Plattform-Investor": {
+      const platform = platformOf(state);
+      const base = state.startups.some((s) => s.status === "active" && s.metrics.valuedOn === "ebitda" && s.stake > 50 && annualEbitda(s.metrics) >= PLATFORM_MIN_EBITDA);
+      const addons = platform?.platform?.addons.length ?? 0;
+      return {
+        title: next.title,
+        text: "Buy-and-Build: Eine gekaufte Firma wird Plattform, kleinere aus derselben Branche kommen dazu. Klein kaufen, als Gruppe teurer verkaufen. Aber Schulden, Integration und Bank machen jeden Schritt riskant.",
+        requirements: [
+          { label: "Family Office gegründet", done: state.familyOffice !== undefined },
+          { label: `${PLATFORM_REPUTATION} Ruf (du: ${state.reputation})`, done: state.reputation >= PLATFORM_REPUTATION },
+          { label: `Mehrheit an einer Firma aus dem Nachfolge-Programm mit mindestens ${eur(PLATFORM_MIN_EBITDA)} EBITDA`, done: base || !!platform },
+          { label: "Plattform ausgerufen", done: !!platform },
+          { label: `Mindestens zwei Zukäufe (bisher ${addons})`, done: addons >= 2 },
+          { label: "Plattform mit Gewinn verkauft", done: false },
+        ],
+        link: platform ? { href: `/plattform/${platform.id}`, label: "Zur Plattform" } : { href: "/nachfolge", label: "Zum Nachfolge-Programm" },
       };
     }
     default:

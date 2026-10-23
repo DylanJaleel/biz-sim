@@ -6,6 +6,7 @@ import { holdingsValue } from "@/lib/game/market";
 import { monthDays, OFFICES, officeOf } from "@/lib/game/office";
 import { LESSONS } from "@/lib/game/lessons";
 import { deskView, nextStepView } from "@/lib/game/views";
+import { mandateLines } from "@/lib/game/mna-views";
 import { cityOf, garageOf } from "@/lib/game/travel";
 import { TROPHIES } from "@/lib/game/trophies";
 import type { PaceKind } from "@/lib/game/types";
@@ -69,6 +70,7 @@ export async function GlassOffice() {
     .map((s) => ({ s, count: state.items.filter((i) => i.startupId === s.id && i.status === "open").length }));
   const mails = [...state.mails].sort((a, b) => b.month - a.month).slice(0, 5);
   const gigs = state.gigs.filter((g) => g.month === state.month && g.status !== "expired");
+  const mandates = mandateLines(state);
   const assistant = office.level >= 2;
   const garage = garageOf(state);
   const ride = [...garage].sort((a, b) => b.price - a.price)[0];
@@ -224,6 +226,11 @@ export async function GlassOffice() {
               <div className="gcard" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 <div className="gcard__head">
                   <h2>Aufträge</h2>
+                  {state.reputation >= 35 && (
+                    <Link href="/nachfolge" className="glbl">
+                      M&A
+                    </Link>
+                  )}
                   <span className="glbl">
                     {(() => {
                       const n = gigs.filter((g) => g.status === "offered").length;
@@ -231,7 +238,21 @@ export async function GlassOffice() {
                     })()}
                   </span>
                 </div>
-                {gigs.length === 0 && <p className="glbl">Diesen Monat liegen keine Aufträge vor.</p>}
+                {gigs.length === 0 && mandates.length === 0 && <p className="glbl">Diesen Monat liegen keine Aufträge vor.</p>}
+                {mandates.map((m) => (
+                  <div key={m.id} className="gig-mini">
+                    <span className="glbl gig-mini__client">
+                      M&A-Mandat · {m.side === "sell" ? "Verkauf" : "Kauf"} · {m.label}
+                    </span>
+                    <b className="gig-mini__title">{m.company}</b>
+                    <div className="gig-mini__foot">
+                      <span className="money">{eur(m.ev)}</span>
+                      <Link className={m.status === "offered" || m.status === "bids" ? "gbtn gbtn--go gbtn--sm" : "gbtn gbtn--sm"} href={`/mandat/${m.id}`}>
+                        {m.status === "offered" ? "Ansehen" : "Zum Mandat"}
+                      </Link>
+                    </div>
+                  </div>
+                ))}
                 {gigs.map((g) => (
                   <div key={g.id} className="gig-mini">
                     <span className="glbl gig-mini__client">

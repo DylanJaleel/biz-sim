@@ -2,6 +2,7 @@ import Link from "next/link";
 import { currentGame } from "@/lib/current-game";
 import { ACTION_DAYS, FUND_FEE, FUND_MATCH, monthLabel, SALARY, TEAM_MAX } from "@/lib/game/config";
 import { holdingView } from "@/lib/game/views";
+import { holdingMna } from "@/lib/game/mna-views";
 import { ActionButton } from "@/components/game/ActionButton";
 import { eur } from "@/components/game/format";
 import { AssignSelect } from "./AssignSelect";
@@ -17,6 +18,8 @@ const ROLE_TEXT = {
 export async function Holding() {
   const { state, revision } = await currentGame();
   const view = holdingView(state);
+  const mna = holdingMna(state);
+  const rec = mna.record;
   const fund = view.fund;
   return (
     <div className="page holding">
@@ -151,6 +154,45 @@ export async function Holding() {
           </section>
         </>
       )}
+
+      <section className="panel" aria-labelledby="mna-title">
+        <p className="eyebrow">Mittelstand</p>
+        <h2 id="mna-title" className="panel__title">
+          M&A, Nachfolge und Buy-and-Build
+        </h2>
+        <p className="muted">
+          Als M&A-Berater lernst du, wie Familienbetriebe verkauft werden. Im Nachfolge-Programm kaufst du selbst einen, mit Bank und Verkäufer. Als Plattform kauft er kleinere
+          dazu, bis die Gruppe verkauft wird. Alles dazu steht auf einer eigenen Seite.
+        </p>
+        <div className="kpis kpis--compact">
+          <span>
+            <small>Mandate abgeschlossen</small>
+            <b>{rec.mandatesDone}</b>
+          </span>
+          <span>
+            <small>Firmen gekauft</small>
+            <b>{rec.acquisitions}</b>
+          </span>
+          <span>
+            <small>Zukäufe</small>
+            <b>{rec.addons}</b>
+          </span>
+          <span>
+            <small>Plattformen verkauft</small>
+            <b>{rec.platformExits.filter((e) => !e.forced).length}</b>
+          </span>
+        </div>
+        <div className="panel__actions">
+          <Link href="/nachfolge" className="btn btn--sm btn--primary">
+            Zu M&A und Nachfolge
+          </Link>
+          {mna.platformId && (
+            <Link href={`/plattform/${mna.platformId}`} className="btn btn--sm">
+              Zur Plattform
+            </Link>
+          )}
+        </div>
+      </section>
 
       {(view.loans.length > 0 || view.lockups.length > 0 || view.dividendCompanies.length > 0) && (
         <section className="panel" aria-labelledby="money-title">

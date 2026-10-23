@@ -3618,3 +3618,210 @@ a.desk__item:focus-visible {
     min-height: 40px;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   M&A-Mandate, Nachfolge-Programm, Buy-and-Build
+   --------------------------------------------------------------------------- */
+
+.mna-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12.5px;
+}
+
+.mna-steps li {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+.mna-steps li.is-done {
+  background: var(--agree-soft);
+  color: var(--agree);
+}
+
+.mna-steps li.is-now {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 650;
+}
+
+.mna-form,
+.mna-desk {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mna-desk .panel + .panel {
+  margin-top: 0;
+}
+
+.mna-field {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.mna-field legend {
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.mna-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.mna-chips button {
+  min-width: 52px;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 13.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.mna-chips button[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.mna-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 8px;
+}
+
+.mna-options label {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px 10px 36px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.mna-options label input {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  margin: 0;
+}
+
+.mna-options label span {
+  color: var(--muted);
+}
+
+.mna-options label.is-on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.mna-options label.is-done {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.mna-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mna-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.mna-card .action {
+  margin-top: 6px;
+}
+
+.mna-sliders {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.mna-slider {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.mna-slider__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.mna-slider input[type="range"] {
+  width: 100%;
+  min-height: 28px;
+  accent-color: var(--accent);
+}
+
+.mna-table {
+  width: 100%;
+  margin: 12px 0;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.mna-table th,
+.mna-table td {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  font-weight: 500;
+}
+
+.mna-table td {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.mna-table__sum th,
+.mna-table__sum td {
+  font-weight: 700;
+}
+
+.mna-mandates {
+  margin-top: 10px;
+}
+
+@media (max-width: 760px) {
+  .mna-options,
+  .mna-sliders {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

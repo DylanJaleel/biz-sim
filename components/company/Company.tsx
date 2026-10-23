@@ -80,8 +80,14 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
             {view.associate} betreut dieses Mandat. Vorlagen, die du bis Monatsende nicht selbst entscheidest, entscheidet {view.associate.split(" ")[0]} für dich.
           </p>
         )}
-        {s.flags.includes("mittelstand") && active && s.stake > 50 && (
+        {s.flags.includes("mittelstand") && active && s.stake > 50 && !s.lbo && (
           <p className="notice">Du hältst die Mehrheit. Verdient die Firma Geld, schüttet sie jedes Quartal aus, was über drei Monatskosten in der Kasse liegt.</p>
+        )}
+        {s.lbo && active && (
+          <p className="notice">
+            Gekauft mit Bankkredit: Die Firma zahlt Zins und Tilgung, die Bank prüft jedes Quartal den Covenant. Ausschüttungen gibt es nur bei niedriger Verschuldung.{" "}
+            <Link href={`/plattform/${s.id}`}>{s.platform ? "Zur Plattform" : "Schulden, Covenant und Buy-and-Build"}</Link>
+          </p>
         )}
         {corporate && (
           <p className="notice">Du sitzt im Aufsichtsrat: keine Anteile, feste Vergütung, eine Sitzung pro Quartal. Du kontrollierst den Vorstand, du führst nicht selbst.</p>

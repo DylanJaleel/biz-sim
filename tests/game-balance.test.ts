@@ -70,6 +70,7 @@ describe("the long game", () => {
     expect(passive.value).toBeLessThan(START_CASH);
     expect(mogul.value).toBeGreaterThan(yes.value * 1.5);
     expect(mogul.mandates).toBeGreaterThanOrEqual(5);
-    expect(mogul.career).toBeGreaterThanOrEqual(4);
+    // Index 5 = Family Office (after the side goal "M&A-Berater").
+    expect(mogul.career).toBeGreaterThanOrEqual(5);
   });
 }, 240_000);

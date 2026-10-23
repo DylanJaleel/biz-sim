@@ -23,6 +23,7 @@ export async function Post({ searchParams }: { searchParams: Promise<Record<stri
       tagline: s.tagline,
       stage: s.stage,
       buyout: Boolean(s.offer.buyout),
+      structured: Boolean(s.offer.ev),
       loan: s.offer.buyout ? Math.round((s.offer.ticket * BUYOUT_LOAN_SHARE) / 1000) * 1000 : 0,
       canBuyout: state.reputation >= BUYOUT_REPUTATION,
       fundMatch: state.fund ? Math.min(state.fund.cash, state.fund.size * FUND_MAX_DEAL, s.offer.ticket * FUND_MATCH) : 0,
