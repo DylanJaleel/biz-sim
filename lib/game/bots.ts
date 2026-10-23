@@ -1,12 +1,13 @@
 import { templateOf } from "./content";
-import { applyAction, daysLeft, GameRuleError, netWorth, newGame, openItems, portfolioValue, previewMeeting, randomFor, startupOf } from "./engine";
+import { applyAction, covenantsOf, daysLeft, GameRuleError, netWorth, newGame, openItems, portfolioValue, previewMeeting, randomFor, startupOf } from "./engine";
+import { covenantOutlook, optionValues } from "./covenants";
 import { holdingsValue } from "./market";
 import { OFFICES } from "./office";
 import { careerOf } from "./career";
 import { valuation } from "./sim";
-import { bestVote, outlook, VOTES } from "./judge";
+import { bestOf, VOTES } from "./judge";
 import { travelOptions } from "./travel";
-import type { GameAction, GameState, Vote } from "./types";
+import type { CovenantId, GameAction, GameState, Vote } from "./types";
 
 // Skript-Spieler für die Balance: Sie spielen das Spiel über die echte Engine.
 
@@ -76,7 +77,7 @@ export const yesBot = (prefer?: string): Bot => ({
   ],
 });
 
-/** Votes at random, argues at random. */
+/** Votes at random, argues at random; with conditions, any of the three. */
 export const randomBot = (prefer?: string): Bot => ({
   name: "Zufall",
   pick: (s) => firstAffordable(s, prefer),
@@ -85,10 +86,48 @@ export const randomBot = (prefer?: string): Bot => ({
     ...openItems(s).map((i) => {
       const t = templateOf(i.templateId);
       const arg = t.arguments[Math.floor(random() * 3)]!;
-      return { type: "meeting", itemId: i.id, argument: arg.id, vote: VOTES[Math.floor(random() * 3)]! } as GameAction;
+      const vote = VOTES[Math.floor(random() * 3)]!;
+      const options = covenantsOf(s, i).options;
+      const covenant = vote === "conditions" ? options[Math.floor(random() * options.length)] : undefined;
+      return { type: "meeting", itemId: i.id, argument: arg.id, vote, ...(covenant ? { covenant } : {}) } as GameAction;
     }),
   ],
 });
+
+/** Follow-up meetings that are due: one day each, so the conditions work in full. */
+function followUps(state: GameState): GameAction[] {
+  return state.items
+    .filter((i) => i.followUp && !i.followUp.done && !i.followUp.missed && i.decision && i.decision.month < state.month && state.month <= i.followUp.until)
+    .filter((i) => startupOf(state, i.startupId).status === "active")
+    .map((i) => ({ type: "followUp", itemId: i.id }) as GameAction);
+}
+
+/**
+ * Always the middle: argues for conditions and picks the first condition on
+ * offer, without asking what the risk is. Follows its conditions up.
+ */
+export const conditionsBot = (prefer?: string): Bot => ({
+  name: "Immer Auflagen",
+  pick: (s) => firstAffordable(s, prefer),
+  month: (s) => [
+    ...investActions(s, firstAffordable(s, prefer), false),
+    ...followUps(s),
+    ...openItems(s).map((i) => {
+      const t = templateOf(i.templateId);
+      const arg = t.arguments.find((a) => a.toward === "conditions") ?? t.arguments[1]!;
+      return { type: "meeting", itemId: i.id, argument: arg.id, vote: "conditions", covenant: covenantsOf(s, i).options[0] } as GameAction;
+    }),
+    ...gigActions(s, 6),
+  ],
+});
+
+/** What the CFO's numbers recommend: yes, no, or the condition that fits. */
+export function analystChoice(state: GameState, itemId: string): { vote: Vote; covenant?: CovenantId } {
+  const item = state.items.find((i) => i.id === itemId)!;
+  const planned = covenantOutlook(templateOf(item.templateId), startupOf(state, item.startupId), covenantsOf(state, item));
+  const best = bestOf(optionValues(planned));
+  return best === "go" || best === "no" ? { vote: best } : { vote: "conditions", covenant: best as CovenantId };
+}
 
 /**
  * Prepares like a careful board member: CFO view, talks to the member most
@@ -98,12 +137,13 @@ export const analystBot = (prefer?: string): Bot => ({
   name: "Analyst",
   pick: (s) => firstAffordable(s, prefer),
   month: (s) => {
-    const actions: GameAction[] = [...investActions(s, firstAffordable(s, prefer), true)];
+    const actions: GameAction[] = [...investActions(s, firstAffordable(s, prefer), true), ...followUps(s)];
     for (const item of openItems(s)) {
       const t = templateOf(item.templateId);
       const startup = startupOf(s, item.startupId);
-      const o = outlook(t, startup);
-      const best = bestVote({ go: o.go.value, conditions: o.conditions.value, no: o.no.value });
+      // The CFO talk (one day, below) is what makes the numbers known.
+      const choice = analystChoice(s, item.id);
+      const best = choice.vote;
       const argument = t.arguments.find((a) => a.toward === best) ?? t.arguments[0]!;
       const stances = previewMeeting(s, item.id).stancesBefore;
       const swing = startup.board
@@ -112,7 +152,7 @@ export const analystBot = (prefer?: string): Bot => ({
         .reverse()[0];
       actions.push({ type: "cfo", itemId: item.id });
       if (swing) actions.push({ type: "pretalk", itemId: item.id, seat: swing.seat });
-      actions.push({ type: "meeting", itemId: item.id, argument: argument.id, vote: best });
+      actions.push({ type: "meeting", itemId: item.id, argument: argument.id, vote: best, ...(choice.covenant ? { covenant: choice.covenant } : {}) });
     }
     for (const round of s.rounds.filter((r) => r.status === "open")) {
       actions.push({ type: "round", roundId: round.id, take: "prorata", vote: "go" });

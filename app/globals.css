@@ -3229,6 +3229,7 @@ a.desk__item:focus-visible {
   .ctabs[data-active="zahlen"] [data-pane]:not([data-pane="zahlen"]),
   .ctabs[data-active="anteile"] [data-pane]:not([data-pane="anteile"]),
   .ctabs[data-active="rechner"] [data-pane]:not([data-pane="rechner"]),
+  .ctabs[data-active="auflagen"] [data-pane]:not([data-pane="auflagen"]),
   .ctabs[data-active="entscheidungen"] [data-pane]:not([data-pane="entscheidungen"]),
   .ctabs[data-active="beirat"] [data-pane]:not([data-pane="beirat"]) {
     display: none;
@@ -3617,4 +3618,92 @@ a.desk__item:focus-visible {
   .asset__trade input {
     min-height: 40px;
   }
+}
+
+/* Auflagen in der Vorbereitung: drei zur Wahl, Hinweise, Folgetermine. */
+.covenant-list {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 10px;
+  padding: 0;
+  list-style: none;
+}
+
+.covenant-list li {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--maybe);
+  border-radius: 10px;
+  background: var(--surface-2);
+  font-size: 13.5px;
+  line-height: 1.4;
+}
+
+.covenant-signals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.covenant-signals li {
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  color: var(--ink-2);
+  font-size: 12.5px;
+}
+
+.covenant-signals li.is-alert {
+  border-color: var(--maybe);
+  background: var(--maybe-soft);
+}
+
+.covenant-answer {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--maybe-soft);
+  font-size: 13.5px;
+}
+
+.covenant-prep__item + .covenant-prep__item {
+  margin-top: 8px;
+  padding-top: 4px;
+  border-top: 1px solid var(--line);
+}
+
+.covenant-prep__ask {
+  margin-top: 10px;
+}
+
+.item__covenant-link {
+  margin: 8px 0 0;
+}
+
+.cfo-table__row--covenant {
+  background: color-mix(in srgb, var(--maybe-soft) 50%, transparent);
+}
+
+.follow-ups__list {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.follow-ups__list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  font-size: 13.5px;
 }

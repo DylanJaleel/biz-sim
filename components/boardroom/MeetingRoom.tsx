@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { MeetingEvent, MeetingPlayback } from "@/lib/game/meeting";
-import type { Vote } from "@/lib/game/types";
+import type { CovenantId, Vote } from "@/lib/game/types";
 import type { MeetingView } from "@/lib/game/views";
 import { usePlay } from "@/components/game/usePlay";
 import { eur, signed } from "@/components/game/format";
@@ -17,6 +17,7 @@ import { usePlayback } from "./usePlayback";
 import { VoteCard } from "./VoteCard";
 
 const VOTES: Vote[] = ["go", "conditions", "no"];
+const PLAIN: Vote[] = ["go", "no"];
 
 const JUDGMENT = {
   strong: { label: "Starke Entscheidung", text: "Dein Votum entspricht dem, was nach Planrechnung am meisten Wert schafft." },
@@ -41,6 +42,7 @@ export function MeetingRoom({ view, revision }: { view: MeetingView; revision: n
   const [script] = useState(() => ({ opening: view.opening, debates: view.debates }));
   const [argument, setArgument] = useState<string | null | undefined>(undefined);
   const [vote, setVote] = useState<Vote | null>(null);
+  const [covenant, setCovenant] = useState<CovenantId | null>(null);
   const [result, setResult] = useState<MeetingPlayback | null>(null);
   const { play, pending, error } = usePlay(revision);
 
@@ -62,9 +64,10 @@ export function MeetingRoom({ view, revision }: { view: MeetingView; revision: n
   const askVote = live && !blocked && playback.caughtUp && argument !== undefined && vote === null;
   const finished = (!live || (result !== null && playback.caughtUp)) && view.decision !== undefined;
 
-  const castVote = (v: Vote) => {
+  const castVote = (v: Vote, c?: CovenantId) => {
     setVote(v);
-    play({ type: "meeting", itemId: view.itemId, argument: argument ?? null, vote: v }, (data) => {
+    setCovenant(c ?? null);
+    play({ type: "meeting", itemId: view.itemId, argument: argument ?? null, vote: v, ...(c ? { covenant: c } : {}) }, (data) => {
       if (data.result.kind === "meeting") setResult(data.result.playback);
     });
   };
@@ -102,7 +105,12 @@ export function MeetingRoom({ view, revision }: { view: MeetingView; revision: n
 
       <div className="room__body">
         <div className="room__stage">
-          <BoardStage seats={seats} people={people} room={room} label={`${view.corporate ? "Aufsichtsrat" : "Beirat"} von ${view.startupName} mit ${seats.length} Mitgliedern und dir am Pult`} />
+          <BoardStage
+            seats={seats}
+            people={people}
+            room={room}
+            label={`${view.corporate ? "Aufsichtsrat" : "Beirat"} von ${view.startupName} mit ${seats.length} Mitgliedern und dir am Pult`}
+          />
           <div className="room__bar">
             <MoodMeter mood={room.mood} />
             {live && !playback.caughtUp && (
@@ -113,12 +121,7 @@ export function MeetingRoom({ view, revision }: { view: MeetingView; revision: n
                 <button type="button" className="btn btn--sm" onClick={playback.next}>
                   Nächster Beitrag
                 </button>
-                <button
-                  type="button"
-                  className="btn btn--sm"
-                  aria-pressed={playback.speed === 2}
-                  onClick={() => playback.setSpeed(playback.speed === 1 ? 2 : 1)}
-                >
+                <button type="button" className="btn btn--sm" aria-pressed={playback.speed === 2} onClick={() => playback.setSpeed(playback.speed === 1 ? 2 : 1)}>
                   {playback.speed}×
                 </button>
                 <button type="button" className="btn btn--sm btn--ghost" onClick={playback.skip}>
@@ -166,9 +169,7 @@ export function MeetingRoom({ view, revision }: { view: MeetingView; revision: n
                   <span className="choice__text">Nichts sagen und zuhören.</span>
                 </button>
               </div>
-              <p className="choice__hint">
-                Ein Argument wirkt bei denen, deren Interessen es trifft. Wer vorher mit dir gesprochen hat, hört genauer hin.
-              </p>
+              <p className="choice__hint">Ein Argument wirkt bei denen, deren Interessen es trifft. Wer vorher mit dir gesprochen hat, hört genauer hin.</p>
             </section>
           )}
 
@@ -180,20 +181,38 @@ export function MeetingRoom({ view, revision }: { view: MeetingView; revision: n
               </h2>
               <p className="choice__hint">Du hast 20 Stimmanteile, alle auf dein Votum. Die anderen verteilen ihre nach Überzeugung.</p>
               <div className="choice__list">
-                {VOTES.map((v) => (
+                {PLAIN.map((v) => (
                   <button key={v} type="button" className={`choice__option choice__option--${v}`} onClick={() => castVote(v)} disabled={pending}>
                     <span className="choice__vote">{VOTE_LABEL[v]}</span>
                     <span className="choice__text">{view.outcomes[v].label}</span>
                     <span className="choice__sub">{view.outcomes[v].summary}</span>
                   </button>
                 ))}
+                <div className="choice__option choice__option--conditions choice__group" role="group" aria-labelledby="covenant-title">
+                  <span className="choice__vote" id="covenant-title">
+                    Ja mit Auflage: welche?
+                  </span>
+                  <span className="choice__sub">Eine passt zur Lage, die anderen sind schlechter als ein klares Ja oder Nein.</span>
+                  <div className="covenant-chips">
+                    {view.covenants.map((c) => (
+                      <button key={c.id} type="button" className="covenant-chip" title={c.short} onClick={() => castVote("conditions", c.id)} disabled={pending}>
+                        <b>{c.name}</b>
+                        <small>{c.term}</small>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </section>
           )}
 
           {vote && !result && (
             <div className="panel" role="status">
-              {pending ? "Die Stimmen werden ausgezählt…" : error ? null : "Einen Moment…"}
+              {pending
+                ? `Die Stimmen werden ausgezählt…${covenant ? ` Deine Auflage: ${view.covenants.find((c) => c.id === covenant)?.name}.` : ""}`
+                : error
+                  ? null
+                  : "Einen Moment…"}
             </div>
           )}
           {error && (
@@ -216,8 +235,8 @@ export function MeetingRoom({ view, revision }: { view: MeetingView; revision: n
           <p className="eyebrow">Keine Sitzung</p>
           <h2 className="panel__title">Der {view.corporate ? "Aufsichtsrat" : "Beirat"} hat nicht getagt</h2>
           <p>
-            {view.corporate ? "Der Vorstand" : "Die Gründung"} hat allein entschieden: <b>{view.decision ? view.outcomes[view.decision.outcome].label : "–"}</b>. Das kostet Vertrauen und
-            Ruf.
+            {view.corporate ? "Der Vorstand" : "Die Gründung"} hat allein entschieden: <b>{view.decision ? view.outcomes[view.decision.outcome].label : "–"}</b>. Das kostet
+            Vertrauen und Ruf.
           </p>
         </section>
       )}
@@ -227,11 +246,45 @@ export function MeetingRoom({ view, revision }: { view: MeetingView; revision: n
   );
 }
 
+/** What the player should take away about conditions: which one fitted, and why. */
+function CovenantNote({ review, followUp }: { review: NonNullable<MeetingView["covenantReview"]>; followUp: MeetingView["followUp"] }) {
+  const hit = review.chosen === review.fit;
+  return (
+    <div className={`covenant-note${review.chosen ? (hit ? " covenant-note--hit" : " covenant-note--miss") : ""}`}>
+      {review.chosen ? (
+        hit ? (
+          <p>
+            <b>Die Auflage „{review.chosenName}“ passte.</b> {review.fitWhy}
+          </p>
+        ) : (
+          <p>
+            <b>„{review.chosenName}“ passte nicht.</b> {review.missWhy} Gepasst hätte „{review.fitName}“: {review.fitWhy}
+          </p>
+        )
+      ) : (
+        <p>
+          <b>Passende Auflage wäre „{review.fitName}“ gewesen.</b> {review.fitWhy}
+        </p>
+      )}
+      {review.appliedName && (
+        <p className="verdict__note">
+          Es gilt {review.chosen && review.appliedName !== "die Auflage des Gremiums" ? `die Auflage „${review.appliedName}“` : review.appliedName}. Sie wirkt ab dem nächsten
+          Monat.
+          {followUp ? ` Prüfe sie im Folgetermin nach (1 Tag, bis Ende ${followUp}), sonst wirkt sie nur zum Teil.` : ""}
+        </p>
+      )}
+      {review.slight && <p className="verdict__note">Die Optionen lagen kaum auseinander. Diese Entscheidung bewegt deinen Ruf kaum.</p>}
+    </div>
+  );
+}
+
 function Verdict({ view }: { view: MeetingView }) {
   const d = view.decision!;
   const people = peopleOf(view.board, view.corporate, view.family);
   const judgment = JUDGMENT[d.judgment];
   const max = Math.max(...VOTES.map((v) => Math.abs(d.values[v])), 1);
+  const review = view.covenantReview;
+  const reviewMax = Math.max(...(review?.options.map((o) => Math.abs(o.value)) ?? []), 1);
   return (
     <section className="verdict" aria-labelledby="verdict-title">
       <div className="verdict__grid">
@@ -247,22 +300,41 @@ function Verdict({ view }: { view: MeetingView }) {
               <b>{judgment.label}.</b> {judgment.text}
             </p>
             <p className="verdict__note">Bewertet wird, was du wissen konntest, nicht ob du Glück hattest.</p>
-            <ul className="outlook" aria-label="Erwarteter Wert deines Anteils in 12 Monaten">
-              {VOTES.map((v) => (
-                <li key={v} className={`outlook__row${v === d.best ? " is-best" : ""}${v === d.vote ? " is-mine" : ""}`}>
-                  <span className="outlook__label">
-                    {VOTE_LABEL[v]}
-                    {v === d.vote && <em> · dein Votum</em>}
-                    {v === d.best && <em> · beste Option</em>}
-                  </span>
-                  <span className="outlook__bar">
-                    <i style={{ width: `${Math.max(4, (Math.abs(d.values[v]) / max) * 100)}%` }} />
-                  </span>
-                  <span className="outlook__value">{eur(d.values[v])}</span>
-                </li>
-              ))}
-            </ul>
+            {review ? (
+              <ul className="outlook" aria-label="Erwarteter Wert deines Anteils in 12 Monaten">
+                {review.options.map((o) => (
+                  <li key={o.key} className={`outlook__row${o.best ? " is-best" : ""}${o.mine ? " is-mine" : ""}${o.fit ? " is-fit" : ""}`}>
+                    <span className="outlook__label">
+                      {o.label}
+                      {o.mine && <em> · dein Votum</em>}
+                      {o.best && <em> · beste Option</em>}
+                    </span>
+                    <span className="outlook__bar">
+                      <i style={{ width: `${Math.max(4, (Math.abs(o.value) / reviewMax) * 100)}%` }} />
+                    </span>
+                    <span className="outlook__value">{eur(o.value)}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <ul className="outlook" aria-label="Erwarteter Wert deines Anteils in 12 Monaten">
+                {VOTES.map((v) => (
+                  <li key={v} className={`outlook__row${v === d.best ? " is-best" : ""}${v === d.vote ? " is-mine" : ""}`}>
+                    <span className="outlook__label">
+                      {VOTE_LABEL[v]}
+                      {v === d.vote && <em> · dein Votum</em>}
+                      {v === d.best && <em> · beste Option</em>}
+                    </span>
+                    <span className="outlook__bar">
+                      <i style={{ width: `${Math.max(4, (Math.abs(d.values[v]) / max) * 100)}%` }} />
+                    </span>
+                    <span className="outlook__value">{eur(d.values[v])}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
             <p className="verdict__note">Erwarteter Wert deiner Position in 12 Monaten, halb im Basisfall, halb in einem schwächeren Markt.</p>
+            {review && <CovenantNote review={review} followUp={view.followUp} />}
             <div className="deltas">
               <span>
                 Ruf <b>{signed(d.reputationDelta)}</b>

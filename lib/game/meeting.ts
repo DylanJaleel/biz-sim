@@ -7,7 +7,8 @@ import {
 } from "./config";
 import { SEAT_ORDER } from "./startups";
 import { fill, type Argument, type Reason, type Template } from "./templates";
-import type { BoardItem, BoardMember, Personality, SeatId, Shares, SpeakerId, Startup, Vote } from "./types";
+import { COVENANTS } from "./covenants";
+import type { BoardItem, BoardMember, CovenantId, Personality, SeatId, Shares, SpeakerId, Startup, Vote } from "./types";
 import { outcomeFromShares, playerShares, sharesFromStance, sumShares, voteFromStance, type Ballot } from "./votes";
 
 export type Phase = "opening" | "statements" | "debate" | "vote" | "verdict";
@@ -27,6 +28,8 @@ export interface MeetingInput {
   /** undefined: the player has not spoken yet; null: the player stays silent. */
   argument?: string | null;
   vote?: Vote;
+  /** The condition the player votes for (with vote "conditions"). */
+  covenant?: CovenantId;
 }
 
 export interface MeetingPlayback {
@@ -141,7 +144,8 @@ function memberName(s: Startup, id: SpeakerId): string {
   return s.board.find((b) => b.seat === id)?.short ?? id;
 }
 
-export function voteReason(t: Template, vote: Vote, s: Startup): string {
+export function voteReason(t: Template, vote: Vote, s: Startup, covenant?: CovenantId): string {
+  if (vote === "conditions" && covenant) return `Mit Auflage: ${COVENANTS[covenant].name}.`;
   const label = fill(t.outcomes[vote].label, s);
   if (vote === "go") return `Dafür: ${label}.`;
   if (vote === "conditions") return `Mit Auflagen: ${label}.`;
@@ -250,7 +254,7 @@ export function buildMeeting(input: MeetingInput): MeetingPlayback {
   }
   const mine = playerShares(input.vote);
   ballots.push({ member: "you", vote: input.vote, shares: mine });
-  events.push({ kind: "vote", speaker: "you", vote: input.vote, reason: voteReason(t, input.vote, s), shares: mine });
+  events.push({ kind: "vote", speaker: "you", vote: input.vote, reason: voteReason(t, input.vote, s, input.covenant), shares: mine });
   events.push({ kind: "phase", phase: "verdict" });
   const shares = sumShares(ballots);
   return {

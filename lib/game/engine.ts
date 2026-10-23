@@ -75,6 +75,9 @@ import {
   PACE_MONTHS,
   PACE_NEXT,
   PACE_NORMAL_BETWEEN,
+  CONDITIONS_TEMPO,
+  FOLLOW_UP_MISSED,
+  FOLLOW_UP_MONTHS,
 } from "./config";
 import { FIRST, generateDeal, LAST, type DealStage } from "./dealgen";
 import {
@@ -100,13 +103,33 @@ import { awardTrophies } from "./trophies";
 import { garageUpkeep, garageValue, RESALE, resolveTrip, travelOptions, vehicleBlocker, vehicleOf } from "./travel";
 import { assetOf, holdingsValue, initialMarket, sentimentOf, stepMarket } from "./market";
 import { templateOf, TEMPLATES } from "./content";
-import { judge, bestVote, outlook, VOTES } from "./judge";
+import { judge, bestOf, bestVote, judgmentWeight, outlook, resolveVote, VOTES } from "./judge";
+import { COVENANTS, covenantOutlook, covenantSetup, optionValues, RISK_QUESTION, type CovenantOutlook } from "./covenants";
 import { CURRICULUM } from "./lessons";
 import { baseStances, buildMeeting, type MeetingPlayback } from "./meeting";
-import { applyDelta, monthlyCashFlow, runwayMonths, stepMonth, valuation } from "./sim";
+import { applyDelta, blendDelta, monthlyCashFlow, runwayMonths, stepMonth, valuation } from "./sim";
 import { definitionOf, offerStartup, STARTUPS, type StartupDefinition } from "./startups";
-import { fill } from "./templates";
-import type { BoardItem, Delta, ExitOffer, GameAction, GameState, GvVote, IncomeLines, Mail, MonthReport, Pace, PaceKind, Round, RoundTake, Shares, Startup, Vote } from "./types";
+import { fill, type ResolvedOutcome } from "./templates";
+import type {
+  BoardItem,
+  CovenantId,
+  CovenantSetup,
+  Delta,
+  ExitOffer,
+  GameAction,
+  GameState,
+  GvVote,
+  IncomeLines,
+  Mail,
+  MonthReport,
+  Pace,
+  PaceKind,
+  Round,
+  RoundTake,
+  Shares,
+  Startup,
+  Vote,
+} from "./types";
 import { voteFromStance } from "./votes";
 
 export class GameRuleError extends Error {
@@ -277,6 +300,12 @@ export function itemOf(state: GameState, id: string): BoardItem {
   return item;
 }
 
+/** The three conditions of an item; older games derive them the same way the agenda would have. */
+export function covenantsOf(state: GameState, item: BoardItem): CovenantSetup {
+  if (item.covenants) return item.covenants;
+  return covenantSetup(templateOf(item.templateId), startupOf(state, item.startupId), randomFor(state.seed, `covenant|${item.id}`));
+}
+
 export function openItems(state: GameState): BoardItem[] {
   return state.items.filter((i) => i.status === "open");
 }
@@ -398,7 +427,7 @@ function playAction(current: GameState, action: GameAction): { state: GameState;
     case "question": {
       const item = requireOpenItem(state, action.itemId);
       const t = templateOf(item.templateId);
-      if (!t.questions.some((q) => q.id === action.questionId)) throw new GameRuleError("Diese Frage gibt es nicht.");
+      if (!t.questions.some((q) => q.id === action.questionId) && action.questionId !== RISK_QUESTION.id) throw new GameRuleError("Diese Frage gibt es nicht.");
       if (item.asked.includes(action.questionId)) throw new GameRuleError("Diese Frage hast du schon gestellt.");
       spendDays(state, "question", `Rückfrage ${startupOf(state, item.startupId).name}`, officeOf(state).analyst ? 0 : undefined);
       item.asked.push(action.questionId);
@@ -428,6 +457,10 @@ function playAction(current: GameState, action: GameAction): { state: GameState;
         throw new GameRuleError("Dieses Argument gibt es nicht.");
       }
       if (!VOTES.includes(action.vote)) throw new GameRuleError("Ungültige Stimme.");
+      if (action.covenant !== undefined) {
+        if (action.vote !== "conditions") throw new GameRuleError("Eine Auflage gibt es nur zur Stimme „Auflagen“.");
+        if (!covenantsOf(state, item).options.includes(action.covenant)) throw new GameRuleError("Diese Auflage steht nicht zur Wahl.");
+      }
       const s = startupOf(state, item.startupId);
       // Further items on the same agenda are decided in the same sitting.
       spendDays(state, "meeting", `Beirat ${s.name}`, sittingToday(state, s) ? 0 : undefined);
@@ -439,11 +472,12 @@ function playAction(current: GameState, action: GameAction): { state: GameState;
         random: meetingRandom(state, item),
         argument: action.argument,
         vote: action.vote,
+        covenant: action.covenant,
       });
       const further = state.items.some(
         (i) => i.id !== item.id && i.startupId === s.id && i.decision && !i.decision.lapsed && !i.decision.delegated && i.decision.month === state.month,
       );
-      decide(state, item, playback.outcome!, action.vote, action.argument, playback.stancesAfter.ceo, playback.shares!);
+      decide(state, item, playback.outcome!, action.vote, action.argument, playback.stancesAfter.ceo, playback.shares!, action.covenant);
       item.decision!.ballots = playback.ballots;
       // Reputation comes from the sitting, not from the number of items: further items count half.
       if (further) {
@@ -453,6 +487,20 @@ function playAction(current: GameState, action: GameAction): { state: GameState;
         d.reputationDelta = half;
       }
       return { state, result: { kind: "meeting", playback, itemId: item.id } };
+    }
+    case "followUp": {
+      const item = itemOf(state, action.itemId);
+      const f = item.followUp;
+      if (!f || f.done || f.missed || !item.decision) throw new GameRuleError("Für diese Vorlage steht kein Folgetermin an.");
+      if (state.month <= item.decision.month) throw new GameRuleError("Der Folgetermin ist frühestens im nächsten Monat sinnvoll.");
+      if (state.month > f.until) throw new GameRuleError("Die Frist für den Folgetermin ist vorbei.");
+      const s = startupOf(state, item.startupId);
+      if (s.status !== "active") throw new GameRuleError("Du sitzt nicht mehr im Gremium dieser Firma.");
+      spendDays(state, "followUp", `Folgetermin ${s.name}`);
+      f.done = true;
+      const applied = item.decision.applied;
+      unlockLesson(state, applied && applied !== "standard" ? COVENANTS[applied].lesson : "covenants");
+      return { state, result: { kind: "none" } };
     }
     case "founderCall": {
       const s = startupOf(state, action.startupId);
@@ -1117,22 +1165,67 @@ function applyFull(state: GameState, s: Startup, input: Delta, texts: string[], 
   return applyDelta(s, delta);
 }
 
-function decide(state: GameState, item: BoardItem, outcome: Vote, vote: Vote, argument: string | null, ceoStance: number, shares: Shares): void {
+function decide(
+  state: GameState,
+  item: BoardItem,
+  outcome: Vote,
+  vote: Vote,
+  argument: string | null,
+  ceoStance: number,
+  shares: Shares,
+  covenant?: CovenantId,
+  delegated = false,
+  planned?: CovenantOutlook,
+): void {
   const t = templateOf(item.templateId);
   let s = startupOf(state, item.startupId);
-  const values = mapValues(outlook(t, s));
-  const best = bestVote(values);
-  const judgment = judge(values, vote);
+  const setup = covenantsOf(state, item);
+  const co = planned ?? covenantOutlook(t, s, setup);
+  // Judged against every option on the table: yes, no and the three conditions.
+  const options = optionValues(co);
+  const choice = vote === "conditions" ? (covenant ?? "standard") : vote;
+  const judged = choice === "standard" ? { ...options, standard: co.standard.value } : options;
+  const judgment = judge(judged, choice, co.floor);
+  const weight = judgmentWeight(judged, co.floor);
+  const bestOption = bestOf(options);
+  const best: Vote = bestOption === "go" || bestOption === "no" ? bestOption : "conditions";
+  const values: Record<Vote, number> = { go: co.go.value, conditions: vote === "conditions" ? judged[choice]! : co.standard.value, no: co.no.value };
   const ceoVote = voteFromStance(ceoStance);
   const trustDelta = outcome === ceoVote ? 2 : outcome === "no" ? OVERRULED_TRUST.no : OVERRULED_TRUST.conditions;
-  const reputationDelta = reputationGain(state, JUDGMENT_REPUTATION[judgment]);
+  const reputationDelta = reputationGain(state, Math.round(JUDGMENT_REPUTATION[judgment] * weight));
   state.reputation = Math.min(100, Math.max(0, state.reputation + reputationDelta));
   s = applyDelta(s, { trust: trustDelta });
+  const applied: CovenantId | "standard" | undefined = outcome === "conditions" ? (vote === "conditions" && covenant ? covenant : "standard") : undefined;
+  // The management wanted a plain yes and the player asked for conditions: it loses some drive.
+  if (applied && vote === "conditions" && ceoVote === "go") s = applyDelta(s, { morale: CONDITIONS_TEMPO.morale });
   replaceStartup(state, s);
   item.status = "decided";
-  item.decision = { argument, vote, outcome, shares, judgment, best, values, reputationDelta, trustDelta, month: state.month };
+  const covenantValues: Partial<Record<CovenantId | "standard", number>> = { standard: co.standard.value };
+  for (const p of co.plans) covenantValues[p.id] = p.outlook.value;
+  item.decision = {
+    argument,
+    vote,
+    outcome,
+    shares,
+    judgment,
+    best,
+    values,
+    reputationDelta,
+    trustDelta,
+    month: state.month,
+    ...(covenant && vote === "conditions" ? { covenant } : {}),
+    ...(applied ? { applied } : {}),
+    fit: setup.fit,
+    covenantValues,
+    bestOption,
+    weight: Math.round(weight * 100) / 100,
+  };
+  // A chosen condition needs one follow-up meeting to work in full; the board's standard condition runs by itself.
+  if (applied && applied !== "standard") item.followUp = { until: state.month + FOLLOW_UP_MONTHS, done: delegated };
   unlockLesson(state, t.lesson);
-  scheduleOutcome(state, item, outcome);
+  if (covenant && vote === "conditions") unlockLesson(state, COVENANTS[covenant].lesson);
+  const plan = applied && applied !== "standard" ? co.plans.find((p) => p.id === applied)?.resolved : undefined;
+  scheduleOutcome(state, item, outcome, plan);
 }
 
 /**
@@ -1147,11 +1240,11 @@ function mapValues(o: ReturnType<typeof outlook>): Record<Vote, number> {
   return { go: o.go.value, conditions: o.conditions.value, no: o.no.value };
 }
 
-/** Immediate effects now, the rest into the queue. */
-function scheduleOutcome(state: GameState, item: BoardItem, outcome: Vote): void {
+/** Immediate effects now, the rest into the queue. Conditions start later; a chosen condition brings its own plan. */
+function scheduleOutcome(state: GameState, item: BoardItem, outcome: Vote, plan?: ResolvedOutcome): void {
   const t = templateOf(item.templateId);
   let s = startupOf(state, item.startupId);
-  const resolved = t.outcomes[outcome].resolve(s);
+  const resolved = plan ?? resolveVote(t, outcome, s);
   const texts: string[] = [];
   for (const effect of resolved.effects) {
     if (effect.delay === 0) s = applyFull(state, s, effect.delta, texts);
@@ -1215,6 +1308,23 @@ function lapseItems(state: GameState, notes: string[]): void {
   }
 }
 
+const eurText = (v: number) => `${(Math.round(v / 1000) * 1000).toLocaleString("de-DE")} €`;
+
+/** Conditions nobody followed up in time: partly lost, and the management takes them less seriously. */
+function missFollowUps(state: GameState, month: number, notes: string[]): void {
+  for (const item of state.items) {
+    const f = item.followUp;
+    if (!f || f.done || f.missed || f.until > month) continue;
+    f.missed = true;
+    const s = state.startups.find((x) => x.id === item.startupId);
+    if (!s || s.status !== "active") continue;
+    replaceStartup(state, applyDelta(s, { trust: FOLLOW_UP_MISSED.trust }));
+    const applied = item.decision?.applied;
+    const name = applied && applied !== "standard" ? `„${COVENANTS[applied].name}“` : "des Gremiums";
+    notes.push(`${s.name}: Niemand hat die Auflage ${name} nachgeprüft. Sie wirkt nur zum Teil, und die Geschäftsführung nimmt Auflagen weniger ernst.`);
+  }
+}
+
 function resolveEffects(state: GameState, month: number, lines: Map<string, string[]>): void {
   const due = state.effects.filter((e) => e.due <= month);
   state.effects = state.effects.filter((e) => e.due > month);
@@ -1236,6 +1346,10 @@ function resolveEffects(state: GameState, month: number, lines: Map<string, stri
           state.reputation = Math.min(100, Math.max(0, state.reputation + (good ? RESULT_REPUTATION.good : RESULT_REPUTATION.bad)));
         }
       }
+    } else if (effect.review && state.items.find((i) => i.id === effect.itemId)?.followUp?.done === false) {
+      // Nobody checked: the condition only works in part.
+      const part = blendDelta(effect.delta, {}, 1 - FOLLOW_UP_MISSED.share);
+      s = applyFull(state, s, part, texts, `Ohne Nachprüfung verpufft die Auflage zum Teil: Statt ${eurText(effect.delta.cash ?? 0)} bleiben rund ${eurText(part.cash ?? 0)}.`);
     } else {
       s = applyFull(state, s, effect.delta, texts, effect.text);
     }
@@ -1362,6 +1476,7 @@ export function planAgenda(state: GameState): void {
       const templateId = pickTemplate(state, s, random);
       if (!templateId) break;
       const item: BoardItem = { id: nextId(state, "v"), startupId: s.id, templateId, month: state.month, status: "open", asked: [], pretalks: [], cfo: false };
+      item.covenants = covenantSetup(templateOf(templateId), s, randomFor(state.seed, `covenant|${item.id}`));
       state.items.push(item);
       added.push(item);
     }
@@ -1402,6 +1517,7 @@ export function closeMonth(state: GameState): MonthReport {
   }
   delegateItems(state, notes);
   lapseItems(state, notes);
+  missFollowUps(state, month, notes);
   const lines = new Map<string, string[]>();
   resolveEffects(state, month + 1, lines);
   const income: IncomeLines = { consulting: 0, boardFees: 0, payouts: 0, living: 0, interest: 0, rent: 0, salaries: 0, fundFee: 0, dividends: 0, loans: 0, lockups: 0 };
@@ -1704,18 +1820,21 @@ function delegateItems(state: GameState, notes: string[]): void {
     const s = state.startups.find((x) => x.id === item.startupId);
     if (!member || !s || s.status !== "active") continue;
     const t = templateOf(item.templateId);
-    const values = mapValues(outlook(t, s));
+    const planned = covenantOutlook(t, s, covenantsOf(state, item));
     const random = randomFor(state.seed, `associate|${item.id}`);
-    const vote: Vote = random() < ASSOCIATE_SKILL ? bestVote(values) : "conditions";
+    // A good associate finds the best option, a fitting condition included; otherwise the board's standard condition.
+    const pick = random() < ASSOCIATE_SKILL ? bestOf(optionValues(planned)) : "standard";
+    const vote: Vote = pick === "go" || pick === "no" ? pick : "conditions";
+    const covenant = vote === "conditions" && pick !== "standard" ? (pick as CovenantId) : undefined;
     const stances = baseStances(t, s, meetingRandom(state, item));
-    decide(state, item, vote, vote, null, stances.ceo, { go: 0, conditions: 0, no: 0, abstain: 0 });
+    decide(state, item, vote, vote, null, stances.ceo, { go: 0, conditions: 0, no: 0, abstain: 0 }, covenant, true, planned);
     // The credit goes mostly to the associate.
     const d = item.decision!;
     const half = Math.trunc(d.reputationDelta / 2);
     state.reputation = Math.min(100, Math.max(0, state.reputation - d.reputationDelta + half));
     d.reputationDelta = half;
     d.delegated = true;
-    notes.push(`${s.name}: ${member.name} hat für dich im Beirat entschieden: ${fill(t.outcomes[vote].label, s)}.`);
+    notes.push(`${s.name}: ${member.name} hat für dich im Beirat entschieden: ${covenant ? `Auflage „${COVENANTS[covenant].name}“` : fill(t.outcomes[vote].label, s)}.`);
   }
 }
 

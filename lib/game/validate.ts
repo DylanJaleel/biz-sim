@@ -1,4 +1,4 @@
-import type { AssetId, ExitChoice, GameAction, GigApproach, GvVote, RoundTake, SeatId, TeamRole, Vote } from "./types";
+import type { AssetId, CovenantId, ExitChoice, GameAction, GigApproach, GvVote, RoundTake, SeatId, TeamRole, Vote } from "./types";
 
 // Server actions receive whatever the browser sends. This turns it into a
 // GameAction or nothing; the engine then checks the game rules.
@@ -10,6 +10,7 @@ const EXIT_CHOICES: readonly ExitChoice[] = ["accept", "negotiate", "reject"];
 const ROLES: readonly TeamRole[] = ["associate", "partner"];
 const GV_VOTES: readonly GvVote[] = ["go", "no"];
 const ASSET_IDS: readonly AssetId[] = ["tagesgeld", "anleihen", "dividenden", "tech"];
+const COVENANT_IDS: readonly CovenantId[] = ["budget", "stagegate", "pilot", "second", "kpi", "veto"];
 
 function id(value: unknown): value is string {
   return typeof value === "string" && value.length > 0 && value.length <= 64 && /^[\w-]+$/.test(value);
@@ -87,7 +88,16 @@ export function parseAction(input: unknown): GameAction | null {
     case "meeting":
       if (!id(a.itemId) || !VOTES.includes(a.vote as Vote)) return null;
       if (a.argument !== null && !id(a.argument)) return null;
-      return { type: "meeting", itemId: a.itemId, argument: a.argument as string | null, vote: a.vote as Vote };
+      if (a.covenant !== undefined && !COVENANT_IDS.includes(a.covenant as CovenantId)) return null;
+      return {
+        type: "meeting",
+        itemId: a.itemId,
+        argument: a.argument as string | null,
+        vote: a.vote as Vote,
+        ...(a.covenant !== undefined ? { covenant: a.covenant as CovenantId } : {}),
+      };
+    case "followUp":
+      return id(a.itemId) ? { type: "followUp", itemId: a.itemId } : null;
     case "readMail":
       return id(a.mailId) ? { type: "readMail", mailId: a.mailId } : null;
     case "learn":

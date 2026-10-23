@@ -14,8 +14,19 @@ import {
   TEAM_MAX,
   FUND_REPUTATION,
   WARMTH_INTRO_MIN,
+  monthName,
 } from "./config";
 import { careerOf } from "./career";
+import {
+  covenantOptions,
+  covenantPrep,
+  covenantReview,
+  followUpsOf,
+  type CovenantOptionView,
+  type CovenantPrepView,
+  type CovenantReviewView,
+  type FollowUpView,
+} from "./covenant-views";
 import { CONTACTS, RING_LABEL, ringOpen, type ContactDef, type Ring } from "./network";
 import { templateOf } from "./content";
 import { daysLeft, fundBlocker, fundSize, itemOf, netWorth, previewMeeting, sittingToday, startupOf, syndicateBlocker } from "./engine";
@@ -80,6 +91,12 @@ export interface MeetingView {
   nextItemId: string | null;
   /** The board already met this month: this item costs no extra day. */
   sitting: boolean;
+  /** The three conditions on offer. */
+  covenants: CovenantOptionView[];
+  /** After the decision: which condition fitted and how the options compared (missing in older games). */
+  covenantReview?: CovenantReviewView;
+  /** Month name until which the chosen condition needs its follow-up meeting. */
+  followUp?: string;
 }
 
 export function meetingView(state: GameState, itemId: string): MeetingView {
@@ -126,6 +143,9 @@ export function meetingView(state: GameState, itemId: string): MeetingView {
     agenda: agendaItems.map((i) => ({ id: i.id, title: fill(templateOf(i.templateId).title, s), status: i.status, current: i.id === itemId })),
     nextItemId: agendaItems.find((i) => i.status === "open" && i.id !== itemId)?.id ?? null,
     sitting: sittingToday(state, s),
+    covenants: covenantOptions(state, item),
+    ...(item.decision ? { covenantReview: covenantReview(state, item, item.decision) } : {}),
+    ...(item.followUp && !item.followUp.done && !item.followUp.missed ? { followUp: monthName(item.followUp.until) } : {}),
   };
 }
 
@@ -180,6 +200,13 @@ export function deskView(state: GameState, lessonsTotal: number): DeskView {
       text: `${o.sellerName} bietet ${o.pct.toLocaleString("de-DE")} % an ${s.name} für ${o.price.toLocaleString("de-DE")} €.`,
       href: `/firma/${s.id}#anteile`,
       tone: "normal",
+    });
+  }
+  for (const f of followUpsOf(state).filter((x) => x.ready)) {
+    tasks.push({
+      text: `${f.startupName}: Folgetermin zur Auflage „${f.covenant}“ (${f.title}). Ein Tag, bis Ende ${monthName(f.until)}. Ohne Nachprüfung wirkt die Auflage nur zum Teil.`,
+      href: `/firma/${f.startupId}#folgetermine`,
+      tone: f.until <= state.month ? "urgent" : "normal",
     });
   }
   for (const s of active.filter((x) => open.some((i) => i.startupId === x.id))) {
@@ -259,6 +286,8 @@ export interface CompanyItemView {
   postponed: boolean;
   /** Who the player can talk to before the meeting, and what they let on. */
   members: { seat: BoardMember["seat"]; short: string; pretalked: boolean; leaning?: Vote | "open" }[];
+  /** The three conditions, the risk question, hints and the CFO's numbers for them. */
+  covenants: CovenantPrepView;
 }
 
 export interface CompanyView {
@@ -297,6 +326,8 @@ export interface CompanyView {
   exits: ExitOffer[];
   /** An analyst in the office prepares CFO talks and questions. */
   analyst: boolean;
+  /** Conditions decided earlier that still need their follow-up meeting. */
+  followUps: FollowUpView[];
 }
 
 function leaningOf(stance: number): Vote | "open" {
@@ -328,6 +359,7 @@ export function companyView(state: GameState, startupId: string): CompanyView {
         const pretalked = open.pretalks.includes(m.seat);
         return { seat: m.seat, short: m.short, pretalked, leaning: pretalked ? leaningOf(stances[m.seat]!) : undefined };
       }),
+      covenants: covenantPrep(state, open),
     };
   });
   const item = agenda[0] ?? null;
@@ -373,6 +405,7 @@ export function companyView(state: GameState, startupId: string): CompanyView {
     exits: state.exits.filter((e) => e.startupId === s.id),
     associate: state.team.find((m) => m.role === "associate" && m.mandate === s.id)?.name,
     analyst: officeOf(state).analyst,
+    followUps: followUpsOf(state, s.id),
   };
 }
 
