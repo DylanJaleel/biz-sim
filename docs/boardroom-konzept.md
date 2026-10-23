@@ -108,3 +108,9 @@ Größte Risiken: Umfang, Inhaltsaufwand, Grafik für das Büro in 3. Person.
 - Fuhrpark-Markt und Aufträge mit Anreise, Bildfolge und Entscheidung vor Ort
 - Rhythmus der Tagesordnung (ruhig, normal, viel los) und viele neue Sitzungsthemen
 - Due Diligence als Lernpfad mit dem CFO: Entwurf steht, kommt nach dem Test im Spiel
+
+## Fahrplan nach der Durchsicht (Oktober)
+
+- **Entschieden:** Nachfolge-Programm (nach dem Vorbild der Search Funds) statt eigenem Startup. Du kaufst Familienbetriebe, setzt Geschäftsführer ein und baust sie aus.
+- **Später, aber spielbar sobald erreicht:** Venture Studio als eigener Zweig im Family Office. Du wählst die Idee, holst einen CEO, finanzierst Meilensteine und hältst am Anfang 60 bis 80 %.
+- **Offen:** Reihenfolge bei M&A (Buy-and-Build direkt oder erst Mandate) und die Lösung für „die Mitte gewinnt“ im Beirat (M1/M2/M3).
