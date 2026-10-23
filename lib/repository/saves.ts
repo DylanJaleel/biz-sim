@@ -1,10 +1,10 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { Prisma } from "@prisma/client";
 import { getDb } from "../db";
 import { monthLabel } from "../game/config";
 import { GameRuleError, upgradeState } from "../game/engine";
 import type { GameState } from "../game/types";
-import { loadGame } from "./game";
+import { packState, unpackState } from "./codec";
+import { ensureGame, loadGame } from "./game";
 import { KEEP, summarize, writeSave, type SaveKind, type SaveListItem, type SaveSummary } from "./save-store";
 
 export { KEEP, summarize, type SaveKind, type SaveListItem, type SaveSummary } from "./save-store";
@@ -34,14 +34,15 @@ export async function createSave(userId: string, name: string): Promise<void> {
 
 /** Replaces the running game with a copy; the current game is backed up first. */
 async function replaceGame(userId: string, next: GameState, backupName: string): Promise<void> {
-  await loadGame(userId);
+  await ensureGame(userId);
   await getDb().$transaction(async (tx) => {
     await tx.$queryRaw`SELECT "id" FROM "Game" WHERE "userId" = ${userId} FOR UPDATE`;
     const row = await tx.game.findUniqueOrThrow({ where: { userId } });
-    await writeSave(tx, userId, "backup", backupName, upgradeState(row.state as unknown as GameState));
+    await writeSave(tx, userId, "backup", backupName, upgradeState(unpackState(row.state)));
     await tx.game.update({
       where: { id: row.id },
-      data: { state: next as unknown as Prisma.InputJsonValue, month: next.month, revision: { increment: 1 } },
+      data: { state: packState(next), month: next.month, revision: { increment: 1 } },
+      select: { id: true },
     });
   });
 }
@@ -49,7 +50,7 @@ async function replaceGame(userId: string, next: GameState, backupName: string):
 export async function restoreSave(userId: string, saveId: string): Promise<void> {
   const save = await getDb().gameSave.findFirst({ where: { id: saveId, userId } });
   if (!save) throw new GameRuleError("Diese Sicherung gibt es nicht.");
-  const state = upgradeState(save.state as unknown as GameState);
+  const state = upgradeState(unpackState(save.state));
   await replaceGame(userId, state, `Vor dem Laden von „${save.name}“`);
 }
 

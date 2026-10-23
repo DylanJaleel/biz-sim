@@ -3,6 +3,7 @@ import { careerOf } from "../game/career";
 import { monthLabel } from "../game/config";
 import { netWorth } from "../game/engine";
 import type { GameState } from "../game/types";
+import { packState } from "./codec";
 
 // Schreiben einer Sicherung, getrennt vom Rest, damit das Spiel-Repository
 // nach dem Monatsabschluss sichern kann, ohne sich selbst zu importieren.
@@ -47,9 +48,8 @@ export function summarize(state: GameState): SaveSummary {
 /** Writes a copy and drops the oldest of the same kind beyond the limit. */
 export async function writeSave(tx: Tx, userId: string, kind: SaveKind, name: string, state: GameState): Promise<void> {
   await tx.gameSave.create({
-    data: { userId, kind, name: name.slice(0, 80), state: state as unknown as Prisma.InputJsonValue, summary: summarize(state) as unknown as Prisma.InputJsonValue },
+    data: { userId, kind, name: name.slice(0, 80), state: packState(state), summary: summarize(state) as unknown as Prisma.InputJsonValue },
   });
   const old = await tx.gameSave.findMany({ where: { userId, kind }, orderBy: { createdAt: "desc" }, skip: KEEP[kind], select: { id: true } });
   if (old.length > 0) await tx.gameSave.deleteMany({ where: { id: { in: old.map((o) => o.id) } } });
 }
-
