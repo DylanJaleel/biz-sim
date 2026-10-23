@@ -95,7 +95,7 @@ export function targetDeal(ctx: Ctx, r: () => number, opts: { ev: number; source
   const owner = def.board.find((b) => b.seat === "ceo")!;
   const metrics: Metrics = { ...def.metrics, revenue, opex, cash, debt: 0, valuedOn: "ebitda" };
   const fair = fairMultiple(metrics);
-  const factor = opts.source === "search" ? between(r, 0.85, 1.0) : opts.source === "referral" ? between(r, 0.9, 1.0) : between(r, 0.98, 1.15);
+  const factor = opts.source === "search" ? between(r, 0.9, 1.0) : opts.source === "referral" ? between(r, 0.9, 1.0) : between(r, 0.98, 1.15);
   const multiple = Math.round(fair * factor * 10) / 10;
   const ev = roundTo(ebitda * multiple, 10_000);
   const stake = 100 - rollover;

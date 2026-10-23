@@ -94,7 +94,8 @@ export function planAddons(ctx: Ctx): void {
   const gm = Math.min(0.9, Math.max(0.12, s.metrics.grossMargin + between(r, -0.04, 0.03)));
   const revenue = roundTo(ea / 12 / margin, 100);
   const opex = roundTo(revenue * gm - ea / 12, 100);
-  const multiple = Math.round(sizeMultiple(ea) * between(r, 0.92, 1.12) * 10) / 10;
+  // Owners know that platforms are buying: add-ons are not cheap.
+  const multiple = Math.round(sizeMultiple(ea) * between(r, 1.0, 1.2) * 10) / 10;
   const sec = SECTORS.find((x) => x.sector === s.sector) ?? pickOf(r, SECTORS);
   const idea = pickOf(r, sec.mittelstand);
   const owner = `${pickOf(r, ["Werner", "Heike", "Rainer", "Sabine", "Uwe", "Petra", "Bernd", "Monika"])} ${pickOf(r, LAST)}`;
@@ -374,8 +375,8 @@ export function platformMonth(ctx: Ctx, month: number, notes: string[], lines: M
     const r = mnaRandom(state, `integration|${s.id}|${i.name}|${i.start}`);
     const def = INTEGRATION[i.kind];
     const strong = s.metrics.axes.management >= 60;
-    const synergy = r() < def.synergy + (strong ? 0.1 : 0) - (overload ? 0.2 : 0);
-    const churn = r() < def.churn + (overload ? 0.15 : 0) - (strong ? 0.05 : 0);
+    const synergy = r() < def.synergy + (strong ? 0.1 : 0) - (overload ? 0.25 : 0);
+    const churn = r() < def.churn + (overload ? 0.2 : 0) - (strong ? 0.05 : 0);
     const rec = m.record;
     const parts: string[] = [];
     if (synergy) {

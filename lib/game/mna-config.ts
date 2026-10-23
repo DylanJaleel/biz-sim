@@ -10,12 +10,12 @@
 export const EBITDA_BASE = 200_000;
 export const MULTIPLE_AT_BASE = 4;
 /** Each doubling of EBITDA adds this much to the multiple (bigger firms are safer, more buyers can afford them). */
-export const MULTIPLE_PER_DOUBLING = 0.7;
+export const MULTIPLE_PER_DOUBLING = 0.55;
 export const EBITDA_MULTIPLE_MIN = 2.5;
 export const EBITDA_MULTIPLE_MAX = 10;
 /** Monthly growth of 1 % adds this much to the multiple; capped both ways. */
 export const MULTIPLE_PER_GROWTH_POINT = 1;
-export const MULTIPLE_GROWTH_CAP: [number, number] = [-1.5, 1];
+export const MULTIPLE_GROWTH_CAP: [number, number] = [-1.5, 0.6];
 /** A company without operating profit is worth this share of its annual revenue (substance only). */
 export const LOSS_MAKER_REVENUE_MULTIPLE = 0.2;
 
@@ -56,7 +56,7 @@ export const FINDING_COUNT_CHANCE = [0.35, 0.45, 0.2] as const;
 
 export const MANDATE_REPUTATION = 35;
 /** Chance of a new mandate offer per month, more with a warm bank contact. */
-export const MANDATE_CHANCE = 0.22;
+export const MANDATE_CHANCE = 0.15;
 export const MANDATE_WARM_BONUS = 0.1;
 export const MANDATE_FROM_MONTH = 4;
 /** Mandates running at the same time: alone one, with family office and an associate two. */
@@ -148,13 +148,13 @@ export const ADDON_MIN_EBITDA = 80_000;
 /** The bank finances add-ons up to this pro-forma leverage. */
 export const ADDON_MAX_LEVERAGE = 3.25;
 export const INTEGRATION = {
-  fast: { months: 4, synergy: 0.45, churn: 0.35, cost: 0.4 },
-  careful: { months: 8, synergy: 0.65, churn: 0.15, cost: 0.6 },
+  fast: { months: 4, synergy: 0.45, churn: 0.4, cost: 0.4 },
+  careful: { months: 8, synergy: 0.65, churn: 0.2, cost: 0.6 },
 } as const;
 /** Cost savings when an integration works, as a share of the add-on's EBITDA. */
 export const SYNERGY_SHARE = 0.2;
 /** Revenue lost when customers leave during the integration, as a share of the add-on's revenue. */
-export const CHURN_LOSS: [number, number] = [0.1, 0.25];
+export const CHURN_LOSS: [number, number] = [0.15, 0.35];
 /** Above this annual revenue the competition authority looks at every add-on. */
 export const ANTITRUST_REVENUE = 60_000_000;
 export const ANTITRUST_BLOCK = 0.12;
