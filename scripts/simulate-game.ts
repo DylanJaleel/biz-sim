@@ -1,7 +1,8 @@
 // Balance-Report für das Boardroom-Spiel: Skript-Spieler × Startups × Seeds.
 //   npm run simulate            (100 seeds, 24 Monate)
 //   npm run simulate -- 200 36
-import { analystBot, consultantBot, mogulBot, passiveBot, proBot, randomBot, runBot, yesBot, type Bot } from "../lib/game/bots";
+//   npm run simulate -- 30 24 120 12   (langes Spiel: 120 Monate, 12 Seeds)
+import { analystBot, consultantBot, expertBot, mogulBot, passiveBot, proBot, randomBot, runBot, yesBot, type Bot } from "../lib/game/bots";
 
 const seeds = Number(process.argv[2] ?? 100);
 const months = Number(process.argv[3] ?? 24);
@@ -15,7 +16,7 @@ console.log(`${seeds} Spiele à ${months} Monate (Start: 150 T€)\n`);
 for (const prefer of ["pendelwerk", "kantinenkasse"]) {
   console.log(`Startup: ${prefer}`);
   console.log("Spieler".padEnd(12) + "Wert (Median)   Insolvenz  Verkauf   Reputation  stark/fair/schwach");
-  const bots: Bot[] = [passiveBot(prefer), yesBot(prefer), randomBot(prefer), analystBot(prefer), proBot(prefer), consultantBot()];
+  const bots: Bot[] = [passiveBot(prefer), yesBot(prefer), randomBot(prefer), analystBot(prefer), proBot(prefer), consultantBot(), expertBot()];
   for (const bot of bots) {
     const runs = Array.from({ length: seeds }, (_, i) => runBot(bot, i + 1, months));
     const j = runs.reduce((acc, r) => ({ strong: acc.strong + r.judgments.strong, fair: acc.fair + r.judgments.fair, weak: acc.weak + r.judgments.weak }), { strong: 0, fair: 0, weak: 0 });
@@ -39,20 +40,23 @@ console.log(
   `Profi (pendelwerk): Büro-Stufe Median ${median(pro.map((r) => r.office))}, Aufsichtsrat ${share((r) => r.corporate)}, Runde angeführt ${share((r) => r.ledRounds > 0)}, Verkauf ${share((r) => r.exited > 0)}`,
 );
 
-// Das lange Spiel: fünf Jahre, mit Deal-Generator, Family Office, Fonds und Börsengängen.
+// Das lange Spiel: mit Deal-Generator, Family Office, Fonds und Börsengängen.
+// Netto-Vermögen (Konto, Depot, Anteile, Sperrfristen, Fuhrpark minus Kredite) nach Spieljahren.
 const long = Number(process.argv[4] ?? 60);
-console.log(`\nLanges Spiel: ${Math.min(seeds, 40)} Spiele à ${long} Monate`);
-console.log("Spieler".padEnd(12) + "Wert (Median)   P25 / P75            Insolvenz  Karriere  Mandate  Nachfolgen  Börsengänge");
+const longSeeds = Math.min(seeds, Number(process.argv[5] ?? 20));
+const years = [1, 2, 3, 5, 7, 10].filter((y) => y * 12 <= long);
+console.log(`\nLanges Spiel: ${longSeeds} Spiele à ${long} Monate, Vermögen (Median) nach Jahr ${years.join(" / ")}`);
+console.log("Spieler".padEnd(12) + years.map((y) => `J${y}`.padStart(10)).join("") + "   P25 / P75 am Ende        Insolvenz  Karriere  Mandate  Nachfolgen  Börsengänge");
 const STEPS = ["Angel", "Lead", "Mehrheit", "Aufsichtsrat", "Family Office", "Mogul"];
-for (const bot of [passiveBot("pendelwerk"), yesBot("pendelwerk"), analystBot("pendelwerk"), proBot("pendelwerk"), mogulBot("pendelwerk")]) {
-  const runs = Array.from({ length: Math.min(seeds, 40) }, (_, i) => runBot(bot, i + 1, long));
-  const sorted = runs.map((r) => r.finalValue).sort((a, b) => a - b);
+for (const bot of [passiveBot("pendelwerk"), yesBot("pendelwerk"), randomBot("pendelwerk"), analystBot("pendelwerk"), proBot("pendelwerk"), mogulBot("pendelwerk"), expertBot()]) {
+  const runs = Array.from({ length: longSeeds }, (_, i) => runBot(bot, i + 1, long));
+  const sorted = runs.map((r) => r.worth[long - 1]!).sort((a, b) => a - b);
   const q = (p: number) => sorted[Math.floor(p * (sorted.length - 1))]!;
   console.log(
     bot.name.padEnd(12) +
-      eur(median(sorted)) +
-      `   ${eur(q(0.25)).trim()} / ${eur(q(0.75)).trim()}`.padEnd(22) +
-      `${Math.round((runs.filter((r) => r.dead > 0).length / runs.length) * 100)} %`.padStart(10) +
+      years.map((y) => eur(median(runs.map((r) => r.worth[y * 12 - 1]!)))).join("") +
+      `   ${eur(q(0.25)).trim()} / ${eur(q(0.75)).trim()}`.padEnd(26) +
+      `${Math.round((runs.filter((r) => r.dead > 0).length / runs.length) * 100)} %`.padStart(8) +
       (STEPS[median(runs.map((r) => r.career))] ?? "–").padStart(14) +
       String(median(runs.map((r) => r.mandates))).padStart(8) +
       String(runs.reduce((a, r) => a + r.buyouts, 0)).padStart(12) +
