@@ -250,7 +250,7 @@ export const LESSONS: Lesson[] = [
       "Wer ein Syndikat anführt, bündelt das Geld anderer Angels und investiert es gemeinsam. Dafür bekommt er einen Anteil am Gewinn des Syndikats, den Carry. Verliert das Syndikat Geld, gibt es keinen Carry.",
     rule: "Carry = 20 % × (Erlös des Syndikats − eingezahltes Geld)",
     example: "Das Syndikat gibt 200.000 € und erhält beim Verkauf 600.000 €. Der Gewinn beträgt 400.000 €, dein Carry 80.000 €.",
-    inGame: "Ab 45 Ruf und mit einem warmen Draht zum Angel-Club kannst du Runden mit einem Syndikat anführen.",
+    inGame: "Ab 50 Ruf und mit einem warmen Draht zum Angel-Club kannst du Runden mit einem Syndikat anführen.",
   },
   {
     id: "aufsichtsrat",
@@ -295,7 +295,8 @@ export const LESSONS: Lesson[] = [
       "Ein Fonds sammelt Geld von Investoren (Limited Partners) ein und legt es in Firmen an. Der Manager bekommt eine jährliche Verwaltungsgebühr und einen Anteil am Gewinn, den Carry. Die Investoren bekommen ihr Geld zurück, wenn Beteiligungen verkauft werden.",
     rule: "Üblich: 2 % Gebühr pro Jahr, 20 % Carry auf den Gewinn.",
     example: "Ein Fonds über 5 Mio. € bringt 100.000 € Gebühr im Jahr. Verkauft er eine Beteiligung für 3 Mio. €, die 1 Mio. € gekostet hat, gehen 400.000 € Carry an den Manager.",
-    inGame: "Mit Family Office, 80 Ruf und einem erfolgreichen Verkauf kannst du einen Fonds auflegen. Er investiert bei jedem neuen Einstieg das Doppelte deines Tickets.",
+    inGame:
+      "Mit 85 Ruf, zwei erfolgreichen Verkäufen und einem Family Office, das seit einem Jahr läuft, kannst du einen Fonds auflegen. Er investiert bei jedem neuen Einstieg das Doppelte deines Tickets.",
   },
   {
     id: "ipo",
@@ -303,8 +304,8 @@ export const LESSONS: Lesson[] = [
     summary:
       "Beim Börsengang (IPO) werden Aktien einer Firma öffentlich handelbar. Bisherige Eigentümer dürfen meist nicht sofort alles verkaufen: Eine Sperrfrist (Lock-up) von sechs bis zwölf Monaten soll den Kurs schützen. Bis dahin schwankt der Wert mit dem Markt.",
     rule: "Erlös = sofort verkaufter Teil + gesperrter Teil × (Kurs nach der Sperrfrist ÷ Kurs beim Börsengang)",
-    example: "Dein Anteil ist beim Börsengang 1 Mio. € wert. 500.000 € bekommst du sofort; fällt der Markt in sechs Monaten um 20 %, bringt der Rest 400.000 €.",
-    inGame: "Große, wachsende Firmen (ab 12 Mio. € Wert) bekommen manchmal das Angebot eines Börsengangs. Die gesperrte Hälfte folgt dem Tech-Index.",
+    example: "Dein Anteil ist beim Börsengang 1 Mio. € wert. 500.000 € bekommst du sofort; fällt der Markt bis zum Ende der Sperrfrist um 20 %, bringt der Rest 400.000 €.",
+    inGame: "Große, wachsende Firmen (ab 12 Mio. € Wert) bekommen manchmal das Angebot eines Börsengangs. Die gesperrte Hälfte ist zwölf Monate gesperrt und folgt dem Tech-Index.",
   },
 ];
 

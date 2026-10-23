@@ -92,7 +92,9 @@ export function NetworkRings({ view, revision }: { view: NetworkView; revision: 
             <span className="meter" aria-hidden="true">
               <i style={{ width: `${contact.warmth}%` }} />
             </span>
-            <small className="muted">Ab {WARMTH_INTRO_MIN} kannst du um einen Gefallen bitten. Jeder Monat kühlt um 3 ab.</small>
+            <small className="muted">
+              Ab {WARMTH_INTRO_MIN} kannst du um einen Gefallen bitten. Jeder Monat kühlt um 3 ab. Hilft ein Kontakt derselben Firma noch einmal, wirkt es jedes Mal halb so stark.
+            </small>
           </div>
           {!contact.open ? (
             <p className="notice">Dieser Kreis öffnet sich mit mehr Ruf. Gute Entscheidungen im Beirat bringen Ruf.</p>

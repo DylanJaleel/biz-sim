@@ -267,7 +267,8 @@ export const expertBot = (style: ExpertStyle = {}, name = "Experte"): Bot => {
       }
       if (s.corporateSeat === "offered") actions.push({ type: "joinCorporate", accept: true });
       const next = OFFICES[s.office + 1];
-      if (next && s.reputation >= next.reputation && netWorth(s) >= next.worth && s.cash + holdingsValue(s.market) > next.rent * 8) actions.push({ type: "moveOffice", level: next.level });
+      if (next && s.reputation >= next.reputation && netWorth(s) >= next.worth && s.cash + holdingsValue(s.market) > next.rent * 8)
+        actions.push({ type: "moveOffice", level: next.level });
       // Rounds: lead the good ones, keep the share in the rest.
       for (const round of s.rounds.filter((r) => r.status === "open")) {
         const c = startupOf(s, round.startupId);

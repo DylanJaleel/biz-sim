@@ -21,7 +21,7 @@ export const ASSETS: AssetDef[] = [
   { id: "tagesgeld", name: "Tagesgeld", kind: "Konto", yield: 0.02, payEvery: 1, beta: 0, drift: 0, vol: 0, note: "Kein Risiko, wenig Ertrag. Jederzeit verfügbar." },
   { id: "anleihen", name: "Anleihen-Fonds", kind: "Anleihen", yield: 0.035, payEvery: 1, beta: 0.15, drift: 0, vol: 0.006, note: "Feste Zinsen, kleine Schwankungen. Leidet, wenn Zinsen steigen." },
   { id: "dividenden", name: "Dividenden-Aktien", kind: "Aktienfonds", yield: 0.032, payEvery: 3, beta: 0.85, drift: 0.001, vol: 0.015, note: "Etablierte Firmen, die Gewinne ausschütten. Dividende jedes Quartal." },
-  { id: "tech", name: "Tech-Index", kind: "Aktienfonds", yield: 0, payEvery: 0, beta: 1.5, drift: 0.003, vol: 0.03, note: "Hohe Chancen, starke Ausschläge, keine Ausschüttung." },
+  { id: "tech", name: "Tech-Index", kind: "Aktienfonds", yield: 0, payEvery: 0, beta: 1.5, drift: 0.001, vol: 0.03, note: "Hohe Chancen, starke Ausschläge, keine Ausschüttung." },
 ];
 
 export function assetOf(id: AssetId): AssetDef {

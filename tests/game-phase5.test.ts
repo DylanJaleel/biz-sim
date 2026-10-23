@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { FAMILY_OFFICE_REPUTATION, FAMILY_OFFICE_WORTH } from "../lib/game/config";
 import { applyAction, closeMonth, netWorth, newGame, upgradeState } from "../lib/game/engine";
 import { TROPHIES } from "../lib/game/trophies";
 import { boldChance, cityOf, garageValue, RESALE, resolveTrip, travelOptions, vehicleOf } from "../lib/game/travel";
@@ -130,7 +131,13 @@ describe("trips to a job", () => {
 describe("audit fixes", () => {
   it("the next step skips side goals and leads to the Family Office", async () => {
     const { nextStepView } = await import("../lib/game/views");
-    const state: GameState = { ...act(newGame(3), { type: "invest", startupId: "pendelwerk" }), ledRounds: 1, reputation: 72, cash: 900_000, office: 3 };
+    const state: GameState = {
+      ...act(newGame(3), { type: "invest", startupId: "pendelwerk" }),
+      ledRounds: 1,
+      reputation: FAMILY_OFFICE_REPUTATION,
+      cash: FAMILY_OFFICE_WORTH + 100_000,
+      office: 3,
+    };
     const step = nextStepView(state)!;
     expect(step.title).toBe("Family Office");
     expect(step.action?.move).toEqual({ type: "foundFamilyOffice" });
@@ -148,7 +155,12 @@ describe("audit fixes", () => {
   });
 
   it("writes once when the Family Office is within reach", () => {
-    let state: GameState = { ...act(newGame(5), { type: "invest", startupId: "pendelwerk" }), reputation: 75, cash: 900_000, office: 3 };
+    let state: GameState = {
+      ...act(newGame(5), { type: "invest", startupId: "pendelwerk" }),
+      reputation: FAMILY_OFFICE_REPUTATION + 3,
+      cash: FAMILY_OFFICE_WORTH + 100_000,
+      office: 3,
+    };
     state = act(state, { type: "closeMonth" });
     state = act(state, { type: "closeMonth" });
     expect(state.mails.filter((m) => m.subject === "Du kannst jetzt ein Family Office gründen")).toHaveLength(1);

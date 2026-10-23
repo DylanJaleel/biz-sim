@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { analystBot, consultantBot, mogulBot, passiveBot, proBot, runBot, yesBot, type Bot } from "../lib/game/bots";
+import { analystBot, consultantBot, expertBot, mogulBot, passiveBot, proBot, runBot, yesBot, type Bot } from "../lib/game/bots";
 import { START_CASH } from "../lib/game/config";
 
 // Skript-Spieler über 24 Monate. Sie halten fest, wofür das Spiel steht:
@@ -70,6 +70,28 @@ describe("the long game", () => {
     expect(passive.value).toBeLessThan(START_CASH);
     expect(mogul.value).toBeGreaterThan(yes.value * 1.5);
     expect(mogul.mandates).toBeGreaterThanOrEqual(5);
-    expect(mogul.career).toBeGreaterThanOrEqual(4);
+    // The family office needs real wealth now; after four years the mogul is on the board of a corporation.
+    expect(mogul.career).toBeGreaterThanOrEqual(3);
+  });
+}, 240_000);
+
+describe("the wealth curve", () => {
+  // A player who uses every source of income: about 1 million after two to
+  // three years, around 5 million after five. Fifty million used to be within
+  // reach in five years; star companies now slow down as they grow.
+  const runs = Array.from({ length: 8 }, (_, i) => runBot(expertBot(), i + 1, 60));
+  const at = (month: number) => median(runs.map((r) => r.worth[month - 1]!));
+
+  it("the expert builds wealth step by step and stays below the old runaway curve", () => {
+    expect(at(12)).toBeLessThan(600_000);
+    expect(at(36)).toBeGreaterThan(700_000);
+    expect(at(36)).toBeLessThan(3_000_000);
+    expect(at(60)).toBeGreaterThan(2_000_000);
+    expect(at(60)).toBeLessThan(8_000_000);
+    expect(Math.max(...runs.map((r) => r.worth[59]!))).toBeLessThan(25_000_000);
+  });
+
+  it("the expert reaches the family office within five years", () => {
+    expect(median(runs.map((r) => r.career))).toBeGreaterThanOrEqual(4);
   });
 }, 240_000);

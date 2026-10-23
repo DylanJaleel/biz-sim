@@ -1,4 +1,14 @@
-import { BUYOUT_REPUTATION, CORPORATE_REPUTATION, FAMILY_OFFICE_REPUTATION, FAMILY_OFFICE_WORTH, FUND_REPUTATION, LEAD_REPUTATION } from "./config";
+import {
+  BUYOUT_REPUTATION,
+  BUYOUT_WORTH,
+  CORPORATE_REPUTATION,
+  FAMILY_OFFICE_REPUTATION,
+  FAMILY_OFFICE_WORTH,
+  FUND_EXITS,
+  FUND_OFFICE_MONTHS,
+  FUND_REPUTATION,
+  LEAD_REPUTATION,
+} from "./config";
 import type { GameState } from "./types";
 
 // Die Karriereleiter vom Angel zum Investment-Mogul. Danach geht das Spiel
@@ -29,7 +39,7 @@ export function careerOf(state: GameState): Career {
     { title: "Lead-Investor", requirement: `Eine Finanzierungsrunde anführen (ab ${LEAD_REPUTATION} Ruf)`, done: led },
     {
       title: "Mehrheitsgesellschafter",
-      requirement: `Mehr als 50 % an einer Firma halten: eine Nachfolge kaufen (Angebote ab ${BUYOUT_REPUTATION} Ruf und 600.000 € Vermögen)`,
+      requirement: `Mehr als 50 % an einer Firma halten: eine Nachfolge kaufen (Angebote ab ${BUYOUT_REPUTATION} Ruf und ${(BUYOUT_WORTH / 1_000_000).toLocaleString("de-DE")} Mio. € Vermögen)`,
       done: majority,
       side: true,
     },
@@ -44,7 +54,11 @@ export function careerOf(state: GameState): Career {
       requirement: `Family Office gründen (ab ${FAMILY_OFFICE_REPUTATION} Ruf, ${(FAMILY_OFFICE_WORTH / 1_000_000).toLocaleString("de-DE")} Mio. € Vermögen, Büroetage mit Analyst)`,
       done: state.familyOffice !== undefined,
     },
-    { title: "Investment-Mogul", requirement: `Eigenen Fonds auflegen (ab ${FUND_REPUTATION} Ruf, mit einem erfolgreichen Verkauf)`, done: state.fund !== undefined },
+    {
+      title: "Investment-Mogul",
+      requirement: `Eigenen Fonds auflegen (ab ${FUND_REPUTATION} Ruf, ${FUND_EXITS} erfolgreiche Verkäufe, Family Office seit ${FUND_OFFICE_MONTHS} Monaten)`,
+      done: state.fund !== undefined,
+    },
   ];
   let level = -1;
   for (let i = 0; i < steps.length; i++) if (steps[i]!.done) level = i;
