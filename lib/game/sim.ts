@@ -12,6 +12,9 @@ import {
   OPEX_PER_HIRE,
   PHASE_THRESHOLDS,
   REVENUE_NOISE,
+  SCALE_DRAG,
+  SCALE_PULL,
+  SCALE_REVENUE,
   CUSTOMER_LOSS_CHANCE,
   CUSTOMER_LOSS_THRESHOLD,
 } from "./config";
@@ -31,10 +34,15 @@ export function dilute(capTable: Holder[], d: number, to: { id: string; name: st
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 
-/** Growth the company drifts towards: product, market and edge, damped by bad morale. */
+/** Growth the company drifts towards: product, market and edge, damped by bad morale and by size. */
 export function potentialGrowth(m: Metrics): number {
   const strength = ((m.axes.product + m.axes.market + m.axes.edge) / 300) * 0.8 + (m.axes.management / 100) * 0.2;
-  return -0.025 + 0.1 * strength * (0.6 + 0.4 * (m.morale / 100));
+  return -0.025 + 0.1 * strength * (0.6 + 0.4 * (m.morale / 100)) - scaleDrag(m);
+}
+
+/** Growth a company loses because of its size: nothing below SCALE_REVENUE, then a bit per doubling. */
+export function scaleDrag(m: Pick<Metrics, "revenue">): number {
+  return m.revenue > SCALE_REVENUE ? SCALE_DRAG * Math.log2(m.revenue / SCALE_REVENUE) : 0;
 }
 
 export function monthlyInterest(m: Metrics): number {
@@ -153,7 +161,9 @@ export function stepMonth(s: Startup, random: () => number = () => 0.5): StepRes
   const events: string[] = [];
   const m = s.metrics;
   const noise = (random() - 0.5) * 2 * REVENUE_NOISE;
-  const growth = m.growth + (potentialGrowth(m) - m.growth) * GROWTH_PULL;
+  // Big companies are tankers: pushes above their potential fade faster.
+  const pull = Math.min(0.6, GROWTH_PULL * (1 + (scaleDrag(m) / SCALE_DRAG) * SCALE_PULL));
+  const growth = m.growth + (potentialGrowth(m) - m.growth) * pull;
   const revenue = Math.max(0, m.revenue * (1 + growth + noise));
   const interest = monthlyInterest(m);
   const repayment = m.debt * DEBT_REPAYMENT_RATE;

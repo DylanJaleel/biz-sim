@@ -126,6 +126,10 @@ export interface Startup {
   names: StartupNames;
   /** Current rhythm of the board; missing in older games (= normal). */
   pace?: Pace;
+  /** How often each network contact has already helped this company. */
+  helped?: Record<string, number>;
+  /** Shares granted to the player for board work so far, in percent. */
+  advisorShares?: number;
 }
 
 export interface StartupNames {

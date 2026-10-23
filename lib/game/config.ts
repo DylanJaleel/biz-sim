@@ -30,7 +30,7 @@ export const TRADE_FEE = 0.001;
 // Phase 3: exits, syndicate, offices, corporate board
 /** Share of a syndicate's gain the lead keeps. */
 export const CARRY = 0.2;
-export const SYNDICATE_REPUTATION = 45;
+export const SYNDICATE_REPUTATION = 50;
 export const SYNDICATE_WARMTH = 40;
 export const EXIT_CHANCE = 0.025;
 export const EXIT_MIN_VALUE = 2_000_000;
@@ -38,19 +38,21 @@ export const EXIT_MIN_AGE = 8;
 /** Negotiating: the buyer pays this much more, or walks away. */
 export const NEGOTIATE_GAIN = 0.15;
 export const NEGOTIATE_CHANCE = 0.55;
-export const CORPORATE_REPUTATION = 65;
+export const CORPORATE_REPUTATION = 70;
 export const CORPORATE_FEE = 4_000;
 export const NEWS_FROM_MONTH = 3;
 // Phase 4: family office, team, buyouts, fund, IPO
-export const FAMILY_OFFICE_REPUTATION = 70;
-export const FAMILY_OFFICE_WORTH = 750_000;
+export const FAMILY_OFFICE_REPUTATION = 75;
+export const FAMILY_OFFICE_WORTH = 2_000_000;
 export const FAMILY_OFFICE_COST = 40_000;
 export const SALARY = { associate: 5_000, partner: 9_000 } as const;
 export const TEAM_MAX = { associate: 3, partner: 1 } as const;
 /** An associate finds the best option this often; otherwise they play it safe. */
 export const ASSOCIATE_SKILL = 0.7;
 export const PARTNER_DAYS = 3;
-export const BUYOUT_REPUTATION = 55;
+export const BUYOUT_REPUTATION = 60;
+/** Family businesses offer themselves for sale only to buyers with this net worth. */
+export const BUYOUT_WORTH = 1_000_000;
 /** Share of a buyout price the bank lends, and on what terms. */
 export const BUYOUT_LOAN_SHARE = 0.4;
 export const BUYOUT_LOAN_RATE = 0.055;
@@ -58,9 +60,12 @@ export const BUYOUT_LOAN_MONTHS = 96;
 /** Majority-owned profitable companies distribute most of what they do not need. */
 export const DIVIDEND_RESERVE_MONTHS = 3;
 export const DIVIDEND_SHARE = 0.7;
-export const FUND_REPUTATION = 80;
+export const FUND_REPUTATION = 85;
+/** Investors want a track record: this many sales, and a family office that has run for a while. */
+export const FUND_EXITS = 2;
+export const FUND_OFFICE_MONTHS = 12;
 export const FUND_BASE = 3_000_000;
-export const FUND_PER_EXIT = 1_500_000;
+export const FUND_PER_EXIT = 1_000_000;
 export const FUND_MAX = 15_000_000;
 export const FUND_FEE = 0.02;
 /** The fund puts in this multiple of the player's own ticket. */
@@ -69,7 +74,7 @@ export const FUND_MATCH = 2;
 export const FUND_MAX_DEAL = 0.25;
 export const IPO_MIN_VALUE = 12_000_000;
 export const IPO_CHANCE = 0.05;
-export const IPO_LOCKUP = 6;
+export const IPO_LOCKUP = 12;
 /** Share of the player's IPO proceeds paid at once; the rest waits for the lockup. */
 export const IPO_CASH_SHARE = 0.5;
 /** Generated deals: from this month on, and at most this many open offers. */
@@ -137,6 +142,14 @@ export const MULTIPLE_BASE = 1.5;
 export const MULTIPLE_PER_GROWTH = 80;
 export const MULTIPLE_MIN = 1;
 export const MULTIPLE_MAX = 10;
+/**
+ * Markets are not endless: above this monthly revenue every doubling costs
+ * growth potential, so even a star company slows down as it gets big.
+ */
+export const SCALE_REVENUE = 150_000;
+export const SCALE_DRAG = 0.01;
+/** Per doubling above SCALE_REVENUE, growth returns this much faster to its potential. */
+export const SCALE_PULL = 1;
 
 // Emergency financing when the cash runs out (used in projections and as fallback).
 export const DOWN_ROUND_MONTHS = 9;
@@ -194,6 +207,8 @@ export const FOUNDER_PREMIUM = 1.25;
 export const SECONDARY_CHANCE = 0.1;
 /** Shares granted per quarter for strong board work. */
 export const ADVISOR_SHARES = 0.5;
+/** No more than this in total per company: a board seat is not a second salary in shares. */
+export const ADVISOR_SHARES_MAX = 2;
 export const RING_REPUTATION = { 1: 0, 2: 35, 3: 55 } as const;
 export const WARMTH_MEET_FIRST = 30;
 export const WARMTH_MEET = 15;
@@ -201,6 +216,8 @@ export const WARMTH_INTRO_MIN = 40;
 export const WARMTH_INTRO_COST = 20;
 export const WARMTH_DECAY = 3;
 export const INTRO_COOLDOWN = 3;
+/** The same contact helping the same company again: each time this share of the effect before. */
+export const INTRO_REPEAT = 0.5;
 
 export function monthLabel(month: number): string {
   const index = (START_MONTH_INDEX + month - 1) % 12;

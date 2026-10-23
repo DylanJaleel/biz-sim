@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { totalPct } from "../lib/game/captable";
-import { FAMILY_OFFICE_COST, IPO_LOCKUP, SALARY } from "../lib/game/config";
+import { FAMILY_OFFICE_COST, FUND_EXITS, FUND_OFFICE_MONTHS, IPO_LOCKUP, SALARY } from "../lib/game/config";
 import { TEMPLATES } from "../lib/game/content";
 import { generateDeal, SECTORS, type DealStage } from "../lib/game/dealgen";
 import { applyAction, closeMonth, fundBlocker, netWorth, newGame, randomFor, startupOf, upgradeState } from "../lib/game/engine";
@@ -125,9 +125,12 @@ describe("family office", () => {
 describe("own fund", () => {
   it("needs a track record, then co-invests and pays a fee", () => {
     let state = act(rich(6), { type: "foundFamilyOffice" });
-    expect(fundBlocker(state)).toMatch(/Verkauf/);
+    expect(fundBlocker(state)).toMatch(/Verkäufe/);
     const exit: ExitOffer = { id: "x1", startupId: "pendelwerk", month: 1, buyer: "Velocity", price: 1, status: "accepted" };
-    state = { ...state, exits: [exit] };
+    state = { ...state, exits: Array.from({ length: FUND_EXITS }, (_, i) => ({ ...exit, id: `x${i + 1}` })) };
+    // The family office has to prove itself for a year first.
+    expect(fundBlocker(state)).toMatch(/bewähren/);
+    state = { ...state, month: state.month + FUND_OFFICE_MONTHS };
     expect(fundBlocker(state)).toBeNull();
     state = act(state, { type: "raiseFund" });
     expect(state.fund!.size).toBeGreaterThanOrEqual(3_000_000);

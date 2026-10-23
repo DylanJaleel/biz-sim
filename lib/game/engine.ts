@@ -17,7 +17,9 @@ import {
   START_REPUTATION,
   monthLabel,
   ADVISOR_SHARES,
+  ADVISOR_SHARES_MAX,
   INTRO_COOLDOWN,
+  INTRO_REPEAT,
   LEAD_REPUTATION,
   LEAD_REPUTATION_GAIN,
   MAJORITY_REPUTATION_GAIN,
@@ -48,6 +50,7 @@ import {
   BUYOUT_LOAN_RATE,
   BUYOUT_LOAN_SHARE,
   BUYOUT_REPUTATION,
+  BUYOUT_WORTH,
   DEALS_FROM_MONTH,
   DEALS_MAX_OPEN,
   DIVIDEND_RESERVE_MONTHS,
@@ -56,10 +59,12 @@ import {
   FAMILY_OFFICE_REPUTATION,
   FAMILY_OFFICE_WORTH,
   FUND_BASE,
+  FUND_EXITS,
   FUND_FEE,
   FUND_MATCH,
   FUND_MAX,
   FUND_MAX_DEAL,
+  FUND_OFFICE_MONTHS,
   FUND_PER_EXIT,
   FUND_REPUTATION,
   IPO_CASH_SHARE,
@@ -895,7 +900,8 @@ export function fundBlocker(state: GameState): string | null {
   if (state.fund) return "Dein Fonds ist schon geschlossen.";
   if (!state.familyOffice) return "Einen Fonds legst du aus dem Family Office auf.";
   if (state.reputation < FUND_REPUTATION) return `Investoren geben Geld ab ${FUND_REPUTATION} Ruf.`;
-  if (!state.exits.some((e) => e.status === "accepted")) return "Investoren wollen mindestens einen erfolgreichen Verkauf sehen.";
+  if (state.exits.filter((e) => e.status === "accepted").length < FUND_EXITS) return `Investoren wollen mindestens ${FUND_EXITS} erfolgreiche Verkäufe sehen.`;
+  if (state.month - state.familyOffice < FUND_OFFICE_MONTHS) return `Dein Family Office muss sich erst ${FUND_OFFICE_MONTHS} Monate bewähren.`;
   return null;
 }
 
@@ -1023,9 +1029,15 @@ function introduce(state: GameState, s: Startup, contactId: string): void {
   const def = contactDef(contactId);
   switch (def.kind) {
     case "delta":
-    case "loan":
-      state.effects.push({ delay: 1, text: def.result, delta: def.delta ?? {}, startupId: s.id, due: state.month + 1, itemId: `intro-${contactId}-${state.month}` });
+    case "loan": {
+      // A second favour for the same company helps less: the easy wins are taken.
+      const times = s.helped?.[contactId] ?? 0;
+      const factor = def.kind === "delta" ? Math.pow(INTRO_REPEAT, times) : 1;
+      const text = times > 0 && factor < 1 ? `${def.result} Beim ${times + 1}. Mal für dieselbe Firma wirkt es schwächer.` : def.result;
+      state.effects.push({ delay: 1, text, delta: scaleDelta(def.delta ?? {}, factor), startupId: s.id, due: state.month + 1, itemId: `intro-${contactId}-${state.month}` });
+      replaceStartup(state, { ...s, helped: { ...s.helped, [contactId]: times + 1 } });
       break;
+    }
     case "investor":
       replaceStartup(state, { ...s, flags: s.flags.includes("investor_intro") ? s.flags : [...s.flags, "investor_intro"] });
       mail(state, { kind: "network", from: def.name, subject: `${s.name}: gern beim nächsten Mal`, body: def.result, startupId: s.id });
@@ -1049,6 +1061,17 @@ function introduce(state: GameState, s: Startup, contactId: string): void {
       break;
     }
   }
+}
+
+/** A delta with every number scaled; flags and exits stay as they are. */
+function scaleDelta(d: Delta, factor: number): Delta {
+  if (factor === 1) return d;
+  const out: Delta = { ...d };
+  for (const key of ["cash", "revenuePct", "growth", "grossMargin", "opex", "team", "morale", "trust", "topCustomer", "debt", "playerCash", "reputation"] as const) {
+    if (d[key] !== undefined) out[key] = d[key]! * factor;
+  }
+  if (d.axes) out.axes = Object.fromEntries(Object.entries(d.axes).map(([k, v]) => [k, (v ?? 0) * factor]));
+  return out;
 }
 
 function createShareOffer(state: GameState, s: Startup, sellerId: string, pct: number, factor: number): void {
@@ -1701,9 +1724,11 @@ function forceLiquidity(state: GameState, notes: string[]): void {
 function grantAdvisorShares(state: GameState, month: number, notes: string[]): void {
   for (const s of state.startups.filter((x) => x.status === "active" && !x.corporate)) {
     const strong = state.items.filter((i) => i.startupId === s.id && i.decision && !i.decision.lapsed && i.decision.judgment === "strong" && i.decision.month > month - 3).length;
-    if (strong === 0 || s.metrics.trust < 60) continue;
-    replaceStartup(state, grantToPlayer(s, ADVISOR_SHARES));
-    const text = `${s.name}: Für deine Arbeit im Beirat bekommst du ${ADVISOR_SHARES.toLocaleString("de-DE")} % Leistungsanteile.`;
+    const granted = s.advisorShares ?? 0;
+    if (strong === 0 || s.metrics.trust < 60 || granted >= ADVISOR_SHARES_MAX) continue;
+    replaceStartup(state, { ...grantToPlayer(s, ADVISOR_SHARES), advisorShares: granted + ADVISOR_SHARES });
+    const last = granted + ADVISOR_SHARES >= ADVISOR_SHARES_MAX;
+    const text = `${s.name}: Für deine Arbeit im Beirat bekommst du ${ADVISOR_SHARES.toLocaleString("de-DE")} % Leistungsanteile${last ? `. Mehr als ${ADVISOR_SHARES_MAX.toLocaleString("de-DE")} % gibt es dafür nicht` : ""}.`;
     notes.push(text);
     mail(state, { kind: "founder", from: s.name, subject: "Leistungsanteile für dich", body: `${text} Gute Beiräte binden Firmen gern mit Anteilen.`, startupId: s.id });
   }
@@ -1779,7 +1804,9 @@ function planExits(state: GameState): void {
     if (random() > chance) continue;
     const buyers = [s.names.acquirer, ...BUYERS];
     const buyer = buyers[Math.floor(random() * buyers.length) % buyers.length]!;
-    const price = Math.round((value * (0.8 + random() * 0.7 + mood * 0.1)) / 10_000) * 10_000;
+    // Buyers pay a premium for growth; for a company that barely grows the offers stay close to its value.
+    const spread = 0.45 + Math.min(0.05, Math.max(0, s.metrics.growth)) * 5;
+    const price = Math.round((value * (0.8 + random() * spread + mood * 0.1)) / 10_000) * 10_000;
     const offer: ExitOffer = { id: nextId(state, "x"), startupId: s.id, month: state.month, buyer, price, status: "open" };
     state.exits.push(offer);
     const mine = waterfall(s, price).payouts.find((p) => p.id === "you")?.amount ?? 0;
@@ -1799,7 +1826,7 @@ function planIpo(state: GameState, s: Startup, value: number, mood: number): boo
   if (value < IPO_MIN_VALUE || state.month - s.joined < 12 || s.metrics.growth < 0.012) return false;
   const random = randomFor(state.seed, `ipo|${s.id}|${state.month}`);
   if (random() > IPO_CHANCE * (1 + mood)) return false;
-  const price = Math.round((value * (1.1 + random() * 0.5 + mood * 0.2)) / 100_000) * 100_000;
+  const price = Math.round((value * (1 + random() * 0.35 + mood * 0.15)) / 100_000) * 100_000;
   const offer: ExitOffer = { id: nextId(state, "x"), startupId: s.id, month: state.month, buyer: "Börsengang in Frankfurt", price, status: "open", ipo: true };
   state.exits.push(offer);
   mail(state, {
@@ -1923,7 +1950,7 @@ function dealStage(state: GameState, random: () => number): DealStage {
     ["preseed", worth < 300_000 ? 6 : 3],
     ["seed", worth < 150_000 ? 1 : 4],
     ["growth", worth > 500_000 ? 3 : 0],
-    ["buyout", state.reputation >= BUYOUT_REPUTATION && worth >= 600_000 ? 2 : 0],
+    ["buyout", state.reputation >= BUYOUT_REPUTATION && worth >= BUYOUT_WORTH ? 2 : 0],
   ];
   const total = weights.reduce((sum, [, w]) => sum + w, 0);
   let roll = random() * total;

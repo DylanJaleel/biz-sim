@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { HOLDER_LABEL } from "@/lib/game/captable";
-import { ACTION_DAYS } from "@/lib/game/config";
+import { ACTION_DAYS, IPO_LOCKUP } from "@/lib/game/config";
 import type { ExitChoice, GvBallot } from "@/lib/game/types";
 import type { ExitView } from "@/lib/game/views";
 import { eur } from "@/components/game/format";
@@ -57,7 +57,7 @@ export function ExitMeeting({ view, revision }: { view: ExitView; revision: numb
         </h1>
         <p className="room__motion">
           {offer.ipo
-            ? `Die Banken trauen sich eine Bewertung von ${eur(offer.price)} zu. Die Hälfte deines Erlöses bekommst du sofort, die andere Hälfte deiner Aktien ist sechs Monate gesperrt und folgt bis dahin dem Markt.`
+            ? `Die Banken trauen sich eine Bewertung von ${eur(offer.price)} zu. Die Hälfte deines Erlöses bekommst du sofort, die andere Hälfte deiner Aktien ist ${IPO_LOCKUP} Monate gesperrt und folgt bis dahin dem Markt.`
             : `Für die ganze Firma bietet ${offer.buyer} ${eur(offer.price)}. Das ist ${ratio >= 1 ? `${fmtPct((ratio - 1) * 100)} mehr` : `${fmtPct((1 - ratio) * 100)} weniger`} als der heutige Wert.`}{" "}
           Jedes Prozent der Firma hat eine Stimme.
         </p>

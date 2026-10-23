@@ -3,6 +3,7 @@ import { outcomeViews, type OutcomeView } from "./cfo";
 import {
   ACTION_DAYS,
   BUYOUT_REPUTATION,
+  BUYOUT_WORTH,
   CORPORATE_REPUTATION,
   FAMILY_OFFICE_COST,
   FAMILY_OFFICE_REPUTATION,
@@ -12,6 +13,8 @@ import {
   RING_REPUTATION,
   SYNDICATE_REPUTATION,
   TEAM_MAX,
+  FUND_EXITS,
+  FUND_OFFICE_MONTHS,
   FUND_REPUTATION,
   WARMTH_INTRO_MIN,
   monthName,
@@ -649,6 +652,7 @@ export function nextStepView(state: GameState): NextStepView | null {
         text: "Kauf die Mehrheit an einem Familienbetrieb, der eine Nachfolge sucht. Solche Angebote kommen in die Post.",
         requirements: [
           { label: `${BUYOUT_REPUTATION} Ruf (du: ${state.reputation})`, done: state.reputation >= BUYOUT_REPUTATION },
+          { label: `${eur(BUYOUT_WORTH)} Vermögen (du: ${eur(worth)})`, done: worth >= BUYOUT_WORTH },
           { label: "Ein Nachfolge-Angebot liegt vor", done: state.startups.some((s) => s.status === "offered" && s.offer?.buyout) },
         ],
         link: { href: "/post", label: "Zur Post" },
@@ -692,12 +696,14 @@ export function nextStepView(state: GameState): NextStepView | null {
     }
     case "Investment-Mogul": {
       const blocker = fundBlocker(state);
+      const accepted = state.exits.filter((e) => e.status === "accepted").length;
       return {
         title: next.title,
         text: "Leg einen eigenen Fonds auf. Fremdes Geld investiert neben dir, du bekommst Gebühr und Carry.",
         requirements: [
           { label: `${FUND_REPUTATION} Ruf (du: ${state.reputation})`, done: state.reputation >= FUND_REPUTATION },
-          { label: "Mindestens ein erfolgreicher Verkauf", done: state.exits.some((e) => e.status === "accepted") },
+          { label: `${FUND_EXITS} erfolgreiche Verkäufe (du: ${accepted})`, done: accepted >= FUND_EXITS },
+          { label: `Family Office seit ${FUND_OFFICE_MONTHS} Monaten`, done: state.familyOffice !== undefined && state.month - state.familyOffice >= FUND_OFFICE_MONTHS },
         ],
         action: blocker === null ? { move: { type: "raiseFund" }, label: `Fonds auflegen (${eur(fundSize(state))})`, days: ACTION_DAYS.raiseFund } : undefined,
       };
