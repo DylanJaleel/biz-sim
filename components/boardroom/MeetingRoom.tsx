@@ -294,7 +294,7 @@ function Verdict({ view }: { view: MeetingView }) {
           <div className="panel">
             <p className="eyebrow">Rückblick</p>
             <h2 id="verdict-title" className="panel__title">
-              {OUTCOME_LABEL[d.outcome]}: {view.outcomes[d.outcome].label}
+              {OUTCOME_LABEL[d.outcome]}: {d.outcome === "conditions" && review?.appliedName && review.chosenName === review.appliedName ? review.appliedName : view.outcomes[d.outcome].label}
             </h2>
             <p className={`judgment judgment--${d.judgment}`}>
               <b>{judgment.label}.</b> {judgment.text}
