@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { analystBot, consultantBot, mogulBot, passiveBot, proBot, runBot, yesBot, type Bot } from "../lib/game/bots";
+import { analystBot, conditionsBot, consultantBot, mogulBot, passiveBot, proBot, runBot, yesBot, type Bot } from "../lib/game/bots";
 import { START_CASH } from "../lib/game/config";
 
 // Skript-Spieler über 24 Monate. Sie halten fest, wofür das Spiel steht:
@@ -25,6 +25,7 @@ describe("game balance", () => {
   const analyst = play(analystBot("pendelwerk"));
   const consultant = play(consultantBot());
   const pro = play(proBot("pendelwerk"));
+  const always = play(conditionsBot("pendelwerk"));
 
   it("only watching a risky startup loses money", () => {
     expect(passive.value).toBeLessThan(START_CASH);
@@ -36,6 +37,17 @@ describe("game balance", () => {
     expect(analyst.value).toBeGreaterThan(START_CASH * 1.2);
     expect(analyst.insolvency).toBeLessThanOrEqual(0.15);
     expect(analyst.reputation).toBeGreaterThan(yes.reputation + 15);
+  });
+
+  it("always choosing conditions is no shortcut: knowing which one fits is", () => {
+    expect(always.reputation).toBeLessThanOrEqual(80);
+    expect(always.reputation).toBeLessThan(analyst.reputation - 20);
+    expect(always.value).toBeLessThan(analyst.value * 0.6);
+  });
+
+  it("good players earn a high reputation without sticking at the top", () => {
+    expect(analyst.reputation).toBeGreaterThanOrEqual(70);
+    expect(pro.reputation).toBeLessThanOrEqual(93);
   });
 
   it("consulting pays the bills but does not replace investing well", () => {

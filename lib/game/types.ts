@@ -14,6 +14,18 @@ export type SeatId = "ceo" | "cto" | "vc" | "indep" | "angel";
 export type SpeakerId = SeatId | "you";
 
 export type Vote = "go" | "conditions" | "no";
+/** Kinds of conditions ("Auflagen") the player can attach to an approval. */
+export type CovenantId = "budget" | "stagegate" | "pilot" | "second" | "kpi" | "veto";
+
+/** The three conditions offered for a board item; exactly one fits the situation. */
+export interface CovenantSetup {
+  options: CovenantId[];
+  fit: CovenantId;
+  /** How far the fitting condition beats the better plain decision, as share of the spread (may be negative). */
+  edge: number;
+  /** How far each unfitting condition falls below a plain decision, as share of the spread. */
+  miss: Partial<Record<CovenantId, number>>;
+}
 export type ShareOption = Vote | "abstain";
 export type Shares = Record<ShareOption, number>;
 
@@ -154,6 +166,8 @@ export interface Effect {
   delay: number;
   text: string;
   delta: Delta;
+  /** The benefit of a condition: only fully there when the player followed it up. */
+  review?: boolean;
 }
 
 export interface PendingEffect extends Effect {
@@ -181,6 +195,18 @@ export interface MeetingDecision {
   lapsed?: boolean;
   /** An associate of the family office decided in the player's place. */
   delegated?: boolean;
+  /** The condition the player voted for (with vote "conditions"). */
+  covenant?: CovenantId;
+  /** The condition that applies when the outcome is "conditions": the player's, or the board's standard. */
+  applied?: CovenantId | "standard";
+  /** The condition that fitted the situation. */
+  fit?: CovenantId;
+  /** Planned value of each offered condition and of the board's standard condition. */
+  covenantValues?: Partial<Record<CovenantId | "standard", number>>;
+  /** The best option overall: "go", "no" or a condition. */
+  bestOption?: string;
+  /** How much the decision mattered for the reputation (0..1). */
+  weight?: number;
 }
 
 export type Judgment = "strong" | "fair" | "weak";
@@ -201,6 +227,10 @@ export interface BoardItem {
   decision?: MeetingDecision;
   /** Filled when the risky part of the outcome has been rolled. */
   result?: { good: boolean; text: string; month: number };
+  /** The conditions on offer; missing in older games (then derived from the template). */
+  covenants?: CovenantSetup;
+  /** After a decision with conditions: one follow-up meeting until the end of month `until`. */
+  followUp?: { until: number; done: boolean; missed?: boolean };
 }
 
 export interface CalendarEntry {
@@ -540,7 +570,8 @@ export type ActionKind =
   | "foundFamilyOffice"
   | "hire"
   | "buyout"
-  | "raiseFund";
+  | "raiseFund"
+  | "followUp";
 
 export type GameAction =
   | { type: "dd"; startupId: string }
@@ -549,7 +580,8 @@ export type GameAction =
   | { type: "question"; itemId: string; questionId: string }
   | { type: "cfo"; itemId: string }
   | { type: "pretalk"; itemId: string; seat: SeatId }
-  | { type: "meeting"; itemId: string; argument: string | null; vote: Vote }
+  | { type: "meeting"; itemId: string; argument: string | null; vote: Vote; covenant?: CovenantId }
+  | { type: "followUp"; itemId: string }
   | { type: "founderCall"; startupId: string }
   | { type: "learn" }
   | { type: "readMail"; mailId: string }

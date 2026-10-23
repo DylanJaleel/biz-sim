@@ -306,6 +306,52 @@ export const LESSONS: Lesson[] = [
     example: "Dein Anteil ist beim Börsengang 1 Mio. € wert. 500.000 € bekommst du sofort; fällt der Markt in sechs Monaten um 20 %, bringt der Rest 400.000 €.",
     inGame: "Große, wachsende Firmen (ab 12 Mio. € Wert) bekommen manchmal das Angebot eines Börsengangs. Die gesperrte Hälfte folgt dem Tech-Index.",
   },
+  {
+    id: "covenants",
+    title: "Auflagen und Covenants",
+    summary:
+      "Investoren und Banken sagen selten einfach Ja. Sie knüpfen ihr Geld an Bedingungen: Covenants sind vereinbarte Kennzahlen, etwa eine Mindestkasse oder eine Höchstverschuldung. Reißt eine, darf der Geldgeber nachverhandeln oder kündigen.",
+    rule: "Eine gute Auflage trifft das eigentliche Risiko. Eine Auflage, die nichts absichert, kostet nur Zeit und Vertrauen.",
+    example: "Ein Kredit über 500.000 € mit der Auflage: Die Kasse darf nie unter drei Monatskosten fallen. Fällt sie darunter, muss die Firma der Bank einen Sparplan vorlegen.",
+    inGame:
+      "Wer im Beirat „Auflagen“ wählt, sagt auch welche. Von drei Auflagen passt eine. Welche, verrät die Rückfrage zum Risiko, der CFO oder ein Vorgespräch. Eine Auflage wirkt einen Monat später und nur ganz, wenn du sie im Folgetermin nachprüfst.",
+  },
+  {
+    id: "stage_gate",
+    title: "Stage-Gate und Meilensteinfinanzierung",
+    summary:
+      "Geld kommt nicht auf einmal, sondern in Tranchen. Die nächste Tranche gibt es erst, wenn ein vorher vereinbarter Meilenstein erreicht ist, etwa ein Umsatzziel oder ein fertiges Produkt. So begrenzt der Geldgeber seinen Schaden, wenn ein Vorhaben scheitert.",
+    rule: "Lohnt sich bei großem Einsatz und unsicherem Ausgang. Bei einem sicheren Vorhaben kostet es nur Tempo.",
+    example: "Statt 300.000 € für ein neues Produkt: 100.000 € jetzt, der Rest nach 50 zahlenden Testkunden. Scheitert der Test, sind 200.000 € gerettet.",
+    inGame: "Die Auflage „Meilenstein zuerst“ passt zu großen Wetten mit offenem Ausgang, etwa einem zweiten Produkt oder einem Zukauf.",
+  },
+  {
+    id: "zustimmungsvorbehalt",
+    title: "Zustimmungsvorbehalt",
+    summary:
+      "Bestimmte Geschäfte darf die Geschäftsführung nur mit Zustimmung des Beirats oder Aufsichtsrats abschließen, etwa große Einstellungen, Kredite oder Verträge über einer Wertgrenze. Das steht in der Satzung oder Geschäftsordnung.",
+    rule: "Ein Vetorecht schützt, wo Vertrauen oder Erfahrung fehlen. Wo die Führung es im Griff hat, wirkt es wie Misstrauen und bremst.",
+    example: "Einstellungen über 80.000 € Jahresgehalt und alle Verträge über 50.000 € brauchen die Zustimmung des Beirats.",
+    inGame: "Die Auflage „Vetorecht des Beirats“ passt, wenn das Vertrauen in die Steuerung angeschlagen ist oder der Plan schnell Personal aufbaut.",
+  },
+  {
+    id: "pilotprojekt",
+    title: "Pilotprojekt und Testmarkt",
+    summary:
+      "Bevor eine Firma etwas groß ausrollt, testet sie es im Kleinen: in einer Stadt, mit wenigen Kunden, für ein paar Monate. Der Pilot liefert den Beleg, dass Kunden wirklich kaufen, bevor das große Geld fließt.",
+    rule: "Ein Pilot lohnt sich, wenn die Nachfrage die offene Frage ist. Ist sie belegt, verschenkt er nur Zeit.",
+    example: "Ein Lieferdienst startet erst in Köln-Ehrenfeld. Nach drei Monaten zeigt sich: Nur ein Drittel der Kunden bestellt ein zweites Mal. Der große Start wird verschoben und das Angebot verbessert.",
+    inGame: "Die Auflage „Pilot zuerst“ passt zu Expansionen, neuen Preisen und neuen Angeboten, besonders bei schwacher Marktstellung.",
+  },
+  {
+    id: "budgetdeckel",
+    title: "Budgetdeckel",
+    summary:
+      "Ein Vorhaben bekommt eine feste Obergrenze für Ausgaben (Cap). Was darüber hinausgeht, muss neu genehmigt werden. Das schützt die Kasse, wenn Kosten davonlaufen.",
+    rule: "Der Deckel passt, wenn das Geld knapp ist. Ist genug da, bremst er nur.",
+    example: "Die Werbekampagne darf höchstens 40.000 € kosten statt der geplanten 60.000 €. Bringen die ersten 40.000 € genug Kunden, wird nachgelegt.",
+    inGame: "Die Auflage „Budgetdeckel“ passt bei kurzer Reichweite und teuren Plänen.",
+  },
 ];
 
 /** Order in which "Weiterbildung" unlocks cards. */
@@ -330,6 +376,11 @@ export const CURRICULUM = [
   "pre_post_money",
   "pro_rata",
   "stimmrechte",
+  "covenants",
+  "budgetdeckel",
+  "pilotprojekt",
+  "stage_gate",
+  "zustimmungsvorbehalt",
   "down_round",
   "secondary",
   "netzwerk",

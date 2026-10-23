@@ -117,6 +117,7 @@ export const ACTION_DAYS = {
   hire: 1,
   buyout: 3,
   raiseFund: 3,
+  followUp: 1,
 } as const;
 
 // Company model
@@ -156,9 +157,21 @@ export const JUDGMENT_REPUTATION = { strong: 4, fair: 1, weak: -3 } as const;
 export const RESULT_REPUTATION = { good: 2, bad: -2 } as const;
 export const FOUNDER_CALL = { trust: 6, morale: 2 } as const;
 export const PROJECTION_MONTHS = 12;
-/** Gap to the best outcome (share of its value) that still counts as strong or fair judgment. */
-export const STRONG_GAP = 0.02;
-export const FAIR_GAP = 0.1;
+/** Gap to the best option, as share of the decision's spread (best minus worst), that still counts as strong or fair judgment. */
+export const STRONG_GAP = 0.12;
+export const FAIR_GAP = 0.35;
+/** Spread of a decision relative to the best value: below `min` the choice moves no reputation, from `full` on all of it. */
+export const JUDGMENT_STAKES = { min: 0.01, full: 0.2 } as const;
+
+// Conditions ("Auflagen"): the player picks which one; one of three fits.
+/** Conditions start this many months later than a plain yes. */
+export const CONDITION_DELAY = 1;
+/** The follow-up meeting has to happen within this many months after the decision. */
+export const FOLLOW_UP_MONTHS = 2;
+/** Without follow-up, this share of the benefit of a condition is lost, and the management takes it less seriously. */
+export const FOLLOW_UP_MISSED = { share: 0.5, trust: -2 } as const;
+/** The management wanted a plain yes and the player asked for conditions: the team loses some drive. */
+export const CONDITIONS_TEMPO = { morale: -3 } as const;
 
 // Phase 2: rounds, shares, network
 /** A round starts when the money lasts less than this many months. */

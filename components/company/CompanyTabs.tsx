@@ -21,7 +21,7 @@ export function CompanyTabs({ panes, children }: { panes: CompanyPane[]; childre
     () => window.location.hash,
     () => "",
   );
-  const fromHash = hash === "#anteile" ? "anteile" : hash.startsWith("#top-") ? "agenda" : null;
+  const fromHash = hash === "#anteile" ? "anteile" : hash === "#auflagen" || hash === "#folgetermine" ? "auflagen" : hash.startsWith("#top-") ? "agenda" : null;
   const known = (id: string | null) => (id && panes.some((p) => p.id === id) ? id : null);
   const active = known(chosen) ?? known(fromHash) ?? panes[0]?.id ?? "";
 

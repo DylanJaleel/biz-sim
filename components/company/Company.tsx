@@ -11,6 +11,7 @@ import { CapTableBar } from "@/components/shares/CapTableBar";
 import { fmtPct } from "@/components/shares/holders";
 import { Disclosure } from "@/components/ui/Disclosure";
 import { CompanyTabs, type CompanyPane } from "./CompanyTabs";
+import { CovenantPrep } from "./CovenantPrep";
 import { ForecastTool } from "./ForecastTool";
 import { LEANING_LABEL, PACE_LABEL, PHASE_LABEL } from "./labels";
 import { Sparkline } from "./Sparkline";
@@ -40,6 +41,7 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
     ...(view.agenda.length > 0 || active ? [{ id: "agenda", label: "Tagesordnung" }] : []),
     { id: "zahlen", label: "Zahlen" },
     ...(!corporate ? [{ id: "anteile", label: "Gesellschafter" }] : []),
+    ...(view.agenda.length > 0 || view.followUps.length > 0 ? [{ id: "auflagen", label: "Auflagen" }] : []),
     ...(active && !corporate ? [{ id: "rechner", label: "Rechner" }] : []),
     ...(view.past.length > 0 ? [{ id: "entscheidungen", label: "Entscheidungen" }] : []),
     { id: "beirat", label: board },
@@ -183,10 +185,14 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
                         {(["go", "conditions", "no"] as const).map((v) => (
                           <div key={v} className={`option option--${v}`}>
                             <span className="option__vote">{VOTE_LABEL[v]}</span>
-                            <span>{item.outcomeLabels[v]}</span>
+                            <span>{v === "conditions" ? item.covenants.options.map((c) => c.name).join(" · ") : item.outcomeLabels[v]}</span>
                           </div>
                         ))}
                       </div>
+
+                      <p className="item__covenant-link muted small">
+                        Bei „Auflagen“ wählst du in der Sitzung, welche. <a href="#auflagen">Auflagen vorbereiten</a>
+                      </p>
 
                       <Disclosure title="Mehr vorbereiten" hint="Rückfragen, CFO, Vorgespräche" quietOnWide className="item__prep">
                         <h3 className="item__h">Rückfragen an {corporate ? "den Vorstand" : "die Gründung"}</h3>
@@ -241,12 +247,30 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
                                 </span>
                               </div>
                             ))}
+                            {item.covenants.plans?.map((o) => (
+                              <div role="row" key={o.id} className="cfo-table__row cfo-table__row--conditions cfo-table__row--covenant">
+                                <span role="cell">
+                                  <b>Auflage</b> {o.name}
+                                </span>
+                                <span role="cell">{eur(o.cashAfter)}</span>
+                                <span role="cell">{runwayText(o.runwayAfter)}</span>
+                                <span role="cell">
+                                  {eur(o.outlook.value)}
+                                  {o.outlook.chance !== undefined && (
+                                    <small>
+                                      {" "}
+                                      · {Math.round(o.outlook.chance * 100)} % Chance: {eur(o.outlook.good ?? 0)}, sonst {eur(o.outlook.bad ?? 0)}
+                                    </small>
+                                  )}
+                                </span>
+                              </div>
+                            ))}
                           </div>
                         ) : (
                           <div className="item__row">
                             <p className="muted">
-                              {view.analyst ? "Dein Analyst" : "Der CFO"} rechnet jede Option durch: Kasse, Runway und was {corporate ? "die Firma" : "dein Anteil"} in einem Jahr
-                              wert sein dürfte.
+                              {view.analyst ? "Dein Analyst" : "Der CFO"} rechnet jede Option durch, auch die drei Auflagen: Kasse, Runway und was{" "}
+                              {corporate ? "die Firma" : "dein Anteil"} in einem Jahr wert sein dürfte.
                             </p>
                             <ActionButton action={{ type: "cfo", itemId: item.id }} revision={revision} days={prepDays(ACTION_DAYS.cfo)} size="sm">
                               Durchrechnen lassen
@@ -311,6 +335,8 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
                     </p>
                   </section>
                 )}
+
+            <CovenantPrep view={view} revision={revision} />
 
             <section className="panel" data-pane="zahlen">
               <div className="panel__row">

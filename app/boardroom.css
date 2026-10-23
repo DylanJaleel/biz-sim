@@ -1970,3 +1970,109 @@
     min-height: 40px;
   }
 }
+
+/* Auflagen: welche Auflage, nicht nur ob. */
+.choice__group,
+.choice__group:hover {
+  border-color: var(--line);
+  background: var(--surface-2);
+  cursor: default;
+}
+
+.choice__group:active {
+  transform: none;
+}
+
+.covenant-chips {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 6px;
+  width: 100%;
+}
+
+.covenant-chip {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--maybe) 45%, var(--line));
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+
+.covenant-chip:hover {
+  border-color: var(--maybe);
+  background: var(--maybe-soft);
+}
+
+.covenant-chip:disabled {
+  opacity: 0.5;
+}
+
+.covenant-chip b {
+  font-size: 14px;
+}
+
+.covenant-chip small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.covenant-note {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--maybe);
+  border-radius: 8px;
+  background: var(--maybe-soft);
+  font-size: 14px;
+}
+
+.covenant-note p {
+  margin: 0;
+}
+
+.covenant-note p + p {
+  margin-top: 6px;
+}
+
+.covenant-note--hit {
+  border-left-color: var(--agree);
+}
+
+.covenant-note--miss {
+  border-left-color: var(--disagree);
+}
+
+.outlook__row.is-fit .outlook__label::after {
+  content: " ✓";
+  color: var(--agree);
+}
+
+/* Querformat am Handy: Die Auflagen nur mit Namen, die Erklärung steht in der Vorbereitung. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .covenant-chips {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .covenant-chip {
+    min-height: 40px;
+    padding: 6px 8px;
+  }
+
+  .covenant-chip b {
+    font-size: 13px;
+  }
+
+  .covenant-chip small,
+  .choice__group .choice__sub {
+    display: none;
+  }
+}

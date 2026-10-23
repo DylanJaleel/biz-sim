@@ -113,7 +113,10 @@ export function forecast(s: Startup, levers: Levers): Forecast {
   if (levers.scenario === "weak") {
     lines.push("Im schwachen Szenario wächst die Firma nur halb so schnell. Fixkosten und Tilgung bleiben trotzdem.");
   }
-  const warning = plan.runway ? `In Monat ${plan.runway} ist die Kasse leer. Vorher braucht die Firma neues Geld oder niedrigere Kosten.` : null;
+  if ((plan.runway ?? Infinity) <= 6) {
+    lines.push("Hinweis für den Beirat: Reicht das Geld keine sechs Monate, spricht viel für einen Budgetdeckel als Auflage. Ob er passt, zeigt die Rückfrage zum Risiko.");
+  }
+  const warning = plan.runway ?`In Monat ${plan.runway} ist die Kasse leer. Vorher braucht die Firma neues Geld oder niedrigere Kosten.` : null;
 
   return {
     plan: plan.points,
