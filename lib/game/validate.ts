@@ -96,6 +96,17 @@ export function parseAction(input: unknown): GameAction | null {
       return id(a.contactId) ? { type: "meetContact", contactId: a.contactId } : null;
     case "introContact":
       return id(a.contactId) && id(a.startupId) ? { type: "introContact", contactId: a.contactId, startupId: a.startupId } : null;
+    case "favor":
+      return id(a.favorId) && typeof a.accept === "boolean" ? { type: "favor", favorId: a.favorId, accept: a.accept } : null;
+    case "event":
+      if (!id(a.eventId) || (a.move !== "accept" && a.move !== "decline")) return null;
+      if (a.talk !== undefined && typeof a.talk !== "boolean") return null;
+      return { type: "event", eventId: a.eventId, move: a.move, ...(a.talk !== undefined ? { talk: a.talk } : {}) };
+    case "specialist":
+      if (!id(a.contactId) || (a.targetId !== undefined && !id(a.targetId))) return null;
+      return { type: "specialist", contactId: a.contactId, ...(a.targetId !== undefined ? { targetId: a.targetId } : {}) };
+    case "contactHint":
+      return id(a.contactId) && id(a.itemId) ? { type: "contactHint", contactId: a.contactId, itemId: a.itemId } : null;
     case "question":
       return id(a.itemId) && id(a.questionId) ? { type: "question", itemId: a.itemId, questionId: a.questionId } : null;
     case "cfo":

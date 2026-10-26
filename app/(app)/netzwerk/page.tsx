@@ -5,10 +5,10 @@ import { PageSkeleton } from "@/components/shell/PageSkeleton";
 
 export const metadata: Metadata = { title: "Netzwerk · Boardroom" };
 
-export default function NetworkPage() {
+export default function NetworkPage({ searchParams }: PageProps<"/netzwerk">) {
   return (
     <Suspense fallback={<PageSkeleton />}>
-      <Network />
+      <Network searchParams={searchParams} />
     </Suspense>
   );
 }

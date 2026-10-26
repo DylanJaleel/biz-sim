@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { HelpersPanel } from "@/components/network/HelpersPanel";
+import { specialistsFor } from "@/lib/game/network-views";
 import { notFound } from "next/navigation";
 import { currentGame } from "@/lib/current-game";
 import { monthLabel } from "@/lib/game/config";
@@ -125,6 +127,16 @@ export async function PlatformPage({ params }: { params: Promise<{ id: string }>
           )}
         </ul>
       </section>
+
+      {v.active && (
+        <HelpersPanel
+          helpers={specialistsFor(state, id)}
+          revision={revision}
+          targetId={id}
+          title="Spezialisten aus deinem Netzwerk"
+          lead="Eine Bankerin, die den Covenant lockert, oder eine Interim-Managerin, die Übergabe und Integration zusammenhält."
+        />
+      )}
 
       {!p && v.active && (
         <section className="panel" aria-labelledby="make-title">

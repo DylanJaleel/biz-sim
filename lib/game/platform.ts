@@ -27,6 +27,7 @@ import {
   WORKING_CASH_MONTHS,
 } from "./mna-config";
 import { between, eur, generateFindings, mio, mnaOf, pickOf, roundTo, times, type Ctx } from "./mna-core";
+import { INTERIM, KARTELL } from "./network-config";
 import { applyDelta } from "./sim";
 import type { AddonTarget, ExitOffer, Finding, GameState, IntegrationKind, Integration, ProcessKind, Startup } from "./types";
 
@@ -167,7 +168,8 @@ export function planAddon(state: GameState, s: Startup, a: AddonTarget, terms: P
   const adj = adjusted(a);
   const ep = annualEbitda(s.metrics);
   const bankNow = s.lbo?.bank ?? 0;
-  const room = Math.max(0, ADDON_MAX_LEVERAGE * (ep + adj.ebitda) - bankNow);
+  // A leveraged-finance contact may have negotiated more room (see network-life.ts).
+  const room = Math.max(0, (ADDON_MAX_LEVERAGE + (s.lbo?.headroom ?? 0)) * (ep + adj.ebitda) - bankNow);
   const st = structureDeal(price, adj.ebitda, terms, state.market.regime, 100, room);
   const fromPlatform = roundTo(Math.min(st.equity, Math.max(0, s.metrics.cash - 2 * s.metrics.opex)), 1000);
   const fromPlayer = st.equity - fromPlatform + st.fees;
@@ -336,7 +338,9 @@ export function platformMonth(ctx: Ctx, month: number, notes: string[], lines: M
   for (const a of m.addons.filter((x) => x.status === "review" && (x.reviewDue ?? 0) <= month)) {
     const s = state.startups.find((x) => x.id === a.platformId);
     const r = mnaRandom(state, `antitrust|${a.id}`);
-    if (!s || s.status !== "active" || !s.platform || r() < ANTITRUST_BLOCK) {
+    // An antitrust lawyer from the network prepared the filing: blocks become rare.
+    const block = (a.spec ?? []).includes("kartell") ? KARTELL.block : ANTITRUST_BLOCK;
+    if (!s || s.status !== "active" || !s.platform || r() < block) {
       a.status = "blocked";
       const refund = a.pending ? a.pending.fromPlayer - Math.round(a.pending.ev * TRANSACTION_COST) : 0;
       state.cash += Math.max(0, refund);
@@ -375,8 +379,10 @@ export function platformMonth(ctx: Ctx, month: number, notes: string[], lines: M
     const r = mnaRandom(state, `integration|${s.id}|${i.name}|${i.start}`);
     const def = INTEGRATION[i.kind];
     const strong = s.metrics.axes.management >= 60;
-    const synergy = r() < def.synergy + (strong ? 0.1 : 0) - (overload ? 0.25 : 0);
-    const churn = r() < def.churn + (overload ? 0.2 : 0) - (strong ? 0.05 : 0);
+    // An interim manager from the network on site: integrations go better.
+    const interim = (s.lbo?.interim ?? 0) >= month;
+    const synergy = r() < def.synergy + (strong ? 0.1 : 0) - (overload ? 0.25 : 0) + (interim ? INTERIM.synergy : 0);
+    const churn = r() < def.churn + (overload ? 0.2 : 0) - (strong ? 0.05 : 0) + (interim ? INTERIM.churn : 0);
     const rec = m.record;
     const parts: string[] = [];
     if (synergy) {

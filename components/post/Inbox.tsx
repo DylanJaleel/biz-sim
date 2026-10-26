@@ -7,6 +7,10 @@ import type { GameState, Mail, StartupStatus } from "@/lib/game/types";
 import { ActionButton } from "@/components/game/ActionButton";
 import { eur, pct, runwayText } from "@/components/game/format";
 import { usePlay } from "@/components/game/usePlay";
+import type { EventCard, FavorCard } from "@/lib/game/network-views";
+import { EventButtons, EventFacts, GuestStack } from "@/components/network/EventParts";
+import { FavorButtons, FavorDue, FavorFacts } from "@/components/network/FavorParts";
+import { NetAvatar } from "@/components/network/NetAvatar";
 
 export type MailView = Mail & { when: string };
 
@@ -55,6 +59,7 @@ export function Inbox({
   cash,
   ddDays,
   corporateSeat,
+  network,
 }: {
   mails: MailView[];
   deals: Record<string, DealView>;
@@ -63,6 +68,7 @@ export function Inbox({
   cash: number;
   ddDays: number;
   corporateSeat: GameState["corporateSeat"];
+  network?: { favors: Record<string, FavorCard>; events: Record<string, EventCard> };
 }) {
   const [selected, setSelected] = useState(initial);
   const { play } = usePlay(revision);
@@ -133,12 +139,23 @@ export function Inbox({
                 )}
               </p>
             ))}
+          {mail.action === "favor" && mail.favorId && <FavorAnswer favor={network?.favors[mail.favorId]} revision={revision} />}
+          {mail.action === "event" && mail.eventId && <EventAnswer event={network?.events[mail.eventId]} revision={revision} />}
           {mail.roundId && (
             <Link className="btn btn--primary" href={`/gv/${mail.roundId}`}>
               Zur Gesellschafterversammlung
             </Link>
           )}
-          {!mail.roundId && mail.startupId && (mail.kind === "shares" || mail.kind === "network") && (
+          {!mail.roundId &&
+            mail.startupId &&
+            (mail.kind === "shares" || mail.kind === "network") &&
+            deals[mail.startupId]?.status === "offered" &&
+            deals[mail.startupId]?.structured && (
+              <Link className="btn" href={`/uebernahme/${mail.startupId}`}>
+                Zur Übernahme
+              </Link>
+            )}
+          {!mail.roundId && mail.startupId && (mail.kind === "shares" || mail.kind === "network") && deals[mail.startupId]?.status !== "offered" && (
             <Link className="btn" href={`/firma/${mail.startupId}#anteile`}>
               Zur Firma
             </Link>
@@ -281,6 +298,41 @@ function Deal({ deal, revision, cash, ddDays }: { deal: DealView; revision: numb
           Absagen
         </ActionButton>
       </div>
+    </div>
+  );
+}
+
+/** A contact asks for a favour: yes costs days, money or a little risk; no cools the relationship. */
+function FavorAnswer({ favor, revision }: { favor?: FavorCard; revision: number }) {
+  if (!favor) return <p className="notice">Diese Bitte ist erledigt oder verstrichen.</p>;
+  return (
+    <div className="net-answer">
+      <div className="net-answer__head">
+        <NetAvatar name={favor.contactName} ring={favor.ring} size="sm" />
+        <b>{favor.contactName}</b>
+        <FavorDue favor={favor} />
+      </div>
+      <FavorFacts favor={favor} />
+      <FavorButtons favor={favor} revision={revision} />
+    </div>
+  );
+}
+
+/** An invitation: go (with or without a talk) or decline. */
+function EventAnswer({ event, revision }: { event?: EventCard; revision: number }) {
+  if (!event) return <p className="notice">Diese Veranstaltung ist vorbei.</p>;
+  return (
+    <div className="net-answer">
+      {event.status === "invited" && (
+        <>
+          <div className="net-answer__head">
+            <span className="nt-due">{event.month}</span>
+          </div>
+          <EventFacts event={event} />
+          <GuestStack event={event} />
+        </>
+      )}
+      <EventButtons event={event} revision={revision} />
     </div>
   );
 }

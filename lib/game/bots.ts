@@ -16,6 +16,7 @@ import { DD_MODULES, type DdModule } from "./mna-config";
 import { activeSearch, searchBlocker, searchCandidates, structureDeal } from "./lbo";
 import { annualEbitda, sizeMultiple } from "./ebitda";
 import { platformBlocker, platformOf } from "./platform";
+import { networkActions } from "./network-bots";
 import type { CovenantId, GameAction, GameState, Startup, Vote } from "./types";
 
 // Skript-Spieler für die Balance: Sie spielen das Spiel über die echte Engine.
@@ -249,7 +250,7 @@ export const mogulBot = (prefer?: string): Bot => {
           });
         if (!s.fund) actions.push({ type: "raiseFund" });
       }
-      return [...mnaActions(s, "mogul"), ...actions, ...base.month(s, random)];
+      return [...networkActions(s, "mogul"), ...mnaActions(s, "mogul"), ...actions, ...base.month(s, random)];
     },
   };
 };
@@ -398,7 +399,7 @@ export const expertBot = (style: ExpertStyle = {}, name = "Experte"): Bot => {
       }
       // A fast car saves the travel day on far jobs.
       if (!s.garage.includes("elektro") && s.reputation >= 40 && s.cash > 400_000) actions.push({ type: "buyVehicle", vehicleId: "elektro" });
-      return [...actions, ...mnaActions(s, "mogul"), ...expertBoard(s, analyst, random)];
+      return [...networkActions(s, "expert"), ...actions, ...mnaActions(s, "mogul"), ...expertBoard(s, analyst, random)];
     },
     end: (s) => {
       if (!depot) return [];
@@ -437,7 +438,11 @@ export const peBot = (prefer?: string): Bot => {
   return {
     name: "PE-Profi",
     pick: base.pick,
-    month: (s, random) => [...mnaActions(s, "pe"), ...base.month(s, random).filter((a) => !["acquire", "examine", "platform", "search"].includes(a.type))],
+    month: (s, random) => [
+      ...networkActions(s, "pe"),
+      ...mnaActions(s, "pe"),
+      ...base.month(s, random).filter((a) => !["acquire", "examine", "platform", "search", "specialist", "favor", "event"].includes(a.type)),
+    ],
   };
 };
 

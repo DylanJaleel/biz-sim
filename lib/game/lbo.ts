@@ -45,6 +45,7 @@ import {
 import { between, ddCost, eur, generateFindings, mio, mnaOf, pickOf, priceAfterFindings, roundTo, times, type Ctx } from "./mna-core";
 import { applyDelta, valuation } from "./sim";
 import { BUYOUT_REPUTATION } from "./config";
+import { INTERIM } from "./network-config";
 import type { AddonTarget, Delta, Finding, GameState, IncomeLines, LboState, Metrics, Regime, Searcher, SearchFund, Startup } from "./types";
 
 // Kaufen mit fremdem Geld: Übernahme eines Familienbetriebs mit Bankkredit,
@@ -564,7 +565,9 @@ function covenantTest(ctx: Ctx, s: Startup, month: number, texts: string[]): Sta
   const lbo = { ...s.lbo! };
   const lev = netLeverage(s);
   ctx.lesson("covenant");
-  if (lev <= COVENANT) {
+  // A leveraged-finance contact may have negotiated more room (see network-life.ts).
+  const limit = COVENANT + (lbo.headroom ?? 0);
+  if (lev <= limit) {
     if (lbo.status === "watch") {
       lbo.rate = Math.max(0, lbo.rate - COVENANT_PENALTY_RATE);
       lbo.payment = annuityOf(lbo.bank, lbo.rate, BANK_YEARS * 12);
@@ -588,20 +591,20 @@ function covenantTest(ctx: Ctx, s: Startup, month: number, texts: string[]): Sta
     const fee = roundTo(lbo.bank * COVENANT_WAIVER_FEE, 100);
     const next = pay({ ...s, lbo }, fee);
     texts.push(
-      `Covenant gebrochen: Nettoverschuldung ${levText}, erlaubt sind ${times(COVENANT)}. Die Bank verlangt ${eur(fee)} Gebühr und ${Math.round(COVENANT_PENALTY_RATE * 100)} Prozentpunkte mehr Zins.`,
+      `Covenant gebrochen: Nettoverschuldung ${levText}, erlaubt sind ${times(limit)}. Die Bank verlangt ${eur(fee)} Gebühr und ${Math.round(COVENANT_PENALTY_RATE * 100)} Prozentpunkte mehr Zins.`,
     );
     ctx.mail({
       kind: "system",
       from: "Hausbank",
       subject: `${s.name}: Covenant gebrochen`,
-      body: `Die Nettoverschuldung liegt bei ${levText}. Vereinbart waren höchstens ${times(COVENANT)}. Bis zum nächsten Quartal gilt: Zinsaufschlag, keine Ausschüttungen, keine Zukäufe. Liegt sie dann immer noch darüber, verlangen wir frisches Eigenkapital.`,
+      body: `Die Nettoverschuldung liegt bei ${levText}. Vereinbart waren höchstens ${times(limit)}. Bis zum nächsten Quartal gilt: Zinsaufschlag, keine Ausschüttungen, keine Zukäufe. Liegt sie dann immer noch darüber, verlangen wir frisches Eigenkapital.`,
       startupId: s.id,
     });
     return next;
   }
   if (lbo.status !== "cure") {
     const e = Math.max(0, annualEbitda(s.metrics));
-    const amount = roundTo(Math.max(lbo.bank * 0.1, lbo.bank - 0.9 * COVENANT * e - Math.max(0, s.metrics.cash - 2 * s.metrics.opex)), 1000);
+    const amount = roundTo(Math.max(lbo.bank * 0.1, lbo.bank - 0.9 * limit * e - Math.max(0, s.metrics.cash - 2 * s.metrics.opex)), 1000);
     lbo.status = "cure";
     lbo.cure = { amount, due: month + 1 };
     texts.push(`Covenant zum zweiten Mal gebrochen (${levText}). Die Bank verlangt ${eur(amount)} Eigenkapital.`);
@@ -709,22 +712,24 @@ function handover(ctx: Ctx, s: Startup, month: number, texts: string[]): Startup
   const operator = search?.searcher.operator ?? 45;
   const seller = (lbo.earnouts.length > 0 ? 0.6 : 1) * (lbo.vendors.length > 0 ? 0.85 : 1);
   const rollover = s.capTable.some((h) => h.id === "ceo" && h.kind === "founder");
+  // An interim manager from the network on site: the handover goes smoother.
+  const steady = (lbo.interim ?? 0) >= month ? INTERIM.handoverRisk : 1;
   let next = s;
   const once = (id: string) => !next.lbo!.handover.includes(id);
   const mark = (id: string) => (next = { ...next, lbo: { ...next.lbo!, handover: [...next.lbo!.handover, id] } });
-  if (once("patriarch") && r() < HANDOVER_RISK.patriarch * seller * (rollover ? 1.4 : 1) * (search ? 0.8 : 1.2)) {
+  if (once("patriarch") && r() < HANDOVER_RISK.patriarch * seller * (rollover ? 1.4 : 1) * (search ? 0.8 : 1.2) * steady) {
     mark("patriarch");
     next = applyDelta(next, { trust: -10, morale: -6, axes: { management: -4 } });
     texts.push("Der Altinhaber mischt sich ein: Er gibt Anweisungen am Geschäftsführer vorbei, die Belegschaft weiß nicht, wer entscheidet.");
   }
   const dd = (next.offer?.dd ?? []).includes("commercial");
-  if (once("customer") && r() < HANDOVER_RISK.customer * (next.metrics.topCustomer > 0.3 ? 1.5 : 0.6) * (dd ? 0.6 : 1) * seller) {
+  if (once("customer") && r() < HANDOVER_RISK.customer * (next.metrics.topCustomer > 0.3 ? 1.5 : 0.6) * (dd ? 0.6 : 1) * seller * steady) {
     mark("customer");
     const loss = Math.max(0.05, next.metrics.topCustomer * 0.6);
     next = applyDelta(next, { revenuePct: -loss, topCustomer: 0.15 - next.metrics.topCustomer, morale: -4 });
     texts.push(`Der größte Kunde geht nach dem Eigentümerwechsel zur Konkurrenz. Rund ${Math.round(loss * 100)} % Umsatz fallen weg.`);
   }
-  if (once("keyPerson") && r() < HANDOVER_RISK.keyPerson * (1.3 - operator / 100)) {
+  if (once("keyPerson") && r() < HANDOVER_RISK.keyPerson * (1.3 - operator / 100) * steady) {
     mark("keyPerson");
     next = applyDelta(next, { growth: -0.003, morale: -5, axes: { management: -8 } });
     texts.push("Der Prokurist kündigt. Er kannte jeden Kunden persönlich; ein Teil des Wissens geht mit ihm.");

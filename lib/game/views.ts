@@ -34,7 +34,8 @@ import { annualEbitda } from "./ebitda";
 import { PLATFORM_MIN_EBITDA, PLATFORM_REPUTATION } from "./mna-config";
 import { platformOf } from "./platform";
 import { mnaTasks } from "./mna-views";
-import { CONTACTS, RING_LABEL, ringOpen, type ContactDef, type Ring } from "./network";
+import { CONTACTS, personOf, RING_LABEL, ringOpen, type ContactDef, type Ring } from "./network";
+import { networkTasks } from "./network-views";
 import { templateOf } from "./content";
 import { daysLeft, fundBlocker, fundSize, itemOf, netWorth, previewMeeting, sittingToday, startupOf, syndicateBlocker } from "./engine";
 import { lessonOf } from "./lessons";
@@ -240,6 +241,11 @@ export function deskView(state: GameState, lessonsTotal: number): DeskView {
       tone: expires <= 0 ? "urgent" : "normal",
     });
   }
+  // Hurried network tasks (favour about to run out, invitation this month, contact cooling off) go right behind the urgent ones (and the lead task), the rest stays at the end.
+  const network = networkTasks(state);
+  const lastUrgent = tasks.reduce((at, t, i) => (t.tone === "urgent" ? i : at), -1);
+  tasks.splice(Math.max(lastUrgent + 1, Math.min(tasks.length, 1)), 0, ...network.filter((t) => t.hurry).map(({ text, href, tone }) => ({ text, href, tone })));
+  tasks.push(...network.filter((t) => !t.hurry));
   const step = nextStepView(state);
   if (step?.action) tasks.unshift({ text: `Alles bereit: ${step.action.label}. Das ist dein nächster Karriereschritt.`, href: "/holding", tone: "urgent" });
   const unread = state.mails.filter((m) => !m.read).length;
@@ -541,7 +547,19 @@ export function networkView(state: GameState): NetworkView {
     const c = state.contacts.find((x) => x.id === def.id) ?? { id: def.id, warmth: 0, met: false };
     const open = ringOpen(state, def.ring);
     const cooldown = c.lastIntro === undefined ? 0 : Math.max(0, INTRO_COOLDOWN - (state.month - c.lastIntro));
-    return { ...def, warmth: c.warmth, met: c.met, open, cooldown, canIntro: open && c.met && c.warmth >= WARMTH_INTRO_MIN && cooldown === 0 };
+    const p = personOf(state, c);
+    return {
+      ...def,
+      name: p.name,
+      role: p.role,
+      org: p.org,
+      bio: p.bio,
+      warmth: c.warmth,
+      met: c.met,
+      open,
+      cooldown,
+      canIntro: open && c.met && c.warmth >= WARMTH_INTRO_MIN && cooldown === 0,
+    };
   });
   return {
     contacts,

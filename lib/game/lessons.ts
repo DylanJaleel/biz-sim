@@ -17,8 +17,7 @@ export const LESSONS: Lesson[] = [
   {
     id: "runway",
     title: "Runway und Burn",
-    summary:
-      "Burn ist das Geld, das eine Firma pro Monat mehr ausgibt, als sie einnimmt. Runway (Reichweite) sagt, wie viele Monate das vorhandene Geld noch reicht.",
+    summary: "Burn ist das Geld, das eine Firma pro Monat mehr ausgibt, als sie einnimmt. Runway (Reichweite) sagt, wie viele Monate das vorhandene Geld noch reicht.",
     rule: "Reichweite = Kasse ÷ monatlicher Verbrauch",
     example: "240.000 € Kasse und 30.000 € Verbrauch im Monat: Das Geld reicht 8 Monate.",
     inGame: "Fällt die Reichweite unter drei Monate, kommen Krisen-Vorlagen. Ist die Kasse leer, droht eine Notfinanzierung oder die Insolvenz.",
@@ -44,8 +43,7 @@ export const LESSONS: Lesson[] = [
   {
     id: "bewertung",
     title: "Wie eine Firma bewertet wird",
-    summary:
-      "Junge Firmen werden selten nach Gewinn bewertet, sondern nach Umsatz und Wachstum. Schnell wachsende Firmen bekommen ein höheres Vielfaches ihres Jahresumsatzes.",
+    summary: "Junge Firmen werden selten nach Gewinn bewertet, sondern nach Umsatz und Wachstum. Schnell wachsende Firmen bekommen ein höheres Vielfaches ihres Jahresumsatzes.",
     rule: "Bewertung ≈ Jahresumsatz × Multiple; das Multiple steigt mit dem Wachstum",
     example: "150.000 € Jahresumsatz und 6 % Wachstum im Monat: Multiple etwa 6, Bewertung um 0,9 Mio. €.",
     inGame: "Im Spiel steigt das Multiple mit der monatlichen Wachstumsrate. Wachstum ist deshalb oft mehr wert als kurzfristiger Gewinn.",
@@ -209,6 +207,54 @@ export const LESSONS: Lesson[] = [
     inGame: "Kontakte pflegen kostet einen Tag. Einen Kontakt in eine Firma einbringen kostet Wärme, und erst ab einem guten Ruf öffnen sich die äußeren Ringe.",
   },
   {
+    id: "reziprozitaet",
+    title: "Beziehungskapital und Gegenseitigkeit",
+    summary:
+      "Ein Netzwerk ist kein Automat, sondern ein Konto: Wer Gefallen tut, darf später um Gefallen bitten. Wer nur nimmt, bekommt irgendwann ein Nein. Beziehungskapital wächst langsam und ist schnell verbraucht.",
+    rule: "Erst geben, dann nehmen. Eine abgelehnte Bitte kostet weniger als eine, die man unbeantwortet liegen lässt.",
+    example: "Die Steuerberaterin bittet dich, einen Mandanten anzusehen. Zwei Tage später hilft sie deiner Firma doppelt so gern und fragt nicht, was es kostet.",
+    inGame:
+      "Kontakte bitten per Post um Gefallen. Zusagen kostet Tage, Geld oder ein kleines Risiko und füllt das Vertrauenskonto. Ist es gut gefüllt, helfen sie stärker und öfter; ist es leer, sagen sie Nein.",
+  },
+  {
+    id: "warm_intro",
+    title: "Warm Intro",
+    summary:
+      "Eine Empfehlung von jemandem, dem beide Seiten vertrauen, öffnet Türen, an denen kalte Anfragen abprallen. Investoren, Einkäufer und Banken lesen eine warme Empfehlung zuerst.",
+    rule: "Die Empfehlung ist so viel wert wie das Vertrauen in den, der empfiehlt.",
+    example: "Eine kalte E-Mail an eine VC-Partnerin wird in einem von hundert Fällen beantwortet. Eine Empfehlung ihres Lieblingsgründers fast immer.",
+    inGame: "„Einbringen“ und der Hinweis vor einer Sitzung sind Warm Intros: Sie kosten Wärme, nicht Tage. Je höher die Person aufgestiegen ist, desto mehr wiegt ihre Hilfe.",
+  },
+  {
+    id: "deal_sourcing",
+    title: "Deal Sourcing",
+    summary:
+      "Gute Investoren warten nicht auf Angebote, sie finden sie. Deals aus dem eigenen Netzwerk (proprietär) sind oft günstiger als Auktionen, in denen viele Bieter den Preis treiben.",
+    rule: "Jeder zusätzliche Bieter kostet Rendite. Wer die Inhaberin zuerst kennt, verhandelt allein.",
+    example: "Eine Nachfolge über eine Empfehlung kostet 4,5 × EBITDA, dieselbe Firma in der Auktion einer Boutique 5,2 ×.",
+    inGame:
+      "Gefallen, Veranstaltungen und Spezialisten bringen Deals und Mandate. Bietet ein Kontakt bei derselben Firma mit, steigt der Preis, bis die Beziehung warm genug ist, dass er zurückzieht.",
+  },
+  {
+    id: "berater_mna",
+    title: "Berater im M&A-Prozess",
+    summary:
+      "Bei einem Firmenkauf arbeiten viele mit: Wirtschaftsprüfer prüfen Zahlen und Steuern, Anwälte die Verträge, Banken strukturieren den Kredit, Kartellrechtler melden den Zusammenschluss an, Interim-Manager halten den Betrieb in der Übergabe zusammen.",
+    rule: "Berater kosten Geld, Fehler ohne sie meist mehr.",
+    example: "Die Legal DD findet eine Change-of-Control-Klausel des größten Kunden. Ohne Prüfung hätte der Käufer 20 % Umsatz verloren.",
+    inGame:
+      "Spezialisten aus Ring 2 und 3 helfen bei Übernahmen, Mandaten und Plattformen: günstigere Prüfung, mehr Spielraum beim Covenant, weniger Kartellrisiko, ruhigere Übergaben.",
+  },
+  {
+    id: "netzwerk_events",
+    title: "Netzwerk-Veranstaltungen",
+    summary:
+      "Konferenzen, Galas und Empfänge sind teuer und kosten Zeit, aber man trifft viele auf einmal und lernt neue Leute kennen. Wer auf der Bühne steht, wird angesprochen, statt selbst ansprechen zu müssen.",
+    rule: "Ein Abend mit fünf Bekannten ersetzt fünf Einzeltermine, aber nur, wenn die Richtigen da sind.",
+    example: "Auf der M&A-Konferenz triffst du die Wirtschaftsprüferin, den Anwalt und die Bankerin, und in der Kaffeepause fragt jemand nach einem Mandat.",
+    inGame: "Einladungen kommen einen Monat vorher in die Post. Wer zusagt, steht im Kalender. Manche Termine gibt es erst ab einem gewissen Ruf, Vorträge bringen Ruf.",
+  },
+  {
     id: "liquiditaet",
     title: "Liquidität",
     summary:
@@ -277,7 +323,8 @@ export const LESSONS: Lesson[] = [
       "Wer eine Firma kauft, muss nicht alles selbst bezahlen: Eine Bank leiht einen Teil des Kaufpreises. Das hebt die Rendite auf das eigene Geld, solange die Gewinne die Raten tragen. Läuft es schlecht, frisst die Rate das Eigenkapital.",
     rule: "Lohnt sich, wenn Ausschüttungen und Wertzuwachs größer sind als Zins und Tilgung.",
     example: "Kaufpreis 2 Mio. €, davon 800.000 € Kredit zu 5,5 %: Die Rate liegt bei rund 10.000 € im Monat. Schüttet die Firma 15.000 € im Monat aus, bleibt Geld übrig.",
-    inGame: "Familienbetriebe kaufst du mit Bankkredit bis 3× EBITDA. Der Kredit liegt in der Firma: Sie zahlt Zins und Tilgung aus ihrem Ertrag, und die Bank achtet auf den Covenant. Ältere Nachfolgen laufen mit einem Kaufkredit über dein Konto.",
+    inGame:
+      "Familienbetriebe kaufst du mit Bankkredit bis 3× EBITDA. Der Kredit liegt in der Firma: Sie zahlt Zins und Tilgung aus ihrem Ertrag, und die Bank achtet auf den Covenant. Ältere Nachfolgen laufen mit einem Kaufkredit über dein Konto.",
   },
   {
     id: "ausschuettung",
@@ -341,14 +388,14 @@ export const LESSONS: Lesson[] = [
     summary:
       "Bevor eine Firma etwas groß ausrollt, testet sie es im Kleinen: in einer Stadt, mit wenigen Kunden, für ein paar Monate. Der Pilot liefert den Beleg, dass Kunden wirklich kaufen, bevor das große Geld fließt.",
     rule: "Ein Pilot lohnt sich, wenn die Nachfrage die offene Frage ist. Ist sie belegt, verschenkt er nur Zeit.",
-    example: "Ein Lieferdienst startet erst in Köln-Ehrenfeld. Nach drei Monaten zeigt sich: Nur ein Drittel der Kunden bestellt ein zweites Mal. Der große Start wird verschoben und das Angebot verbessert.",
+    example:
+      "Ein Lieferdienst startet erst in Köln-Ehrenfeld. Nach drei Monaten zeigt sich: Nur ein Drittel der Kunden bestellt ein zweites Mal. Der große Start wird verschoben und das Angebot verbessert.",
     inGame: "Die Auflage „Pilot zuerst“ passt zu Expansionen, neuen Preisen und neuen Angeboten, besonders bei schwacher Marktstellung.",
   },
   {
     id: "budgetdeckel",
     title: "Budgetdeckel",
-    summary:
-      "Ein Vorhaben bekommt eine feste Obergrenze für Ausgaben (Cap). Was darüber hinausgeht, muss neu genehmigt werden. Das schützt die Kasse, wenn Kosten davonlaufen.",
+    summary: "Ein Vorhaben bekommt eine feste Obergrenze für Ausgaben (Cap). Was darüber hinausgeht, muss neu genehmigt werden. Das schützt die Kasse, wenn Kosten davonlaufen.",
     rule: "Der Deckel passt, wenn das Geld knapp ist. Ist genug da, bremst er nur.",
     example: "Die Werbekampagne darf höchstens 40.000 € kosten statt der geplanten 60.000 €. Bringen die ersten 40.000 € genug Kunden, wird nachgelegt.",
     inGame: "Die Auflage „Budgetdeckel“ passt bei kurzer Reichweite und teuren Plänen.",
@@ -360,7 +407,8 @@ export const LESSONS: Lesson[] = [
       "Familienunternehmen werden nach dem bewertet, was sie verdienen: EBITDA, also Gewinn vor Zinsen, Steuern und Abschreibungen. Der Unternehmenswert ist ein Vielfaches (Multiple) davon. Kleine Firmen kosten wenig, große mehr, weil sie sicherer sind und mehr Käufer sie bezahlen können.",
     rule: "Unternehmenswert = EBITDA × Multiple; Eigenkapitalwert = Unternehmenswert + Kasse − Schulden",
     example: "Eine Firma verdient 600.000 € EBITDA. Bei 5,5× ist sie 3,3 Mio. € wert. Hat sie 1 Mio. € Schulden, gehören den Eigentümern 2,3 Mio. €.",
-    inGame: "Firmen aus dem Nachfolge-Programm werden so bewertet: Das Vielfache steigt mit der Größe und dem Wachstum, ein Klumpenkunde drückt es. In Mandaten setzt du das Multiple selbst.",
+    inGame:
+      "Firmen aus dem Nachfolge-Programm werden so bewertet: Das Vielfache steigt mit der Größe und dem Wachstum, ein Klumpenkunde drückt es. In Mandaten setzt du das Multiple selbst.",
   },
   {
     id: "multiple_arbitrage",
@@ -368,7 +416,8 @@ export const LESSONS: Lesson[] = [
     summary:
       "Kleine Firmen werden mit einem niedrigen Vielfachen gehandelt, große mit einem höheren. Wer viele kleine kauft und zu einer großen Gruppe zusammenfügt, kann sie am Ende teurer verkaufen, als die Teile gekostet haben. Das ist der Kern von Buy-and-Build.",
     rule: "Wertgewinn = EBITDA des Zukaufs × (Multiple der Gruppe − bezahltes Multiple) − Integrationskosten",
-    example: "Ein Zukauf mit 200.000 € EBITDA kostet 4,5×, also 900.000 €. In einer Gruppe, die mit 7× bewertet wird, ist er 1,4 Mio. € wert. Kommen Kunden abhanden, ist der Vorteil schnell weg.",
+    example:
+      "Ein Zukauf mit 200.000 € EBITDA kostet 4,5×, also 900.000 €. In einer Gruppe, die mit 7× bewertet wird, ist er 1,4 Mio. € wert. Kommen Kunden abhanden, ist der Vorteil schnell weg.",
     inGame: "Deine Plattform kauft Firmen derselben Branche. Je größer das EBITDA der Gruppe, desto höher ihr Multiple beim Verkauf.",
   },
   {
@@ -378,7 +427,8 @@ export const LESSONS: Lesson[] = [
       "Ein Covenant ist eine Bedingung im Kreditvertrag, meist eine Obergrenze für die Verschuldung im Verhältnis zum Ertrag. Wird sie gebrochen, darf die Bank den Zins erhöhen, Ausschüttungen sperren, frisches Eigenkapital verlangen und im äußersten Fall den Kredit kündigen.",
     rule: "Nettoverschuldung ÷ EBITDA ≤ vereinbarte Grenze (im Spiel 3,5×)",
     example: "3 Mio. € Bankschulden, 1 Mio. € EBITDA: 3,0×, alles gut. Fällt das EBITDA in der Krise auf 800.000 €, sind es 3,75×: Covenant gebrochen.",
-    inGame: "Die Bank prüft jedes Quartal. Erster Bruch: Zinsaufschlag, keine Ausschüttung, kein Zukauf. Zweiter Bruch: Du musst Geld nachschießen, sonst verkauft die Bank die Firma.",
+    inGame:
+      "Die Bank prüft jedes Quartal. Erster Bruch: Zinsaufschlag, keine Ausschüttung, kein Zukauf. Zweiter Bruch: Du musst Geld nachschießen, sonst verkauft die Bank die Firma.",
   },
   {
     id: "earn_out",
@@ -387,7 +437,8 @@ export const LESSONS: Lesson[] = [
       "Ein Teil des Kaufpreises wird erst später gezahlt, und nur, wenn die Firma ein Ziel erreicht. So teilen Käufer und Verkäufer das Risiko, dass die Zahlen schöner aussehen, als sie sind. Der Verkäufer bleibt motiviert, die Übergabe gut zu machen.",
     rule: "Kaufpreis = fester Teil + bedingter Teil (fällig, wenn das Ziel erreicht ist)",
     example: "3 Mio. € Kaufpreis, davon 300.000 € als Earn-out nach zwei Jahren, wenn das EBITDA mindestens so hoch ist wie beim Kauf.",
-    inGame: "Bis 15 % des Preises. Nach 24 Monaten zahlt die Firma, wenn das EBITDA das Ziel erreicht; sonst entfällt der Betrag und der Verkäufer ist verärgert. Ein Earn-out senkt das Risiko einer holprigen Übergabe.",
+    inGame:
+      "Bis 15 % des Preises. Nach 24 Monaten zahlt die Firma, wenn das EBITDA das Ziel erreicht; sonst entfällt der Betrag und der Verkäufer ist verärgert. Ein Earn-out senkt das Risiko einer holprigen Übergabe.",
   },
   {
     id: "verkaeuferdarlehen",
@@ -414,7 +465,8 @@ export const LESSONS: Lesson[] = [
       "Post-Merger-Integration heißt: zwei Firmen werden eine. Einkauf, IT, Verwaltung und Standorte werden zusammengelegt, das spart Geld (Synergien). Dabei gehen oft Kunden und gute Leute verloren. Synergien kommen langsamer und seltener als im Plan.",
     rule: "Schnell integrieren: früher fertig, mehr Unruhe. Behutsam: teurer und länger, aber weniger Verluste.",
     example: "Zwei Speditionen legen ihre Disposition zusammen und sparen 120.000 € im Jahr. Drei Fahrer und ein Großkunde gehen zur Konkurrenz.",
-    inGame: "Jeder Zukauf deiner Plattform wird integriert. Dein Team schafft eine Integration gleichzeitig, mit Partnerin oder Associate mehr. Zu viele auf einmal kosten Einsparungen und Kunden.",
+    inGame:
+      "Jeder Zukauf deiner Plattform wird integriert. Dein Team schafft eine Integration gleichzeitig, mit Partnerin oder Associate mehr. Zu viele auf einmal kosten Einsparungen und Kunden.",
   },
   {
     id: "bieterverfahren",
@@ -466,6 +518,9 @@ export const CURRICULUM = [
   "down_round",
   "secondary",
   "netzwerk",
+  "reziprozitaet",
+  "warm_intro",
+  "deal_sourcing",
   "liquiditaet",
   "diversifikation",
   "dividendenrendite",
@@ -486,6 +541,8 @@ export const CURRICULUM = [
   "search_fund",
   "multiple_arbitrage",
   "pmi",
+  "berater_mna",
+  "netzwerk_events",
 ];
 
 export function lessonOf(id: string): Lesson {

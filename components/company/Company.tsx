@@ -12,6 +12,8 @@ import { fmtPct } from "@/components/shares/holders";
 import { Disclosure } from "@/components/ui/Disclosure";
 import { CompanyTabs, type CompanyPane } from "./CompanyTabs";
 import { CovenantPrep } from "./CovenantPrep";
+import { HelpersPanel } from "@/components/network/HelpersPanel";
+import { helpersForCompany, hintsFor } from "@/lib/game/network-views";
 import { ForecastTool } from "./ForecastTool";
 import { LEANING_LABEL, PACE_LABEL, PHASE_LABEL } from "./labels";
 import { Sparkline } from "./Sparkline";
@@ -342,7 +344,7 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
                   </section>
                 )}
 
-            <CovenantPrep view={view} revision={revision} />
+            <CovenantPrep view={view} revision={revision} hints={view.agenda.map((i) => hintsFor(state, i.id))} />
 
             <section className="panel" data-pane="zahlen">
               <div className="panel__row">
@@ -538,6 +540,7 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
                 Im Vorgespräch erfährst du, wohin jemand neigt und worauf es dieser Person ankommt. In der Sitzung hört sie dann genauer auf dein Argument.
               </p>
             </section>
+            {active && !corporate && <HelpersPanel helpers={helpersForCompany(state, s.id)} revision={revision} targetId={s.id} />}
           </aside>
         </div>
       </CompanyTabs>
