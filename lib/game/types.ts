@@ -581,6 +581,8 @@ export interface GameState {
   notices?: string[];
   /** M&A mandates, succession programme, buy-and-build (missing in older games). */
   mna?: MnaState;
+  /** Paid jobs done so far and the cities they took place in (for tombstones; the gig list itself is cleared after six months). */
+  gigLog?: { done: number; cities: string[] };
 }
 
 export type ActionKind =
@@ -864,6 +866,10 @@ export interface MnaRecord {
   covenantBreaches: number;
   forcedSales: number;
   platformExits: PlatformExitRecord[];
+  /** Sell-side auctions closed at or above the family's wish (missing in older games). */
+  auctionWins?: number;
+  /** Covenant breaches that ended without a forced sale: back under the limit, or cured with fresh equity. */
+  covenantRecovered?: number;
 }
 
 export interface MnaState {

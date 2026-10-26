@@ -530,6 +530,10 @@ a.grow:hover {
     inset 0 18px 30px -18px rgba(255, 200, 120, 0.5);
 }
 
+.shelf + .shelf {
+  margin-top: 22px;
+}
+
 .shelf::after {
   content: "";
   position: absolute;
@@ -1682,6 +1686,10 @@ a.grow:hover {
   a.glbl {
     display: inline-flex;
     align-items: center;
+    min-height: 40px;
+  }
+
+  .assist__tasks a {
     min-height: 40px;
   }
 }

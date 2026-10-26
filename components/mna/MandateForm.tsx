@@ -98,15 +98,20 @@ export function MandateForm(props: MandateFormProps) {
           Jede Prüfung kostet einen Tag.
         </p>
       </fieldset>
-      <ActionButton
-        action={{ type: "mandate", mandateId: props.id, move: "launch", multiple, process, dd, ...(sell ? { buyers } : {}) }}
-        revision={props.revision}
-        days={days}
-        variant="primary"
-        disabled={days > props.daysLeft}
-      >
-        {sell ? "Verkaufsprozess starten" : "Angebot abgeben"}
-      </ActionButton>
+      <div className="mna-bar">
+        <ActionButton
+          action={{ type: "mandate", mandateId: props.id, move: "launch", multiple, process, dd, ...(sell ? { buyers } : {}) }}
+          revision={props.revision}
+          days={days}
+          variant="primary"
+          disabled={days > props.daysLeft}
+        >
+          {sell ? "Verkaufsprozess starten" : "Angebot abgeben"}
+        </ActionButton>
+        <span className="mna-bar__text">
+          {sell ? "Forderung" : "Gebot"} {eur(multiple * props.ebitda)}
+        </span>
+      </div>
     </div>
   );
 }

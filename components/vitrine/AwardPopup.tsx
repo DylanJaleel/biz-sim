@@ -6,6 +6,9 @@ import { trophyOf } from "@/lib/game/trophies";
 import { usePlay } from "@/components/game/usePlay";
 import { Tomb } from "@/components/glass/Tomb";
 
+/** Up to this many further tombstones are named; beyond that the popup only counts them (old games can earn many at once). */
+const SHOW_TITLES = 2;
+
 /** Announces a new tombstone once; afterwards it waits in the cabinet. */
 export function AwardPopup({ ids, details, revision }: { ids: string[]; details: Record<string, string | undefined>; revision: number }) {
   const { play, pending } = usePlay(revision);
@@ -27,12 +30,14 @@ export function AwardPopup({ ids, details, revision }: { ids: string[]; details:
         <p>{first.story}</p>
         <p>
           Ab jetzt steht er in deiner Vitrine
-          {more > 0
-            ? `, zusammen mit ${more === 1 ? "einem weiteren" : `${more} weiteren`}: ${defs
-                .slice(1)
-                .map((d) => d.title)
-                .join(", ")}`
-            : ""}
+          {more === 0
+            ? ""
+            : more <= SHOW_TITLES
+              ? `, zusammen mit ${defs
+                  .slice(1)
+                  .map((d) => d.title)
+                  .join(", ")}`
+              : `, und ${more} weitere warten dort ebenfalls auf dich`}
           .
         </p>
         <div className="award__actions">

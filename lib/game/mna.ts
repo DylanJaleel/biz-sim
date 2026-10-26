@@ -395,6 +395,7 @@ function close(ctx: Ctx, md: Mandate, notes: string[], income: IncomeLines): voi
   const rep = MANDATE_REPUTATION_GAIN[mood];
   ctx.reputation(rep);
   if (mood === "happy") rec.happyClients += 1;
+  if (md.process === "auction" && md.side === "sell" && ev >= md.wish) rec.auctionWins = (rec.auctionWins ?? 0) + 1;
   const bank = state.contacts.find((c) => c.id === "bank");
   if (bank && mood !== "unhappy") {
     bank.met = true;

@@ -1,16 +1,16 @@
 import Link from "next/link";
 import { monthLabel } from "@/lib/game/config";
-import { SHELF_LABEL, TROPHIES, type TrophyShelf } from "@/lib/game/trophies";
+import { SHELF_LABEL, SHELF_ORDER, TROPHIES } from "@/lib/game/trophies";
 import { currentGame } from "@/lib/current-game";
 import { sceneStyle } from "@/components/glass/Tomb";
 import { Shelves } from "./Shelves";
 
-// Die Vitrine hinter dem Schreibtisch: drei Regale, fünfzehn Plätze. Was
+// Die Vitrine hinter dem Schreibtisch: fünf Regale. Was
 // verdient ist, steht im Licht; der Rest wartet als Umriss.
 
 export async function Vitrine() {
   const { state } = await currentGame();
-  const shelves = (["worth", "deals", "career"] as TrophyShelf[]).map((shelf) => ({
+  const shelves = SHELF_ORDER.map((shelf) => ({
     shelf,
     title: SHELF_LABEL[shelf],
     items: TROPHIES.filter((t) => t.shelf === shelf).map((t) => {

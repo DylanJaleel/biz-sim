@@ -27,7 +27,7 @@ export async function PlatformPage({ params }: { params: Promise<{ id: string }>
   const lbo = v.lbo;
   const headroom = Math.max(0, Math.min(1, (Number.isFinite(v.leverage) ? v.leverage : v.covenant) / v.covenant));
   return (
-    <div className="page mna">
+    <div className="page mna mna--platform">
       <header className="page__head">
         <nav className="crumbs" aria-label="Pfad">
           <Link href="/nachfolge">Nachfolge-Programm</Link>
@@ -153,91 +153,103 @@ export async function PlatformPage({ params }: { params: Promise<{ id: string }>
         <>
           <section className="panel" aria-labelledby="targets-title">
             <p className="eyebrow">Zukäufe</p>
-            <h2 id="targets-title" className="panel__title">
-              Kandidaten
-            </h2>
-            {v.targets.length === 0 ? (
-              <p className="muted">Gerade keine. Neue Kandidaten kommen alle paar Monate, öfter mit Partnerin und warmem Draht zum Deal-Flow.</p>
-            ) : (
-              <ul className="list">
-                {v.targets.map((t) => (
-                  <li key={t.id} className="list__row">
-                    {t.status === "review" ? <b>{t.name}</b> : <Link href={`/uebernahme/${t.id}`}>{t.name}</Link>}
-                    <span className="muted small">
-                      EBITDA {eur(t.ebitda)} · {eur(t.ev)} ({x(t.multiple)}) {t.status === "review" ? "· beim Kartellamt" : `· bis ${monthLabel(t.expires)}`}
-                    </span>
-                    {t.status === "open" && (
-                      <Link className="btn btn--sm" href={`/uebernahme/${t.id}`}>
-                        Prüfen und kaufen
-                      </Link>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
+            <Disclosure as="h2" headingId="targets-title" headingClass="panel__title" title="Kandidaten" hint={`${v.targets.length}`} defaultOpen={v.targets.length > 0}>
+              {v.targets.length === 0 ? (
+                <p className="muted">Gerade keine. Neue Kandidaten kommen alle paar Monate, öfter mit Partnerin und warmem Draht zum Deal-Flow.</p>
+              ) : (
+                <ul className="list mna-rows">
+                  {v.targets.map((t) => (
+                    <li key={t.id} className="list__row">
+                      {t.status === "review" ? <b>{t.name}</b> : <Link href={`/uebernahme/${t.id}`}>{t.name}</Link>}
+                      <span className="muted small">
+                        EBITDA {eur(t.ebitda)} · {eur(t.ev)} ({x(t.multiple)}) {t.status === "review" ? "· beim Kartellamt" : `· bis ${monthLabel(t.expires)}`}
+                      </span>
+                      {t.status === "open" && (
+                        <Link className="btn btn--sm" href={`/uebernahme/${t.id}`}>
+                          Prüfen und kaufen
+                        </Link>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Disclosure>
           </section>
 
           <section className="panel" aria-labelledby="int-title">
             <p className="eyebrow">Integration</p>
-            <h2 id="int-title" className="panel__title">
-              {p.integrations.length === 0
-                ? "Keine Integration läuft"
-                : `${p.integrations.length} Integration${p.integrations.length > 1 ? "en" : ""} (dein Team schafft ${v.capacity})`}
-            </h2>
-            <ul className="list">
-              {v.integrations.map((i) => (
-                <li key={i.name} className="list__row">
-                  <b>{i.name}</b>
-                  <span className="muted small">
-                    {i.kind === "fast" ? "schnell" : "behutsam"} · noch {i.left} Monat{i.left === 1 ? "" : "e"} · {eur(i.cost)} Kosten im Monat · EBITDA {eur(i.ebitda)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            {p.addons.length > 0 && (
-              <Disclosure title={`Bisher ${p.addons.length} Zukäufe`} as="h3">
-                <ul className="list">
-                  {p.addons.map((a) => (
-                    <li key={`${a.name}-${a.month}`} className="list__row">
-                      <b>{a.name}</b>
-                      <span className="muted small">
-                        {monthLabel(a.month)} · {eur(a.ev)} · {x(a.multiple)} EBITDA
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </Disclosure>
-            )}
+            <Disclosure
+              as="h2"
+              headingId="int-title"
+              headingClass="panel__title"
+              title={
+                p.integrations.length === 0
+                  ? "Keine Integration läuft"
+                  : `${p.integrations.length} Integration${p.integrations.length > 1 ? "en" : ""} (dein Team schafft ${v.capacity})`
+              }
+              defaultOpen={p.integrations.length > 0}
+            >
+              <ul className="list">
+                {v.integrations.map((i) => (
+                  <li key={i.name} className="list__row">
+                    <b>{i.name}</b>
+                    <span className="muted small">
+                      {i.kind === "fast" ? "schnell" : "behutsam"} · noch {i.left} Monat{i.left === 1 ? "" : "e"} · {eur(i.cost)} Kosten im Monat · EBITDA {eur(i.ebitda)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              {p.addons.length > 0 && (
+                <Disclosure title={p.addons.length === 1 ? "Bisher ein Zukauf" : `Bisher ${p.addons.length} Zukäufe`} as="h3">
+                  <ul className="list">
+                    {p.addons.map((a) => (
+                      <li key={`${a.name}-${a.month}`} className="list__row">
+                        <b>{a.name}</b>
+                        <span className="muted small">
+                          {monthLabel(a.month)} · {eur(a.ev)} · {x(a.multiple)} EBITDA
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </Disclosure>
+              )}
+            </Disclosure>
           </section>
 
           <section className="panel" aria-labelledby="sale-title">
             <p className="eyebrow">Exit</p>
-            <h2 id="sale-title" className="panel__title">
-              Die Gruppe verkaufen
-            </h2>
-            {v.exitId ? (
-              <p>
-                Ein Angebot liegt vor. <Link href={`/verkauf/${v.exitId}`}>Zur Gesellschafterversammlung</Link>
-              </p>
-            ) : p.sale ? (
-              <>
+            <Disclosure
+              as="h2"
+              headingId="sale-title"
+              headingClass="panel__title"
+              title="Die Gruppe verkaufen"
+              hint={v.exitId ? "Angebot liegt vor" : p.sale ? "läuft" : undefined}
+              defaultOpen={Boolean(v.exitId || p.sale)}
+            >
+              {v.exitId ? (
                 <p>
-                  {p.sale.process === "auction" ? "Bieterverfahren" : "Exklusiver Verkauf"} an {p.sale.buyers === "strategic" ? "Konzerne" : "Finanzinvestoren"} läuft seit{" "}
-                  {monthLabel(p.sale.started)}. Das Angebot kommt zum Ende von {monthLabel(p.sale.due)}.
+                  Ein Angebot liegt vor. <Link href={`/verkauf/${v.exitId}`}>Zur Gesellschafterversammlung</Link>
                 </p>
-                <ActionButton action={{ type: "platform", startupId: v.id, move: "stopSale" }} revision={revision} variant="ghost" size="sm">
-                  Verkauf abbrechen
-                </ActionButton>
-              </>
-            ) : (
-              <>
-                <p className="muted small">
-                  Käufer zahlen das Multiple einer Gruppe dieser Größe. Laufende Integrationen und ein gebrochener Covenant drücken den Preis. Die Schulden werden aus dem Erlös
-                  bezahlt.
-                </p>
-                {v.active && <SaleForm id={v.id} revision={revision} days={v.saleDays} months={v.saleMonths} />}
-              </>
-            )}
+              ) : p.sale ? (
+                <>
+                  <p>
+                    {p.sale.process === "auction" ? "Bieterverfahren" : "Exklusiver Verkauf"} an {p.sale.buyers === "strategic" ? "Konzerne" : "Finanzinvestoren"} läuft seit{" "}
+                    {monthLabel(p.sale.started)}. Das Angebot kommt zum Ende von {monthLabel(p.sale.due)}.
+                  </p>
+                  <ActionButton action={{ type: "platform", startupId: v.id, move: "stopSale" }} revision={revision} variant="ghost" size="sm">
+                    Verkauf abbrechen
+                  </ActionButton>
+                </>
+              ) : (
+                <>
+                  <p className="muted small">
+                    Käufer zahlen das Multiple einer Gruppe dieser Größe. Laufende Integrationen und ein gebrochener Covenant drücken den Preis. Die Schulden werden aus dem Erlös
+                    bezahlt.
+                  </p>
+                  {v.active && <SaleForm id={v.id} revision={revision} days={v.saleDays} months={v.saleMonths} />}
+                </>
+              )}
+            </Disclosure>
           </section>
         </>
       )}

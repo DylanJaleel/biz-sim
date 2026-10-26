@@ -105,7 +105,7 @@ import { monthDays, OFFICES, officeOf } from "./office";
 import { contactDef, initialContacts, ringOpen } from "./network";
 import { boardFee, drawGigs } from "./gigs";
 import { awardTrophies } from "./trophies";
-import { garageUpkeep, garageValue, RESALE, resolveTrip, travelOptions, vehicleBlocker, vehicleOf } from "./travel";
+import { cityOf, ensureGigLog, garageUpkeep, garageValue, RESALE, resolveTrip, travelOptions, vehicleBlocker, vehicleOf } from "./travel";
 import { assetOf, holdingsValue, initialMarket, sentimentOf, stepMarket } from "./market";
 import { templateOf, TEMPLATES } from "./content";
 import { judge, bestOf, bestVote, judgmentWeight, outlook, resolveVote, VOTES } from "./judge";
@@ -1607,6 +1607,10 @@ export function closeMonth(state: GameState): MonthReport {
 
   // Consulting booked this month is invoiced now.
   for (const gig of state.gigs.filter((g) => g.status === "booked" && g.month === month)) {
+    const log = ensureGigLog(state);
+    log.done += 1;
+    const city = cityOf(gig).id;
+    if (!log.cities.includes(city)) log.cities.push(city);
     state.cash += gig.fee;
     income.consulting += gig.fee;
     if (gig.reputation) state.reputation = Math.min(100, state.reputation + reputationGain(state, gig.reputation));
