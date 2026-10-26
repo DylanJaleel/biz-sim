@@ -66,6 +66,10 @@ export interface Metrics {
   topCustomer: number;
   /** Outstanding bank debt. */
   debt: number;
+  /** Family businesses from the succession programme are valued by EBITDA × multiple (see ebitda.ts). */
+  valuedOn?: "ebitda";
+  /** Acquisition debt at company level: bank loan, vendor loans, open earn-outs (see LboState). */
+  acqDebt?: number;
 }
 
 export interface StartupHistoryPoint {
@@ -112,7 +116,23 @@ export interface Startup {
   corporate?: boolean;
   /** Month the player joined; 0 while only offered. */
   joined: number;
-  offer?: { ticket: number; stake: number; expires: number; ddDone: boolean; buyout?: boolean };
+  offer?: {
+    ticket: number;
+    stake: number;
+    expires: number;
+    ddDone: boolean;
+    buyout?: boolean;
+    /** Enterprise value asked for the whole company (EBITDA deals). */
+    ev?: number;
+    /** Asked multiple of EBITDA. */
+    multiple?: number;
+    /** Found by a searcher of the succession programme. */
+    searchId?: string;
+    /** Where the target came from: open market (adviser), searcher, referral. */
+    source?: "market" | "search" | "referral";
+    /** Modules of the due diligence already done. */
+    dd?: import("./mna-config").DdModule[];
+  };
   /** Stage label of a generated deal (Pre-Seed, Seed, Wachstum, Nachfolge). */
   stage?: string;
   flags: string[];
@@ -130,6 +150,12 @@ export interface Startup {
   helped?: Record<string, number>;
   /** Shares granted to the player for board work so far, in percent. */
   advisorShares?: number;
+  /** Hidden problems a due diligence can find (EBITDA deals). */
+  findings?: Finding[];
+  /** Bought with acquisition debt: terms, covenant, earn-outs. */
+  lbo?: LboState;
+  /** The company is the platform of a buy-and-build. */
+  platform?: PlatformState;
 }
 
 export interface StartupNames {
@@ -382,6 +408,10 @@ export interface IncomeLines {
   lockups?: number;
   /** Phase 5: upkeep of cars, driver and jet. */
   vehicles?: number;
+  /** M&A mandates: retainers and success fees. */
+  mandates?: number;
+  /** Search capital paid to searchers of the succession programme. */
+  search?: number;
 }
 
 export type ExitChoice = "accept" | "negotiate" | "reject";
@@ -409,6 +439,9 @@ export interface ExitOffer {
   carry?: number;
   /** A listing on the stock exchange instead of a sale. */
   ipo?: boolean;
+  /** Sale of a buy-and-build platform from a sale process; ev is the enterprise value offered. */
+  platform?: boolean;
+  ev?: number;
 }
 
 export type TeamRole = "associate" | "partner";
@@ -546,6 +579,8 @@ export interface GameState {
   corporateDeclined?: number;
   /** One-time hints already sent (e.g. "familyOffice", "fund"). */
   notices?: string[];
+  /** M&A mandates, succession programme, buy-and-build (missing in older games). */
+  mna?: MnaState;
 }
 
 export type ActionKind =
@@ -575,7 +610,11 @@ export type ActionKind =
   | "hire"
   | "buyout"
   | "raiseFund"
-  | "followUp";
+  | "followUp"
+  | "mandate"
+  | "search"
+  | "acquire"
+  | "platform";
 
 export type GameAction =
   | { type: "dd"; startupId: string }
@@ -608,4 +647,228 @@ export type GameAction =
   | { type: "fire"; memberId: string }
   | { type: "assign"; memberId: string; startupId: string | null }
   | { type: "buyout"; startupId: string; leverage: boolean }
-  | { type: "raiseFund" };
+  | { type: "raiseFund" }
+  | {
+      type: "mandate";
+      mandateId: string;
+      move: MandateMove;
+      multiple?: number;
+      buyers?: BuyerFocus;
+      process?: ProcessKind;
+      dd?: import("./mna-config").DdModule[];
+    }
+  | { type: "search"; move: "start" | "stop"; candidate?: number }
+  | { type: "examine"; targetId: string; modules: import("./mna-config").DdModule[] }
+  | { type: "acquire"; targetId: string; bid: "ask" | "low"; bank: number; vendor: number; earnout: number; integration?: IntegrationKind }
+  | { type: "platform"; startupId: string; move: "make" | "sell" | "cure" | "stopSale"; process?: ProcessKind; buyers?: "strategic" | "financial" };
+
+// ---------------------------------------------------------------------------
+// M&A-Mandate, Nachfolge-Programm (Search Fund) und Buy-and-Build
+// ---------------------------------------------------------------------------
+
+export type FindingKind = "ebitda" | "changeOfControl" | "lawsuit" | "taxAudit" | "market" | "pension";
+
+/** A problem hidden in a company; the matching due diligence module finds it. */
+export interface Finding {
+  kind: FindingKind;
+  module: import("./mna-config").DdModule;
+  title: string;
+  text: string;
+  /** Share of the price a buyer knocks off once it is known. */
+  priceCut: number;
+  /** Effects when it surfaces: more monthly costs, one-off cash, lost revenue, slower growth. */
+  opex?: number;
+  cash?: number;
+  revenuePct?: number;
+  growth?: number;
+  found?: boolean;
+}
+
+export type BuyerFocus = "strategic" | "financial" | "mixed";
+export type ProcessKind = "exclusive" | "auction";
+export type MandateMove = "accept" | "decline" | "comps" | "launch" | "accept_bid" | "final" | "negotiate";
+export type MandateStatus = "offered" | "prep" | "marketing" | "bids" | "signing" | "closed" | "failed" | "declined" | "expired";
+
+export interface MandateBid {
+  buyer: string;
+  kind: "strategic" | "financial";
+  ev: number;
+}
+
+/** Sell-side or buy-side advice for a family business: the investment banking part of the game. */
+export interface Mandate {
+  id: string;
+  month: number;
+  side: "sell" | "buy";
+  client: string;
+  company: string;
+  sector: string;
+  city: string;
+  text: string;
+  /** Annual EBITDA as the books show it. */
+  ebitda: number;
+  /** What the market would really pay, as a multiple of EBITDA (hidden). */
+  fair: number;
+  /** The client's expectation: enterprise value (sell side) or highest price (buy side). */
+  wish: number;
+  retainer: number;
+  /** Month the client signed; the retainer is invoiced at its end. */
+  accepted?: number;
+  status: MandateStatus;
+  expires: number;
+  findings: Finding[];
+  /** Range of comparable deals once analysed. */
+  comps?: [number, number];
+  multiple?: number;
+  buyers?: BuyerFocus;
+  process?: ProcessKind;
+  dd?: import("./mna-config").DdModule[];
+  bids?: MandateBid[];
+  /** Month the current step resolves (at month end). */
+  due?: number;
+  leak?: boolean;
+  /** Price agreed at signing, before the buyer's own review. */
+  signed?: MandateBid;
+  outcome?: { ev: number; fee: number; reputation: number; mood: "happy" | "ok" | "unhappy" | "failed"; text: string };
+}
+
+export interface Searcher {
+  name: string;
+  background: string;
+  /** 0..100: how well they will run a company. */
+  operator: number;
+  /** 0..100: how many owners they reach. */
+  network: number;
+  /** Hidden: how long they keep going. */
+  grit: number;
+  /** Salary and travel per month. */
+  cost: number;
+}
+
+export interface SearchFund {
+  id: string;
+  started: number;
+  searcher: Searcher;
+  status: "searching" | "acquired" | "failed" | "stopped";
+  spent: number;
+  targets: number;
+  startupId?: string;
+  ended?: number;
+}
+
+export type IntegrationKind = "fast" | "careful";
+
+export interface Integration {
+  name: string;
+  start: number;
+  due: number;
+  kind: IntegrationKind;
+  /** Annual EBITDA and monthly revenue of the add-on at closing. */
+  ebitda: number;
+  revenue: number;
+  /** Integration cost per month, paid by the platform. */
+  cost: number;
+}
+
+/** A smaller company the platform could buy. */
+export interface AddonTarget {
+  id: string;
+  platformId: string;
+  month: number;
+  expires: number;
+  name: string;
+  city: string;
+  owner: string;
+  text: string;
+  revenue: number;
+  grossMargin: number;
+  opex: number;
+  team: number;
+  growth: number;
+  topCustomer: number;
+  /** Asked multiple of EBITDA. */
+  multiple: number;
+  findings: Finding[];
+  dd: import("./mna-config").DdModule[];
+  status: "open" | "review" | "bought" | "blocked" | "expired" | "lost";
+  /** Competition authority: closing waits until this month. */
+  reviewDue?: number;
+  /** Signed terms while the authority reviews; the player's money sits in escrow. */
+  pending?: { ev: number; bank: number; vendor: number; earnout: number; fromPlatform: number; fromPlayer: number; integration: IntegrationKind };
+}
+
+export interface LboState {
+  acquired: number;
+  entryEv: number;
+  entryEbitda: number;
+  /** All own money the player put in (equity, fees, cures). */
+  equity: number;
+  bank: number;
+  rate: number;
+  payment: number;
+  vendors: { amount: number; due: number; label: string }[];
+  earnouts: { amount: number; due: number; target: number; label: string }[];
+  /** Quarters in a row above the covenant. */
+  breach: number;
+  status: "ok" | "watch" | "cure";
+  cure?: { amount: number; due: number };
+  /** The searcher who runs the company, if any. */
+  searchId?: string;
+  /** Handover risks already happened (once each). */
+  handover: string[];
+  /** Revenue the running costs were last matched to: costs follow revenue in part. */
+  refRevenue?: number;
+  /** EBITDA margin the business can sustain (at purchase, plus realised synergies). */
+  margin?: number;
+  /** Gross margin of the business at purchase: price wars and windfalls fade back towards it. */
+  grossMargin?: number;
+}
+
+export interface PlatformState {
+  since: number;
+  addons: { name: string; month: number; ev: number; ebitda: number; multiple: number }[];
+  integrations: Integration[];
+  sale?: { process: ProcessKind; buyers: "strategic" | "financial"; started: number; due: number };
+}
+
+export interface PlatformExitRecord {
+  name: string;
+  month: number;
+  ev: number;
+  ebitda: number;
+  multiple: number;
+  entryMultiple: number;
+  /** Player's proceeds ÷ player's own money in. */
+  moic: number;
+  addons: number;
+  /** The bank sold it (covenant): a failure. */
+  forced?: boolean;
+}
+
+/** Counters for career steps and tombstones. */
+export interface MnaRecord {
+  mandatesDone: number;
+  mandatesFailed: number;
+  mandateFees: number;
+  happyClients: number;
+  searchesStarted: number;
+  searchesFailed: number;
+  acquisitions: number;
+  /** Bought companies that came through the first year with their EBITDA intact. */
+  successions: number;
+  troubledHandovers: number;
+  addons: number;
+  synergies: number;
+  integrationFailures: number;
+  antitrustBlocks: number;
+  covenantBreaches: number;
+  forcedSales: number;
+  platformExits: PlatformExitRecord[];
+}
+
+export interface MnaState {
+  mandates: Mandate[];
+  searches: SearchFund[];
+  addons: AddonTarget[];
+  record: MnaRecord;
+}

@@ -277,7 +277,7 @@ export const LESSONS: Lesson[] = [
       "Wer eine Firma kauft, muss nicht alles selbst bezahlen: Eine Bank leiht einen Teil des Kaufpreises. Das hebt die Rendite auf das eigene Geld, solange die Gewinne die Raten tragen. Läuft es schlecht, frisst die Rate das Eigenkapital.",
     rule: "Lohnt sich, wenn Ausschüttungen und Wertzuwachs größer sind als Zins und Tilgung.",
     example: "Kaufpreis 2 Mio. €, davon 800.000 € Kredit zu 5,5 %: Die Rate liegt bei rund 10.000 € im Monat. Schüttet die Firma 15.000 € im Monat aus, bleibt Geld übrig.",
-    inGame: "Bei einer Nachfolge kannst du 40 % des Kaufpreises über die Bank finanzieren. Die Rate läuft acht Jahre über dein Konto.",
+    inGame: "Familienbetriebe kaufst du mit Bankkredit bis 3× EBITDA. Der Kredit liegt in der Firma: Sie zahlt Zins und Tilgung aus ihrem Ertrag, und die Bank achtet auf den Covenant. Ältere Nachfolgen laufen mit einem Kaufkredit über dein Konto.",
   },
   {
     id: "ausschuettung",
@@ -353,6 +353,87 @@ export const LESSONS: Lesson[] = [
     example: "Die Werbekampagne darf höchstens 40.000 € kosten statt der geplanten 60.000 €. Bringen die ersten 40.000 € genug Kunden, wird nachgelegt.",
     inGame: "Die Auflage „Budgetdeckel“ passt bei kurzer Reichweite und teuren Plänen.",
   },
+  {
+    id: "ebitda_multiple",
+    title: "EBITDA-Multiple",
+    summary:
+      "Familienunternehmen werden nach dem bewertet, was sie verdienen: EBITDA, also Gewinn vor Zinsen, Steuern und Abschreibungen. Der Unternehmenswert ist ein Vielfaches (Multiple) davon. Kleine Firmen kosten wenig, große mehr, weil sie sicherer sind und mehr Käufer sie bezahlen können.",
+    rule: "Unternehmenswert = EBITDA × Multiple; Eigenkapitalwert = Unternehmenswert + Kasse − Schulden",
+    example: "Eine Firma verdient 600.000 € EBITDA. Bei 5,5× ist sie 3,3 Mio. € wert. Hat sie 1 Mio. € Schulden, gehören den Eigentümern 2,3 Mio. €.",
+    inGame: "Firmen aus dem Nachfolge-Programm werden so bewertet: Das Vielfache steigt mit der Größe und dem Wachstum, ein Klumpenkunde drückt es. In Mandaten setzt du das Multiple selbst.",
+  },
+  {
+    id: "multiple_arbitrage",
+    title: "Multiple-Arbitrage",
+    summary:
+      "Kleine Firmen werden mit einem niedrigen Vielfachen gehandelt, große mit einem höheren. Wer viele kleine kauft und zu einer großen Gruppe zusammenfügt, kann sie am Ende teurer verkaufen, als die Teile gekostet haben. Das ist der Kern von Buy-and-Build.",
+    rule: "Wertgewinn = EBITDA des Zukaufs × (Multiple der Gruppe − bezahltes Multiple) − Integrationskosten",
+    example: "Ein Zukauf mit 200.000 € EBITDA kostet 4,5×, also 900.000 €. In einer Gruppe, die mit 7× bewertet wird, ist er 1,4 Mio. € wert. Kommen Kunden abhanden, ist der Vorteil schnell weg.",
+    inGame: "Deine Plattform kauft Firmen derselben Branche. Je größer das EBITDA der Gruppe, desto höher ihr Multiple beim Verkauf.",
+  },
+  {
+    id: "covenant",
+    title: "Covenant: was die Bank verlangt",
+    summary:
+      "Ein Covenant ist eine Bedingung im Kreditvertrag, meist eine Obergrenze für die Verschuldung im Verhältnis zum Ertrag. Wird sie gebrochen, darf die Bank den Zins erhöhen, Ausschüttungen sperren, frisches Eigenkapital verlangen und im äußersten Fall den Kredit kündigen.",
+    rule: "Nettoverschuldung ÷ EBITDA ≤ vereinbarte Grenze (im Spiel 3,5×)",
+    example: "3 Mio. € Bankschulden, 1 Mio. € EBITDA: 3,0×, alles gut. Fällt das EBITDA in der Krise auf 800.000 €, sind es 3,75×: Covenant gebrochen.",
+    inGame: "Die Bank prüft jedes Quartal. Erster Bruch: Zinsaufschlag, keine Ausschüttung, kein Zukauf. Zweiter Bruch: Du musst Geld nachschießen, sonst verkauft die Bank die Firma.",
+  },
+  {
+    id: "earn_out",
+    title: "Earn-out",
+    summary:
+      "Ein Teil des Kaufpreises wird erst später gezahlt, und nur, wenn die Firma ein Ziel erreicht. So teilen Käufer und Verkäufer das Risiko, dass die Zahlen schöner aussehen, als sie sind. Der Verkäufer bleibt motiviert, die Übergabe gut zu machen.",
+    rule: "Kaufpreis = fester Teil + bedingter Teil (fällig, wenn das Ziel erreicht ist)",
+    example: "3 Mio. € Kaufpreis, davon 300.000 € als Earn-out nach zwei Jahren, wenn das EBITDA mindestens so hoch ist wie beim Kauf.",
+    inGame: "Bis 15 % des Preises. Nach 24 Monaten zahlt die Firma, wenn das EBITDA das Ziel erreicht; sonst entfällt der Betrag und der Verkäufer ist verärgert. Ein Earn-out senkt das Risiko einer holprigen Übergabe.",
+  },
+  {
+    id: "verkaeuferdarlehen",
+    title: "Verkäuferdarlehen",
+    summary:
+      "Der Verkäufer bekommt nicht den ganzen Preis sofort, sondern leiht dem Käufer einen Teil. Das ist günstiger als Eigenkapital, steht aber hinter der Bank. Ein Verkäufer, der noch Geld in der Firma hat, hilft eher bei der Übergabe.",
+    rule: "Im Spiel bis 20 % des Preises, 4 % Zins, Rückzahlung in einer Summe nach vier Jahren",
+    example: "Von 2 Mio. € Kaufpreis bleiben 300.000 € als Darlehen stehen. Die Firma zahlt 1.000 € Zinsen im Monat und nach vier Jahren die 300.000 €.",
+    inGame: "Ist das Darlehen fällig und die Kasse zu knapp, finanziert die Bank nur, wenn die Verschuldung es zulässt. Sonst wird es eng.",
+  },
+  {
+    id: "search_fund",
+    title: "Search Fund: Nachfolge mit fremder Hilfe",
+    summary:
+      "Eine junge Unternehmerin sucht mit dem Geld von Investoren ein bis zwei Jahre nach einem Familienbetrieb ohne Nachfolge. Findet sie einen, kaufen die Investoren ihn, und sie wird Geschäftsführerin mit einem wachsenden Anteil. Viele Suchen scheitern; dann ist das Suchkapital weg.",
+    rule: "Suchkapital (Gehalt, Reisen) → Kauf mit Eigenkapital und Kredit → Earn-in der Suchenden bis etwa 25 %",
+    example: "18 Monate Suche à 12.000 € kosten 216.000 €. Die gefundene Firma kostet 5× EBITDA statt 6× im Bieterverfahren, weil der Inhaber nur mit ihr spricht.",
+    inGame: "Im Nachfolge-Programm wählst du eine Suchende. Nach drei Monaten kommen Zielfirmen; nach 24 Monaten ohne Kauf endet die Suche.",
+  },
+  {
+    id: "pmi",
+    title: "Integration nach dem Kauf (PMI)",
+    summary:
+      "Post-Merger-Integration heißt: zwei Firmen werden eine. Einkauf, IT, Verwaltung und Standorte werden zusammengelegt, das spart Geld (Synergien). Dabei gehen oft Kunden und gute Leute verloren. Synergien kommen langsamer und seltener als im Plan.",
+    rule: "Schnell integrieren: früher fertig, mehr Unruhe. Behutsam: teurer und länger, aber weniger Verluste.",
+    example: "Zwei Speditionen legen ihre Disposition zusammen und sparen 120.000 € im Jahr. Drei Fahrer und ein Großkunde gehen zur Konkurrenz.",
+    inGame: "Jeder Zukauf deiner Plattform wird integriert. Dein Team schafft eine Integration gleichzeitig, mit Partnerin oder Associate mehr. Zu viele auf einmal kosten Einsparungen und Kunden.",
+  },
+  {
+    id: "bieterverfahren",
+    title: "Bieterverfahren",
+    summary:
+      "Statt mit einem Käufer zu verhandeln, lädt der Verkäufer mehrere ein. Erst kommen unverbindliche Angebote, dann prüfen die besten Bieter und geben ein verbindliches Angebot ab. Wettbewerb treibt den Preis, aber der Prozess dauert länger und es spricht sich herum.",
+    rule: "Exklusiv: schnell, diskret, der Preis orientiert sich an deiner Forderung. Bieterverfahren: höherer Preis, mehr Aufwand, Risiko von Indiskretionen.",
+    example: "Ein Konzern bietet exklusiv 5 Mio. €. Im Bieterverfahren zahlt ein Finanzinvestor 5,6 Mio. €, weil zwei andere mitbieten.",
+    inGame: "In Verkaufsmandaten und beim Verkauf deiner Plattform wählst du den Prozess. Bei Konzernen am Tisch kann der Verkauf durchsickern.",
+  },
+  {
+    id: "dd_bausteine",
+    title: "Due Diligence: die vier Bausteine",
+    summary:
+      "Eine gründliche Prüfung vor dem Kauf hat vier Teile. Financial: Stimmt das EBITDA, wenn man Einmaleffekte und das fehlende Gehalt des Inhabers bereinigt? Legal: Verträge, Klagen, Klauseln beim Eigentümerwechsel. Tax: offene Prüfungen und Nachzahlungen. Commercial: Markt, Kunden, Wettbewerb.",
+    rule: "Jeder Befund vor der Unterschrift senkt den Preis; jeder übersehene Befund trifft nach dem Kauf den neuen Eigentümer.",
+    example: "Die Financial DD zeigt, dass das EBITDA 15 % niedriger ist. Bei 5× sind das 450.000 € weniger Kaufpreis für eine Firma mit 600.000 € EBITDA.",
+    inGame: "Beim Kauf von Firmen und in Mandaten wählst du die Bausteine. Jeder kostet einen Tag und Beraterhonorar.",
+  },
 ];
 
 /** Order in which "Weiterbildung" unlocks cards. */
@@ -396,6 +477,15 @@ export const CURRICULUM = [
   "ausschuettung",
   "fonds",
   "ipo",
+  "ebitda_multiple",
+  "dd_bausteine",
+  "bieterverfahren",
+  "verkaeuferdarlehen",
+  "earn_out",
+  "covenant",
+  "search_fund",
+  "multiple_arbitrage",
+  "pmi",
 ];
 
 export function lessonOf(id: string): Lesson {

@@ -18,6 +18,7 @@ import {
   CUSTOMER_LOSS_CHANCE,
   CUSTOMER_LOSS_THRESHOLD,
 } from "./config";
+import { ebitdaEquityValue } from "./ebitda";
 import type { Axes, Delta, Holder, HolderKind, Metrics, Startup, StartupPhase } from "./types";
 
 export const NEW_INVESTORS = { id: "investors", name: "Neue Investoren", kind: "investor" as HolderKind };
@@ -67,6 +68,8 @@ export function revenueMultiple(growth: number): number {
 
 /** Company value: annual revenue × a multiple that rewards growth, plus net cash. */
 export function valuation(m: Metrics): number {
+  // Family businesses of the succession programme: EBITDA × multiple, minus debt.
+  if (m.valuedOn === "ebitda") return ebitdaEquityValue(m);
   const arr = m.revenue * 12;
   // Investors pay a little more for clean numbers and a lot less for one dominant customer.
   const quality = (0.85 + (0.3 * m.axes.finance) / 100) * (1 - Math.max(0, m.topCustomer - 0.3) * 0.6);
@@ -105,6 +108,8 @@ export function applyDelta(s: Startup, d: Delta, scale = 1): Startup {
     axes: addAxes(m.axes, d.axes && scaleAxes(d.axes, scale)),
     topCustomer: clamp(m.topCustomer + (d.topCustomer ?? 0) * scale, 0, 1),
     debt: Math.max(0, m.debt + (d.debt ?? 0) * scale),
+    ...(m.valuedOn ? { valuedOn: m.valuedOn } : {}),
+    ...(m.acqDebt ? { acqDebt: m.acqDebt } : {}),
   };
   const dil = clamp((d.dilution ?? 0) * scale, 0, 0.9);
   const stake = s.stake * (1 - dil);

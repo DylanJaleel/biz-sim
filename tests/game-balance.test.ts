@@ -82,8 +82,8 @@ describe("the long game", () => {
     expect(passive.value).toBeLessThan(START_CASH);
     expect(mogul.value).toBeGreaterThan(yes.value * 1.5);
     expect(mogul.mandates).toBeGreaterThanOrEqual(5);
-    // The family office needs real wealth now; after four years the mogul is on the board of a corporation.
-    expect(mogul.career).toBeGreaterThanOrEqual(3);
+    // The family office needs real wealth now; after four years the mogul is on the board of a corporation (index 4, after the side goal "M&A-Berater").
+    expect(mogul.career).toBeGreaterThanOrEqual(4);
   });
 }, 240_000);
 

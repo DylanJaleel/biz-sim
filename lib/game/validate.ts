@@ -1,4 +1,5 @@
-import type { AssetId, CovenantId, ExitChoice, GameAction, GigApproach, GvVote, RoundTake, SeatId, TeamRole, Vote } from "./types";
+import { DD_MODULES, type DdModule } from "./mna-config";
+import type { AssetId, BuyerFocus, CovenantId, ExitChoice, GameAction, GigApproach, GvVote, MandateMove, ProcessKind, RoundTake, SeatId, TeamRole, Vote } from "./types";
 
 // Server actions receive whatever the browser sends. This turns it into a
 // GameAction or nothing; the engine then checks the game rules.
@@ -11,6 +12,22 @@ const ROLES: readonly TeamRole[] = ["associate", "partner"];
 const GV_VOTES: readonly GvVote[] = ["go", "no"];
 const ASSET_IDS: readonly AssetId[] = ["tagesgeld", "anleihen", "dividenden", "tech"];
 const COVENANT_IDS: readonly CovenantId[] = ["budget", "stagegate", "pilot", "second", "kpi", "veto"];
+
+const MANDATE_MOVES: readonly MandateMove[] = ["accept", "decline", "comps", "launch", "accept_bid", "final", "negotiate"];
+const BUYER_FOCUS: readonly BuyerFocus[] = ["strategic", "financial", "mixed"];
+const PROCESSES: readonly ProcessKind[] = ["exclusive", "auction"];
+
+/** A share between 0 and max, or null. */
+function share(value: unknown, max: number): number | null {
+  const n = Number(value);
+  return Number.isFinite(n) && n >= 0 && n <= max ? Math.round(n * 1000) / 1000 : null;
+}
+
+function modules(value: unknown): DdModule[] | null {
+  if (value === undefined) return [];
+  if (!Array.isArray(value) || value.length > 4) return null;
+  return value.every((v) => DD_MODULES.includes(v as DdModule)) ? [...new Set(value as DdModule[])] : null;
+}
 
 function id(value: unknown): value is string {
   return typeof value === "string" && value.length > 0 && value.length <= 64 && /^[\w-]+$/.test(value);
@@ -100,6 +117,61 @@ export function parseAction(input: unknown): GameAction | null {
       return id(a.itemId) ? { type: "followUp", itemId: a.itemId } : null;
     case "readMail":
       return id(a.mailId) ? { type: "readMail", mailId: a.mailId } : null;
+    case "mandate": {
+      if (!id(a.mandateId) || !MANDATE_MOVES.includes(a.move as MandateMove)) return null;
+      const dd = modules(a.dd);
+      if (dd === null) return null;
+      if (a.buyers !== undefined && !BUYER_FOCUS.includes(a.buyers as BuyerFocus)) return null;
+      if (a.process !== undefined && !PROCESSES.includes(a.process as ProcessKind)) return null;
+      const multiple = a.multiple === undefined ? undefined : share(a.multiple, 15);
+      if (multiple === null) return null;
+      return {
+        type: "mandate",
+        mandateId: a.mandateId,
+        move: a.move as MandateMove,
+        ...(multiple !== undefined ? { multiple } : {}),
+        ...(a.buyers !== undefined ? { buyers: a.buyers as BuyerFocus } : {}),
+        ...(a.process !== undefined ? { process: a.process as ProcessKind } : {}),
+        ...(dd.length > 0 ? { dd } : {}),
+      };
+    }
+    case "search": {
+      if (a.move === "stop") return { type: "search", move: "stop" };
+      const candidate = Number(a.candidate ?? 0);
+      return a.move === "start" && Number.isInteger(candidate) && candidate >= 0 && candidate <= 2 ? { type: "search", move: "start", candidate } : null;
+    }
+    case "examine": {
+      const dd = modules(a.modules);
+      return id(a.targetId) && dd && dd.length > 0 ? { type: "examine", targetId: a.targetId, modules: dd } : null;
+    }
+    case "acquire": {
+      const bank = share(a.bank, 0.6);
+      const vendor = share(a.vendor, 0.2);
+      const earnout = share(a.earnout, 0.15);
+      if (!id(a.targetId) || (a.bid !== "ask" && a.bid !== "low") || bank === null || vendor === null || earnout === null) return null;
+      if (a.integration !== undefined && a.integration !== "fast" && a.integration !== "careful") return null;
+      return {
+        type: "acquire",
+        targetId: a.targetId,
+        bid: a.bid,
+        bank,
+        vendor,
+        earnout,
+        ...(a.integration !== undefined ? { integration: a.integration as "fast" | "careful" } : {}),
+      };
+    }
+    case "platform": {
+      if (!id(a.startupId) || !["make", "sell", "cure", "stopSale"].includes(a.move as string)) return null;
+      if (a.process !== undefined && !PROCESSES.includes(a.process as ProcessKind)) return null;
+      if (a.buyers !== undefined && a.buyers !== "strategic" && a.buyers !== "financial") return null;
+      return {
+        type: "platform",
+        startupId: a.startupId,
+        move: a.move as "make" | "sell" | "cure" | "stopSale",
+        ...(a.process !== undefined ? { process: a.process as ProcessKind } : {}),
+        ...(a.buyers !== undefined ? { buyers: a.buyers as "strategic" | "financial" } : {}),
+      };
+    }
     case "learn":
     case "closeMonth":
       return { type: a.type };

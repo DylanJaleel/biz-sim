@@ -116,6 +116,7 @@ import { applyDelta, blendDelta, monthlyCashFlow, runwayMonths, stepMonth, valua
 import { definitionOf, offerStartup, STARTUPS, type StartupDefinition } from "./startups";
 import { fill, type ResolvedOutcome } from "./templates";
 import type {
+  ActionKind,
   BoardItem,
   CovenantId,
   CovenantSetup,
@@ -136,6 +137,10 @@ import type {
   Vote,
 } from "./types";
 import { voteFromStance } from "./votes";
+import type { Ctx } from "./mna-core";
+import { mandatesMonth, planMandates, playMandate } from "./mna";
+import { acquireDeal, cure, examine, lboAllowsDividends, lboMonth, planSearchTargets, searchMonth, startSearch, stopSearch, targetDeal, targetEv } from "./lbo";
+import { acquire, makePlatform, planAddons, platformMonth, recordSale, startSale, stopSale } from "./platform";
 
 export class GameRuleError extends Error {
   constructor(message: string) {
@@ -359,8 +364,8 @@ export type ActionResult =
   | { kind: "round"; roundId: string }
   | { kind: "exit"; exitId: string };
 
-function spendDays(state: GameState, kind: keyof typeof ACTION_DAYS | "gig", label: string, custom?: number): void {
-  const days = custom ?? (kind === "gig" ? 1 : ACTION_DAYS[kind]);
+function spendDays(state: GameState, kind: keyof typeof ACTION_DAYS | ActionKind, label: string, custom?: number): void {
+  const days = custom ?? (kind in ACTION_DAYS ? ACTION_DAYS[kind as keyof typeof ACTION_DAYS] : 1);
   if (days === 0) return;
   if (state.daysUsed + days > monthDays(state)) {
     throw new GameRuleError(`Dafür fehlen dir Tage: ${days} nötig, ${daysLeft(state)} frei. Schließe den Monat ab.`);
@@ -382,9 +387,60 @@ export function applyAction(current: GameState, action: GameAction): { state: Ga
   return out;
 }
 
+/** What the M&A modules (mandates, succession programme, buy-and-build) may do with the game. */
+export function ctxOf(state: GameState): Ctx {
+  return {
+    state,
+    mail: (data) => mail(state, data),
+    id: (prefix) => nextId(state, prefix),
+    lesson: (id) => unlockLesson(state, id),
+    spend: (kind, label, days) => spendDays(state, kind, label, days),
+    replace: (s) => replaceStartup(state, s),
+    worth: () => netWorth(state),
+    reputation: (delta) => {
+      state.reputation = Math.min(100, Math.max(0, state.reputation + reputationGain(state, delta)));
+    },
+    addDeal: (def) => {
+      state.deals.push(def);
+      offer(state, def.id);
+      return startupOf(state, def.id);
+    },
+    majority: (s, before) => checkMajority(state, s, before),
+    fail: (message) => {
+      throw new GameRuleError(message);
+    },
+  };
+}
+
 function playAction(current: GameState, action: GameAction): { state: GameState; result: ActionResult } {
   const state = clone(current);
   switch (action.type) {
+    case "mandate": {
+      playMandate(ctxOf(state), action);
+      return { state, result: { kind: "none" } };
+    }
+    case "search": {
+      if (action.move === "start") startSearch(ctxOf(state), action.candidate ?? 0);
+      else stopSearch(ctxOf(state));
+      return { state, result: { kind: "none" } };
+    }
+    case "examine": {
+      examine(ctxOf(state), action.targetId, action.modules);
+      return { state, result: { kind: "none" } };
+    }
+    case "acquire": {
+      acquire(ctxOf(state), action.targetId, { bid: action.bid, bank: action.bank, vendor: action.vendor, earnout: action.earnout }, action.integration);
+      return { state, result: { kind: "none" } };
+    }
+    case "platform": {
+      const s = startupOf(state, action.startupId);
+      const ctx = ctxOf(state);
+      if (action.move === "make") makePlatform(ctx, s);
+      else if (action.move === "sell") startSale(ctx, s, action.process ?? "auction", action.buyers ?? "strategic");
+      else if (action.move === "cure") cure(ctx, s);
+      else stopSale(ctx, s);
+      return { state, result: { kind: "none" } };
+    }
     case "dd": {
       const s = startupOf(state, action.startupId);
       if (s.status !== "offered" || !s.offer) throw new GameRuleError("Dieses Angebot liegt nicht mehr vor.");
@@ -754,6 +810,11 @@ function playAction(current: GameState, action: GameAction): { state: GameState;
       const s = startupOf(state, action.startupId);
       if (s.status !== "offered" || !s.offer?.buyout) throw new GameRuleError("Dieses Angebot liegt nicht mehr vor.");
       if (state.reputation < BUYOUT_REPUTATION) throw new GameRuleError(`Eine Firma übernehmen kannst du ab ${BUYOUT_REPUTATION} Ruf.`);
+      // Family businesses valued by EBITDA: the structured purchase with a bank loan in the company.
+      if (s.offer.ev) {
+        acquireDeal(ctxOf(state), s, { bid: "ask", bank: action.leverage ? BUYOUT_LOAN_SHARE : 0, vendor: 0, earnout: 0 });
+        return { state, result: { kind: "none" } };
+      }
       const price = s.offer.ticket;
       const loan = action.leverage ? Math.round((price * BUYOUT_LOAN_SHARE) / 1000) * 1000 : 0;
       if (state.cash < price - loan) throw new GameRuleError(`Dafür reicht dein Kapital nicht: ${(price - loan).toLocaleString("de-DE")} € nötig.`);
@@ -999,6 +1060,7 @@ function settleExit(state: GameState, offer: ExitOffer, vote: GvVote | "abstain"
   offer.status = "accepted";
   const own = result.payouts.find((p) => p.id === "you")?.amount ?? 0;
   const mine = own + result.carry;
+  recordSale(state, offer, s, mine);
   // The fund keeps its proceeds minus the player's carry on its gain.
   const fundCost = (id: string) => s.capTable.find((h) => h.id === id)?.cost ?? 0;
   const fundMoney = result.payouts.filter((p) => p.kind === "fund").reduce((sum, p) => sum + p.amount - Math.max(0, p.amount - fundCost(p.id)) * CARRY, 0);
@@ -1054,9 +1116,7 @@ function introduce(state: GameState, s: Startup, contactId: string): void {
       if (fresh) offer(state, fresh.id);
       else {
         const random = randomFor(state.seed, `intro-deal|${state.month}|${state.counter}`);
-        const deal = generateDeal(random, dealStage(state, random), nextId(state, "d"), state.month, new Set(state.startups.map((x) => x.name)));
-        state.deals.push(deal);
-        offer(state, deal.id);
+        newDeal(state, random, dealStage(state, random), new Set(state.startups.map((x) => x.name)));
       }
       break;
     }
@@ -1584,6 +1644,13 @@ export function closeMonth(state: GameState): MonthReport {
     replaceStartup(state, next);
   }
 
+  // Succession programme and buy-and-build: business cycle, debt, covenants, integrations, mandates.
+  const mna = ctxOf(state);
+  lboMonth(mna, month, notes, lines);
+  platformMonth(mna, month, notes, lines);
+  mandatesMonth(mna, month, notes, income);
+  searchMonth(mna, month, notes, income);
+
   if (month >= NEWS_FROM_MONTH) publishNews(state, month, lines, notes);
 
   // Private side: living costs, rent, the stock market, the overdraft.
@@ -1643,6 +1710,9 @@ export function closeMonth(state: GameState): MonthReport {
   announceNextStep(state);
   pruneDeals(state);
   planDeals(state);
+  planMandates(mna);
+  planSearchTargets(mna);
+  planAddons(mna);
   for (const g of state.gigs.filter((x) => x.status === "offered")) g.status = "expired";
   state.gigs = [
     ...state.gigs.filter((g) => g.month > state.month - 6),
@@ -1793,7 +1863,7 @@ const BUYERS = ["Alpenblick Private Equity", "Hanse Capital Partners", "Brückne
 function planExits(state: GameState): void {
   const mood = sentimentOf(state.market.regime);
   for (const s of state.startups.filter((x) => x.status === "active" && !x.corporate)) {
-    if (state.month - s.joined < EXIT_MIN_AGE || s.flags.includes("round_open")) continue;
+    if (state.month - s.joined < EXIT_MIN_AGE || s.flags.includes("round_open") || s.platform?.sale) continue;
     const value = valuation(s.metrics);
     if (value < EXIT_MIN_VALUE) continue;
     if (state.exits.some((e) => e.startupId === s.id && (e.status === "open" || state.month - e.month < 6))) continue;
@@ -1902,6 +1972,8 @@ function payDividends(state: GameState, income: IncomeLines, notes: string[]): v
   for (const s of state.startups.filter((x) => x.status === "active" && !x.corporate)) {
     const fundPct = s.capTable.filter((h) => h.kind === "fund").reduce((sum, h) => sum + h.pct, 0);
     if (s.stake + fundPct <= 50 || monthlyCashFlow(s.metrics) <= 0) continue;
+    // Lenders of a bought company allow payouts only well below the covenant.
+    if (!lboAllowsDividends(s)) continue;
     const excess = s.metrics.cash - DIVIDEND_RESERVE_MONTHS * s.metrics.opex;
     if (excess < 5_000) continue;
     const total = excess * DIVIDEND_SHARE;
@@ -1975,11 +2047,18 @@ function planDeals(state: GameState): void {
   count += state.team.filter((m) => m.role === "partner").length;
   const taken = new Set(state.startups.map((s) => s.name));
   for (let i = 0; i < count && open + i < DEALS_MAX_OPEN; i++) {
-    const def = generateDeal(random, dealStage(state, random), nextId(state, "d"), state.month, taken);
-    taken.add(def.name);
-    state.deals.push(def);
-    offer(state, def.id);
+    const name = newDeal(state, random, dealStage(state, random), taken);
+    taken.add(name);
   }
+}
+
+/** A generated offer; family businesses come valued by EBITDA, sized to what the player can carry. */
+function newDeal(state: GameState, random: () => number, stage: DealStage, taken: Set<string>): string {
+  if (stage === "buyout") return targetDeal(ctxOf(state), random, { ev: targetEv(netWorth(state) * 0.8, random), source: "market" }).name;
+  const def = generateDeal(random, stage, nextId(state, "d"), state.month, taken);
+  state.deals.push(def);
+  offer(state, def.id);
+  return def.name;
 }
 
 /** World news hits sectors or single companies. Rare at first, more often later. */

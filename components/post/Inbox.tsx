@@ -16,6 +16,8 @@ export interface DealView {
   tagline: string;
   stage?: string;
   buyout: boolean;
+  /** Valued by EBITDA: bought through the structuring page (bank, seller loan, earn-out). */
+  structured?: boolean;
   loan: number;
   canBuyout: boolean;
   fundMatch: number;
@@ -218,7 +220,13 @@ function Deal({ deal, revision, cash, ddDays }: { deal: DealView; revision: numb
       ) : (
         <p className="muted">Eine Prüfung (Due Diligence) zeigt, was hinter den Zahlen steckt: Kosten, Team, Wettbewerb. Wer blind investiert, erfährt es später im Beirat.</p>
       )}
-      {deal.buyout && (
+      {deal.structured && (
+        <p className="notice">
+          Nachfolge: Bewertet nach EBITDA. Vor dem Kauf prüfst du Zahlen, Verträge, Steuern und Markt; finanziert wird mit Bankkredit in der Firma, Verkäuferdarlehen und Earn-out.
+          {!deal.canBuyout && ` Firmen übernehmen kannst du ab ${BUYOUT_REPUTATION} Ruf.`}
+        </p>
+      )}
+      {deal.buyout && !deal.structured && (
         <p className="notice">
           Nachfolge: Du kaufst die Mehrheit von der Inhaberfamilie. Mit der Mehrheit schüttet die Firma jedes Quartal aus, was sie nicht braucht. Ein Kaufkredit über 40 % läuft
           acht Jahre über dein Konto.
@@ -228,12 +236,16 @@ function Deal({ deal, revision, cash, ddDays }: { deal: DealView; revision: numb
       {deal.fundMatch > 0 && <p className="notice">Dein Fonds investiert bis zu {eur(deal.fundMatch)} mit, zum selben Preis wie du.</p>}
 
       <div className="deal__actions">
-        {!deal.ddDone && (
+        {!deal.ddDone && !deal.structured && (
           <ActionButton action={{ type: "dd", startupId: deal.id }} revision={revision} days={ddDays}>
             Prüfen
           </ActionButton>
         )}
-        {deal.buyout ? (
+        {deal.structured ? (
+          <Link href={`/uebernahme/${deal.id}`} className="btn btn--primary">
+            Prüfen und Übernahme strukturieren
+          </Link>
+        ) : deal.buyout ? (
           <>
             <ActionButton
               action={{ type: "buyout", startupId: deal.id, leverage: true }}

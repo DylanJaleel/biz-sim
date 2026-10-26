@@ -9,6 +9,7 @@ import { deskView } from "@/lib/game/views";
 import { currentGame } from "@/lib/current-game";
 import { eur } from "@/components/game/format";
 import { GigList } from "@/components/game/GigList";
+import { mandateLines } from "@/lib/game/mna-views";
 import { REGIME_LABEL } from "@/lib/game/market";
 
 // Dein Schreibtisch von oben. Alles, was zu tun ist, liegt als Gegenstand darauf.
@@ -132,6 +133,18 @@ export async function Office() {
         <div className="career" aria-label="Aufträge">
           <p className="eyebrow">Aufträge diesen Monat</p>
           <GigList gigs={state.gigs.filter((g) => g.month === state.month)} reputation={state.reputation} daysLeft={desk.daysLeft} compact />
+          {mandateLines(state).length > 0 && (
+            <ul className="list mna-mandates">
+              {mandateLines(state).map((m) => (
+                <li key={m.id} className="list__row">
+                  <Link href={`/mandat/${m.id}`}>{m.company}</Link>
+                  <span className="muted small">
+                    M&A-Mandat · {m.side === "sell" ? "Verkauf" : "Kauf"} · {m.label}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
         <div className="career office-level" aria-label="Büro">
           <p className="eyebrow">Büro</p>

@@ -1,18 +1,5 @@
 import { templateOf } from "./content";
-import {
-  applyAction,
-  covenantsOf,
-  daysLeft,
-  GameRuleError,
-  netWorth,
-  newGame,
-  openItems,
-  portfolioValue,
-  previewMeeting,
-  randomFor,
-  startupOf,
-  syndicateBlocker,
-} from "./engine";
+import { applyAction, covenantsOf, daysLeft, GameRuleError, netWorth, newGame, openItems, portfolioValue, previewMeeting, randomFor, startupOf, syndicateBlocker } from "./engine";
 import { covenantOutlook, optionValues } from "./covenants";
 import { holdingsValue } from "./market";
 import { OFFICES, officeOf } from "./office";
@@ -23,6 +10,12 @@ import { boldChance, garageUpkeep, travelOptions } from "./travel";
 import { playerAmount } from "./captable";
 import { contactDef, ringOpen } from "./network";
 import { BUYOUT_REPUTATION, INTRO_COOLDOWN, LEAD_REPUTATION, LIVING_COSTS, WARMTH_INTRO_MIN } from "./config";
+import { activeMandates, mandateCapacity } from "./mna";
+import { ddCost, mnaRead } from "./mna-core";
+import { DD_MODULES, type DdModule } from "./mna-config";
+import { activeSearch, searchBlocker, searchCandidates, structureDeal } from "./lbo";
+import { annualEbitda, sizeMultiple } from "./ebitda";
+import { platformBlocker, platformOf } from "./platform";
 import type { CovenantId, GameAction, GameState, Startup, Vote } from "./types";
 
 // Skript-Spieler für die Balance: Sie spielen das Spiel über die echte Engine.
@@ -230,6 +223,7 @@ export const mogulBot = (prefer?: string): Bot => {
       for (const o of s.startups.filter((x) => x.status === "offered" && x.offer)) {
         if (active.length + actions.length / 2 >= 6) break;
         const ticket = o.offer!.ticket;
+        if (o.offer!.ev) continue;
         if (o.offer!.buyout) {
           if (s.reputation >= 55 && ticket * 0.6 <= s.cash * 0.85) actions.push({ type: "dd", startupId: o.id }, { type: "buyout", startupId: o.id, leverage: true });
           continue;
@@ -255,7 +249,7 @@ export const mogulBot = (prefer?: string): Bot => {
           });
         if (!s.fund) actions.push({ type: "raiseFund" });
       }
-      return [...actions, ...base.month(s, random)];
+      return [...mnaActions(s, "mogul"), ...actions, ...base.month(s, random)];
     },
   };
 };
@@ -404,7 +398,7 @@ export const expertBot = (style: ExpertStyle = {}, name = "Experte"): Bot => {
       }
       // A fast car saves the travel day on far jobs.
       if (!s.garage.includes("elektro") && s.reputation >= 40 && s.cash > 400_000) actions.push({ type: "buyVehicle", vehicleId: "elektro" });
-      return [...actions, ...expertBoard(s, analyst, random)];
+      return [...actions, ...mnaActions(s, "mogul"), ...expertBoard(s, analyst, random)];
     },
     end: (s) => {
       if (!depot) return [];
@@ -437,6 +431,111 @@ function expertBoard(s: GameState, analyst: Bot, random: () => number): GameActi
   return [...board, ...gigs];
 }
 
+/** The mogul with a taste for leverage: maximum debt, no reviews, fast integrations, more add-ons. */
+export const peBot = (prefer?: string): Bot => {
+  const base = mogulBot(prefer);
+  return {
+    name: "PE-Profi",
+    pick: base.pick,
+    month: (s, random) => [...mnaActions(s, "pe"), ...base.month(s, random).filter((a) => !["acquire", "examine", "platform", "search"].includes(a.type))],
+  };
+};
+
+const STYLE = {
+  mogul: {
+    bank: 0.45,
+    vendor: 0.1,
+    earnout: 0.1,
+    dd: DD_MODULES,
+    addonDd: ["financial", "legal"] as DdModule[],
+    integration: "careful" as const,
+    cashShare: 0.6,
+    sellAddons: 3,
+    sellMonths: 30,
+  },
+  pe: { bank: 0.6, vendor: 0.2, earnout: 0.15, dd: [] as DdModule[], addonDd: [] as DdModule[], integration: "fast" as const, cashShare: 0.85, sellAddons: 4, sellMonths: 36 },
+};
+
+/**
+ * Mandates, succession programme and buy-and-build as a bot plays them:
+ * advise first, then fund a search, buy what it finds, make it a platform,
+ * add smaller firms and sell the group.
+ */
+export function mnaActions(s: GameState, style: keyof typeof STYLE): GameAction[] {
+  const st = STYLE[style];
+  const out: GameAction[] = [];
+  const mna = mnaRead(s);
+  // Investment banking: take mandates, analyse, run an auction, close.
+  for (const m of mna.mandates) {
+    if (m.status === "offered" && activeMandates(s).length < mandateCapacity(s) && daysLeft(s) >= 6) out.push({ type: "mandate", mandateId: m.id, move: "accept" });
+    if (m.status === "offered" || m.status === "prep") {
+      if (!m.comps) out.push({ type: "mandate", mandateId: m.id, move: "comps" });
+      else {
+        const mid = (m.comps[0] + m.comps[1]) / 2;
+        out.push(
+          m.side === "sell"
+            ? { type: "mandate", mandateId: m.id, move: "launch", multiple: Math.round(mid * 10) / 10, buyers: "mixed", process: "auction", dd: ["financial", "legal"] }
+            : { type: "mandate", mandateId: m.id, move: "launch", multiple: Math.round(mid * 0.95 * 10) / 10, process: "exclusive", dd: ["financial", "commercial"] },
+        );
+      }
+    }
+    if (m.status === "bids" && m.bids?.length) {
+      if (m.side === "sell" && m.process === "auction" && m.bids.length >= 2) out.push({ type: "mandate", mandateId: m.id, move: "final" });
+      else if (m.side === "buy" && m.bids[0]!.ev > m.wish) out.push({ type: "mandate", mandateId: m.id, move: "negotiate" });
+      else out.push({ type: "mandate", mandateId: m.id, move: "accept_bid" });
+    }
+  }
+  const worth = netWorth(s);
+  const owned = s.startups.filter((x) => x.status === "active" && x.lbo);
+  // The bank wants money: pay if possible.
+  for (const x of owned.filter((y) => y.lbo!.status === "cure" && y.lbo!.cure && y.lbo!.cure.amount <= s.cash)) out.push({ type: "platform", startupId: x.id, move: "cure" });
+  // Fund a search while no company of the programme is owned.
+  if (!activeSearch(s) && owned.length === 0 && searchBlocker(s, worth) === null) {
+    const best = searchCandidates(s)
+      .map((c, i) => ({ i, score: c.operator + c.network - c.cost / 500 }))
+      .sort((a, b) => b.score - a.score)[0]!;
+    out.push({ type: "search", move: "start", candidate: best.i });
+  }
+  // Targets: review, then buy at a fair price with bank, seller loan and earn-out.
+  for (const o of s.startups.filter((x) => x.status === "offered" && x.offer?.ev)) {
+    if (s.reputation < BUYOUT_REPUTATION || owned.length >= (style === "pe" ? 2 : 1)) break;
+    const ebitda = annualEbitda(o.metrics);
+    if (o.offer!.multiple! > sizeMultiple(ebitda) + 0.4) continue;
+    const structure = structureDeal(o.offer!.ev!, ebitda, st, s.market.regime, o.offer!.stake);
+    const ddTodo = st.dd.filter((m) => !(o.offer!.dd ?? []).includes(m));
+    const ddMoney = ddTodo.reduce((sum, m) => sum + ddCost(m, o.offer!.ev!), 0);
+    if (structure.equity + structure.fees + ddMoney > s.cash * st.cashShare) continue;
+    if (ddTodo.length > 0) out.push({ type: "examine", targetId: o.id, modules: ddTodo });
+    out.push({ type: "acquire", targetId: o.id, bid: "ask", bank: st.bank, vendor: st.vendor, earnout: st.earnout });
+  }
+  const platform = platformOf(s);
+  if (!platform) {
+    const base = owned.filter((x) => platformBlocker(s, x) === null).sort((a, b) => annualEbitda(b.metrics) - annualEbitda(a.metrics))[0];
+    if (base) out.push({ type: "platform", startupId: base.id, move: "make" });
+    return out;
+  }
+  const p = platform.platform!;
+  const age = s.month - p.since;
+  if (
+    !p.sale &&
+    !s.exits.some((e) => e.startupId === platform.id && e.status === "open") &&
+    (p.addons.length >= st.sellAddons || age >= st.sellMonths) &&
+    p.integrations.length === 0 &&
+    platform.lbo?.status === "ok"
+  ) {
+    out.push({ type: "platform", startupId: platform.id, move: "sell", process: "auction", buyers: "strategic" });
+    return out;
+  }
+  const busy = p.integrations.length;
+  for (const a of mna.addons.filter((x) => x.platformId === platform.id && x.status === "open")) {
+    if (p.sale || (style === "mogul" && busy >= 1 + s.team.filter((t) => t.role === "partner").length)) break;
+    const todo = st.addonDd.filter((m) => !a.dd.includes(m));
+    if (todo.length > 0) out.push({ type: "examine", targetId: a.id, modules: todo });
+    out.push({ type: "acquire", targetId: a.id, bid: "ask", bank: 0.6, vendor: st.vendor, earnout: st.earnout, integration: st.integration });
+  }
+  return out;
+}
+
 function target(v: Vote): number {
   return v === "go" ? 0.85 : v === "conditions" ? 0.1 : -0.85;
 }
@@ -463,12 +562,16 @@ export interface BotRun {
   worth: number[];
   /** Income lines of all month reports, summed up. */
   income: Record<string, number>;
+  /** Net worth at the end of each game year. */
+  curve: number[];
+  mna: ReturnType<typeof mnaRead>["record"];
 }
 
 export function runBot(bot: Bot, seed: number, months: number): BotRun {
   let state = newGame(seed);
   const worth: number[] = [];
   const income: Record<string, number> = {};
+  const curve: number[] = [];
   const play = (actions: GameAction[], stopWhenBusy: boolean) => {
     for (const action of actions) {
       try {
@@ -487,6 +590,7 @@ export function runBot(bot: Bot, seed: number, months: number): BotRun {
     state = result.state;
     if (result.result.kind === "report") for (const [k, v] of Object.entries(result.result.report.income ?? {})) income[k] = (income[k] ?? 0) + (v ?? 0);
     worth.push(netWorth(state));
+    if ((m + 1) % 12 === 0) curve.push(netWorth(state));
   }
   const judgments = { strong: 0, fair: 0, weak: 0 };
   for (const i of state.items) if (i.decision && !i.decision.lapsed) judgments[i.decision.judgment]++;
@@ -510,5 +614,7 @@ export function runBot(bot: Bot, seed: number, months: number): BotRun {
     judgments,
     worth,
     income,
+    curve,
+    mna: mnaRead(state).record,
   };
 }

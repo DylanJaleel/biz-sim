@@ -2,7 +2,7 @@
 //   npm run simulate            (100 seeds, 24 Monate)
 //   npm run simulate -- 200 36
 //   npm run simulate -- 30 24 120 12   (langes Spiel: 120 Monate, 12 Seeds)
-import { analystBot, conditionsBot, consultantBot, expertBot, mogulBot, passiveBot, proBot, randomBot, runBot, yesBot, type Bot } from "../lib/game/bots";
+import { analystBot, conditionsBot, consultantBot, expertBot, mogulBot, passiveBot, peBot, proBot, randomBot, runBot, yesBot, type Bot, type BotRun } from "../lib/game/bots";
 
 const seeds = Number(process.argv[2] ?? 100);
 const months = Number(process.argv[3] ?? 24);
@@ -51,9 +51,20 @@ const longSeeds = Math.min(seeds, Number(process.argv[5] ?? 20));
 const years = [1, 2, 3, 5, 7, 10].filter((y) => y * 12 <= long);
 console.log(`\nLanges Spiel: ${longSeeds} Spiele à ${long} Monate, Vermögen (Median) nach Jahr ${years.join(" / ")}`);
 console.log("Spieler".padEnd(12) + years.map((y) => `J${y}`.padStart(10)).join("") + "   P25 / P75 am Ende        Insolvenz  Karriere  Mandate  Nachfolgen  Börsengänge");
-const STEPS = ["Angel", "Lead", "Mehrheit", "Aufsichtsrat", "Family Office", "Mogul"];
-for (const bot of [passiveBot("pendelwerk"), yesBot("pendelwerk"), randomBot("pendelwerk"), analystBot("pendelwerk"), proBot("pendelwerk"), mogulBot("pendelwerk"), expertBot()]) {
+const STEPS = ["Angel", "Lead", "M&A-Berater", "Mehrheit", "Aufsichtsrat", "Family Office", "Mogul", "Plattform"];
+const longRuns: Record<string, BotRun[]> = {};
+for (const bot of [
+  passiveBot("pendelwerk"),
+  yesBot("pendelwerk"),
+  randomBot("pendelwerk"),
+  analystBot("pendelwerk"),
+  proBot("pendelwerk"),
+  mogulBot("pendelwerk"),
+  peBot("pendelwerk"),
+  expertBot(),
+]) {
   const runs = Array.from({ length: longSeeds }, (_, i) => runBot(bot, i + 1, long));
+  longRuns[bot.name] = runs;
   const sorted = runs.map((r) => r.worth[long - 1]!).sort((a, b) => a - b);
   const q = (p: number) => sorted[Math.floor(p * (sorted.length - 1))]!;
   console.log(
@@ -66,4 +77,25 @@ for (const bot of [passiveBot("pendelwerk"), yesBot("pendelwerk"), randomBot("pe
       String(runs.reduce((a, r) => a + r.buyouts, 0)).padStart(12) +
       String(runs.reduce((a, r) => a + r.ipos, 0)).padStart(13),
   );
+}
+
+// Mittelstand: Mandate, Nachfolge-Programm, Buy-and-Build.
+console.log("\nMittelstand im langen Spiel (Summen über alle Spiele, Vermögen je Jahresende als Median)");
+for (const name of ["Mogul", "PE-Profi", "Experte"]) {
+  const runs = longRuns[name] ?? [];
+  const sum = (f: (r: BotRun) => number) => runs.reduce((a, r) => a + f(r), 0);
+  const exits = runs.flatMap((r) => r.mna.platformExits);
+  const sold = exits.filter((e) => !e.forced);
+  const years = Math.max(0, ...runs.map((r) => r.curve.length));
+  const curve = Array.from({ length: years }, (_, y) => median(runs.map((r) => r.curve[y] ?? 0)));
+  console.log(
+    `${name}: Mandate ${sum((r) => r.mna.mandatesDone)} abgeschlossen / ${sum((r) => r.mna.mandatesFailed)} gescheitert (Median-Honorar je Spiel ${eur(median(runs.map((r) => r.mna.mandateFees))).trim()}), ` +
+      `Suchen ${sum((r) => r.mna.searchesStarted)} (ohne Kauf ${sum((r) => r.mna.searchesFailed)}), Käufe ${sum((r) => r.mna.acquisitions)}, Übergaben gut/holprig ${sum((r) => r.mna.successions)}/${sum((r) => r.mna.troubledHandovers)}, ` +
+      `Zukäufe ${sum((r) => r.mna.addons)} (Synergien ${sum((r) => r.mna.synergies)}, missglückt ${sum((r) => r.mna.integrationFailures)}), Covenant-Brüche ${sum((r) => r.mna.covenantBreaches)}, Zwangsverkäufe ${sum((r) => r.mna.forcedSales)}`,
+  );
+  console.log(
+    `  Plattform-Exits ${sold.length}, Multiple beim Kauf/Verkauf (Median) ${median(sold.map((e) => e.entryMultiple))}× / ${median(sold.map((e) => e.multiple))}×, MOIC Median ${median(sold.map((e) => e.moic))}×, ` +
+      `MOIC unter 1: ${exits.filter((e) => e.moic < 1).length} von ${exits.length}`,
+  );
+  console.log(`  Vermögen je Jahr (Median): ${curve.map((v) => eur(v).trim()).join(" → ")}`);
 }
