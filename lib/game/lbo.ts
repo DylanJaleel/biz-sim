@@ -569,6 +569,8 @@ function covenantTest(ctx: Ctx, s: Startup, month: number, texts: string[]): Sta
       lbo.rate = Math.max(0, lbo.rate - COVENANT_PENALTY_RATE);
       lbo.payment = annuityOf(lbo.bank, lbo.rate, BANK_YEARS * 12);
       texts.push(`Covenant wieder eingehalten (${times(lev)} EBITDA). Der Zinsaufschlag entfällt.`);
+      const rec = mnaOf(ctx.state).record;
+      rec.covenantRecovered = (rec.covenantRecovered ?? 0) + 1;
     }
     if (lbo.status !== "cure") {
       lbo.status = "ok";
@@ -639,6 +641,8 @@ export function cure(ctx: Ctx, s: Startup): void {
   lbo.status = "ok";
   lbo.breach = 0;
   delete lbo.cure;
+  const record = mnaOf(state).record;
+  record.covenantRecovered = (record.covenantRecovered ?? 0) + 1;
   lbo.equity += amount;
   next = syncDebt({ ...next, lbo, metrics: { ...next.metrics, cash }, playerCost: (next.playerCost ?? 0) + amount });
   ctx.replace(next);

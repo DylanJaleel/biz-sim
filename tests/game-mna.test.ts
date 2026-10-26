@@ -76,6 +76,7 @@ describe("M&A mandates", () => {
     expect(done.status).toBe("closed");
     expect(done.outcome!.fee).toBeGreaterThan(0);
     expect(mnaOf(state).record.mandatesDone).toBe(1);
+    expect(mnaOf(state).record.auctionWins ?? 0).toBe(done.outcome!.ev >= done.wish ? 1 : 0);
     expect(careerOf(state).steps.find((x) => x.title === "M&A-Berater")!.done).toBe(true);
   });
 
@@ -191,6 +192,32 @@ describe("buying a family business", () => {
     }
     expect(x.status).toBe("sold");
     expect(mnaOf(state).record.forcedSales).toBe(1);
+    expect(mnaOf(state).record.covenantRecovered ?? 0).toBe(0);
+  });
+
+  it("a breach that is repaired in time counts as survived", () => {
+    const { state: start, id } = withTarget(14);
+    let state = act(start, { type: "acquire", targetId: id, bid: "ask", bank: 0.6, vendor: 0, earnout: 0 });
+    const s = state.startups.find((x) => x.id === id)!;
+    const goodOpex = s.metrics.opex;
+    s.metrics.opex = s.metrics.revenue * s.metrics.grossMargin * 0.97;
+    s.lbo = { ...s.lbo!, refRevenue: undefined, margin: undefined };
+    state.month = 15;
+    state = closeMonthOnly(state);
+    expect(state.startups.find((y) => y.id === id)!.lbo!.status).toBe("watch");
+    expect(mnaOf(state).record.covenantBreaches).toBe(1);
+    // Costs back to normal and enough cash: the next quarterly test is passed.
+    const x = state.startups.find((y) => y.id === id)!;
+    x.metrics.opex = goodOpex;
+    x.metrics.cash += x.lbo!.bank;
+    x.lbo = { ...x.lbo!, refRevenue: undefined, margin: undefined };
+    state.month = 17;
+    state = closeMonthOnly(state);
+    state = closeMonthOnly(state);
+    const after = state.startups.find((y) => y.id === id)!;
+    expect(after.lbo!.status).toBe("ok");
+    expect(mnaOf(state).record.covenantRecovered).toBe(1);
+    expect(mnaOf(state).record.forcedSales).toBe(0);
   });
 });
 

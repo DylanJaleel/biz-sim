@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { FAMILY_OFFICE_REPUTATION, FAMILY_OFFICE_WORTH } from "../lib/game/config";
 import { applyAction, closeMonth, netWorth, newGame, upgradeState } from "../lib/game/engine";
-import { TROPHIES } from "../lib/game/trophies";
-import { boldChance, cityOf, garageValue, RESALE, resolveTrip, travelOptions, vehicleOf } from "../lib/game/travel";
-import type { GameAction, GameState, Gig } from "../lib/game/types";
+import { emptyRecord } from "../lib/game/mna-core";
+import { awardTrophies, TROPHIES } from "../lib/game/trophies";
+import { boldChance, cityOf, garageValue, gigStats, RESALE, resolveTrip, travelOptions, vehicleOf } from "../lib/game/travel";
+import type { BoardItem, ExitOffer, GameAction, GameState, Gig, MeetingDecision } from "../lib/game/types";
 import { parseAction } from "../lib/game/validate";
 
 const act = (state: GameState, action: GameAction) => applyAction(state, action).state;
+const close = (state: GameState) => act(state, { type: "closeMonth" });
 
 function gig(kind: string, extra: Partial<Gig> = {}): Gig {
   return { id: "g900", month: 1, kind, client: "Feinguss Weber", title: "Interim-CFO", text: "", days: 6, fee: 20_000, status: "offered", ...extra };
@@ -49,6 +51,138 @@ describe("display cabinet", () => {
     expect(up.garage).toEqual([]);
     expect(up.trophies.map((t) => t.id)).toContain("first-deal");
     expect(up.trophies.every((t) => t.seen)).toBe(true);
+  });
+});
+
+describe("more tombstones", () => {
+  const earnedIds = (state: GameState, worth = 0) => awardTrophies(structuredClone(state), worth);
+  const decided = (n: number, over: Partial<MeetingDecision>): BoardItem[] =>
+    Array.from({ length: n }, (_, k) => ({
+      id: `i${k}`,
+      startupId: "pendelwerk",
+      templateId: "t",
+      month: 1,
+      status: "decided" as const,
+      asked: [],
+      pretalks: [],
+      cfo: false,
+      decision: { argument: null, vote: "conditions", outcome: "conditions", judgment: "strong", month: 1, ...over } as MeetingDecision,
+    }));
+  const sold = (price: number, n = 1): ExitOffer[] =>
+    Array.from({ length: n }, (_, k) => ({ id: `x${k}`, startupId: "pendelwerk", month: 1, buyer: "B", price, status: "accepted" as const }));
+
+  it("has about twenty more, in five shelves, each with a story", () => {
+    expect(TROPHIES.length).toBeGreaterThanOrEqual(33);
+    expect(new Set(TROPHIES.map((t) => t.shelf))).toEqual(new Set(["worth", "deals", "career", "mna", "board"]));
+    for (const t of TROPHIES) expect(t.story.length).toBeGreaterThan(20);
+  });
+
+  it("nothing new is earned by a fresh game", () => {
+    expect(earnedIds(newGame(5))).toEqual([]);
+  });
+
+  it("big fortunes come late", () => {
+    const state = newGame(5);
+    expect(earnedIds(state, 99_000_000)).not.toContain("worth-100m");
+    expect(earnedIds(state, 100_000_000)).toContain("worth-100m");
+    expect(earnedIds(state, 250_000_000)).toContain("worth-250m");
+  });
+
+  it("counts sales and big sales", () => {
+    const state = newGame(5);
+    expect(earnedIds({ ...state, exits: sold(12_000_000, 2) })).toContain("exit-10m");
+    expect(earnedIds({ ...state, exits: sold(12_000_000, 2) })).not.toContain("exits-3");
+    expect(earnedIds({ ...state, exits: sold(2_000_000, 3) })).toContain("exits-3");
+    expect(earnedIds({ ...state, exits: sold(2_000_000, 3) })).not.toContain("exit-10m");
+    const fresh = structuredClone({ ...state, exits: sold(12_500_000) });
+    awardTrophies(fresh, 0);
+    expect(fresh.trophies.find((t) => t.id === "exit-10m")?.detail).toBe("12,5 Mio €");
+  });
+
+  it("M&A tombstones follow the record and the companies", () => {
+    const base = newGame(5);
+    const withRecord = (r: Partial<ReturnType<typeof emptyRecord>>): GameState => ({
+      ...base,
+      mna: { mandates: [], searches: [], addons: [], record: { ...emptyRecord(), ...r } },
+    });
+    expect(earnedIds(withRecord({ mandatesDone: 1 }))).toContain("mna-first");
+    expect(earnedIds(withRecord({ mandatesDone: 9 }))).not.toContain("mna-10");
+    expect(earnedIds(withRecord({ mandatesDone: 10 }))).toContain("mna-10");
+    expect(earnedIds(withRecord({ auctionWins: 1 }))).toContain("mna-auction");
+    expect(earnedIds(withRecord({ successions: 1 }))).toContain("mna-handover");
+    expect(earnedIds(withRecord({ addons: 4 }))).not.toContain("mna-addons-5");
+    expect(earnedIds(withRecord({ addons: 5 }))).toContain("mna-addons-5");
+    expect(earnedIds(withRecord({ covenantRecovered: 1 }))).toContain("mna-covenant");
+    const exit = { name: "X", month: 5, ev: 1, ebitda: 1, multiple: 6, entryMultiple: 4, moic: 2.9, addons: 3 };
+    expect(earnedIds(withRecord({ platformExits: [exit] }))).not.toContain("mna-moic-3");
+    expect(earnedIds(withRecord({ platformExits: [{ ...exit, moic: 3.2 }] }))).toEqual(expect.arrayContaining(["mna-moic-3", "platform-investor"]));
+    expect(earnedIds(withRecord({ platformExits: [{ ...exit, moic: 3.2, forced: true }] }))).not.toContain("mna-moic-3");
+    const first = base.startups[0]!;
+    const own = (extra: Partial<typeof first>): GameState => ({ ...base, startups: [{ ...first, ...extra }, ...base.startups.slice(1)] });
+    expect(earnedIds(own({ platform: { since: 3, addons: [], integrations: [] } }))).toContain("mna-platform");
+    const lbo = { acquired: 1, entryEv: 1, entryEbitda: 1, equity: 1, bank: 0, rate: 0.05, payment: 0, vendors: [], earnouts: [], breach: 0, status: "ok" as const, handover: [] };
+    expect(earnedIds(own({ lbo }))).not.toContain("mna-search");
+    expect(earnedIds(own({ lbo: { ...lbo, searchId: "s1" } }))).toContain("mna-search");
+  });
+
+  it("board tombstones count only fitting conditions and the player's own strong decisions", () => {
+    const base = newGame(5);
+    const fit = (n: number) => ({ ...base, items: decided(n, { applied: "pilot", fit: "pilot" }) });
+    expect(earnedIds(fit(9))).not.toContain("board-conditions-10");
+    expect(earnedIds(fit(10))).toContain("board-conditions-10");
+    expect(earnedIds({ ...base, items: decided(12, { applied: "budget", fit: "pilot" }) })).not.toContain("board-conditions-10");
+    expect(earnedIds({ ...base, items: decided(12, { applied: "standard", fit: "pilot" }) })).not.toContain("board-conditions-10");
+    expect(earnedIds({ ...base, items: decided(24, { vote: "go", outcome: "go" }) })).not.toContain("board-strong-25");
+    expect(earnedIds({ ...base, items: decided(25, { vote: "go", outcome: "go" }) })).toContain("board-strong-25");
+    expect(earnedIds({ ...base, items: decided(25, { vote: "go", outcome: "go", delegated: true }) })).not.toContain("board-strong-25");
+    expect(earnedIds({ ...base, items: decided(25, { vote: "go", outcome: "go", judgment: "fair" }) })).not.toContain("board-strong-25");
+  });
+
+  it("jobs and cities are counted for good, also after the job list is cleared", () => {
+    let state: GameState = { ...newGame(7), cash: 5_000_000, reputation: 80 };
+    const cities = ["koeln", "wuppertal", "hamburg", "berlin", "frankfurt", "muenchen", "luzern", "wien"];
+    expect(earnedIds(state)).not.toContain("trips-10");
+    for (let n = 0; n < 10; n++) {
+      state = { ...state, gigs: [...state.gigs, gig("interim", { id: `t${n}`, month: state.month, city: cities[n % cities.length] })] };
+      state = act(state, { type: "gig", gigId: `t${n}`, travel: "bahn2" });
+      state = close({ ...state, daysUsed: 0 });
+    }
+    expect(state.gigLog?.done).toBe(10);
+    expect(state.gigLog?.cities).toEqual(expect.arrayContaining(cities));
+    expect(state.trophies.map((t) => t.id)).toEqual(expect.arrayContaining(["trips-10", "trips-all-cities"]));
+    // The list forgets old jobs, the count does not.
+    expect(gigStats({ ...state, gigs: [] }).done).toBe(10);
+  });
+
+  it("starts the job count of an old save from the jobs it still has", () => {
+    const old: GameState = {
+      ...newGame(7),
+      month: 5,
+      gigs: [gig("interim", { id: "a", month: 4, status: "booked", city: "wien" }), gig("interim", { id: "b", month: 2, status: "booked" })],
+    };
+    expect(old.gigLog).toBeUndefined();
+    expect(gigStats(old)).toEqual({ done: 2, cities: ["wien", "hamburg"] });
+  });
+
+  it("an own jet, not the jet card", () => {
+    const base = newGame(5);
+    expect(earnedIds({ ...base, garage: ["jetkarte"] })).not.toContain("own-jet");
+    expect(earnedIds({ ...base, garage: ["jet"] })).toContain("own-jet");
+  });
+
+  it("an old save that reaches many at once gets them all in one go (the popup shows one)", () => {
+    const exit = { name: "X", month: 5, ev: 1, ebitda: 1, multiple: 6, entryMultiple: 4, moic: 3.2, addons: 3 };
+    const state: GameState = {
+      ...newGame(5),
+      exits: sold(12_000_000, 3),
+      garage: ["jet"],
+      mna: { mandates: [], searches: [], addons: [], record: { ...emptyRecord(), mandatesDone: 10, successions: 1, addons: 5, platformExits: [exit] } },
+    };
+    const fresh = structuredClone(state);
+    const ids = awardTrophies(fresh, 120_000_000);
+    expect(ids.length).toBeGreaterThanOrEqual(9);
+    expect(fresh.trophies.every((t) => !t.seen)).toBe(true);
+    expect(awardTrophies(fresh, 120_000_000)).toEqual([]);
   });
 });
 

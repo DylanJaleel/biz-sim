@@ -53,6 +53,23 @@ export function cityOf(gig: Gig): City {
   return CITIES[gig.city ?? GIG_CITY[gig.kind] ?? "koeln"] ?? CITIES.koeln!;
 }
 
+/** Jobs invoiced before this month, read from the (six-month) job list: the start of the log for games saved before it existed. */
+function derivedGigLog(state: GameState): { done: number; cities: string[] } {
+  const past = state.gigs.filter((g) => g.status === "booked" && g.month < state.month);
+  return { done: past.length, cities: [...new Set(past.map((g) => cityOf(g).id))] };
+}
+
+/** The running count of finished jobs; created from the job list the first time it is needed. */
+export function ensureGigLog(state: GameState): { done: number; cities: string[] } {
+  if (!state.gigLog) state.gigLog = derivedGigLog(state);
+  return state.gigLog;
+}
+
+/** Read-only view for tombstones: never writes into the state. */
+export function gigStats(state: GameState): { done: number; cities: string[] } {
+  return state.gigLog ?? derivedGigLog(state);
+}
+
 // ---------------------------------------------------------------------------
 // Fuhrpark: was man kaufen kann.
 // ---------------------------------------------------------------------------
