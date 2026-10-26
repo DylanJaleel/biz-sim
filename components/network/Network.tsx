@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { currentGame } from "@/lib/current-game";
 import { networkPage } from "@/lib/game/network-views";
-import { ActionButton } from "@/components/game/ActionButton";
-import { eur } from "@/components/game/format";
-import { Disclosure } from "@/components/ui/Disclosure";
+import { EventItem, YearGrid } from "./EventParts";
+import { FavorItem } from "./FavorParts";
 import { NetworkRings } from "./NetworkRings";
+import { NetworkTabs } from "./NetworkTabs";
 
 // Das Netzwerk: die Karte der Kontakte mit ihren Beziehungen, offene Bitten,
-// Einladungen und der Jahreskalender der Veranstaltungen.
+// Einladungen und der Jahreskalender der Veranstaltungen. Auf kleinen
+// Bildschirmen drei Reiter, auf dem Desktop alles auf einer Seite.
 
 export async function Network({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const params = await searchParams;
@@ -16,127 +17,87 @@ export async function Network({ searchParams }: { searchParams: Promise<Record<s
   const wanted = typeof params.kontakt === "string" ? params.kontakt : undefined;
   const initial = view.contacts.find((c) => c.id === wanted)?.id ?? view.contacts.find((c) => c.favors.length > 0)?.id ?? view.contacts[0]?.id ?? "";
   const known = view.contacts.filter((c) => c.met).length;
+  const invites = view.events.filter((e) => e.status === "invited").length;
+  const status = Object.fromEntries([...view.events].reverse().map((e) => [e.defId, e.status]));
+  const log = [
+    { n: view.log.given, text: "Gefallen getan" },
+    { n: view.log.declined, text: "abgesagt" },
+    { n: view.log.lapsed, text: "verstrichen" },
+    { n: view.log.events, text: view.log.events === 1 ? "Veranstaltung" : "Veranstaltungen" },
+    { n: view.log.specialists, text: view.log.specialists === 1 ? "Spezialist beauftragt" : "Spezialisten beauftragt" },
+  ].filter((x) => x.n > 0);
+
   return (
-    <div className="page">
-      <header className="page__head">
-        <p className="eyebrow">Netzwerk</p>
-        <h1 className="page__title">Wen du kennst</h1>
-        <p className="page__lead">
-          Drei Kreise: persönliche Kontakte, Branchenprofis, Entscheider. Wärme zeigt, wie nah ihr euch seid; das Vertrauenskonto, wer wem zuletzt geholfen hat. Wer Gefallen tut,
-          bekommt stärkere Hilfe. Wer nur nimmt, hört irgendwann Nein.
-        </p>
-        <p className="muted small">
-          {known} von {view.contacts.length} kennst du · Gefallen getan {view.log.given} · abgesagt {view.log.declined} · verstrichen {view.log.lapsed} · Veranstaltungen{" "}
-          {view.log.events} · Spezialisten beauftragt {view.log.specialists}
-        </p>
+    <div className="page net-page">
+      <header className="page__head net-head">
+        <div>
+          <p className="eyebrow">Netzwerk</p>
+          <h1 className="page__title">Wen du kennst</h1>
+          <p className="page__lead">Wärme zeigt, wie nah ihr euch seid. Wer Gefallen tut, bekommt stärkere Hilfe. Wer nur nimmt, hört irgendwann Nein.</p>
+        </div>
+        <ul className="net-stats" aria-label="Stand deines Netzwerks">
+          <li>
+            <b>
+              {known} von {view.contacts.length}
+            </b>{" "}
+            kennst du
+          </li>
+          {log.map((l) => (
+            <li key={l.text}>
+              <b>{l.n}</b> {l.text}
+            </li>
+          ))}
+        </ul>
       </header>
 
-      <NetworkRings key={initial} view={view} revision={revision} initial={initial} />
+      <NetworkTabs
+        panes={[
+          { id: "karte", label: "Karte" },
+          { id: "bitten", label: "Bitten", count: view.favors.length },
+          { id: "termine", label: "Termine", count: invites },
+        ]}
+      >
+        <div data-npane="karte">
+          <NetworkRings key={initial} view={view} revision={revision} initial={initial} />
+        </div>
 
-      <section className="page__section" id="bitten" aria-labelledby="favors-title">
-        <Disclosure
-          title="Offene Bitten"
-          as="h2"
-          headingId="favors-title"
-          headingClass="section-title"
-          hint={view.favors.length > 0 ? `${view.favors.length}` : undefined}
-          defaultOpen
-        >
-          {view.favors.length === 0 ? (
-            <p className="muted">Gerade bittet dich niemand um etwas. Bitten kommen per Post, mit Frist bis Ende des nächsten Monats.</p>
-          ) : (
-            <ul className="net-favors">
-              {view.favors.map((f) => (
-                <li key={f.id} className={`panel net-favor${f.urgent ? " is-urgent" : ""}`}>
-                  <p className="eyebrow">
-                    {f.contactName} · bis Ende {f.expires}
-                  </p>
-                  <h3 className="item__h">{f.subject}</h3>
-                  <p>{f.body}</p>
-                  <p className="muted small">{f.cost}.</p>
-                  <div className="deal__actions">
-                    <ActionButton
-                      action={{ type: "favor", favorId: f.id, accept: true }}
-                      revision={revision}
-                      days={f.days > 0 ? f.days : undefined}
-                      variant="primary"
-                      disabled={Boolean(f.blocker)}
-                    >
-                      Zusagen
-                    </ActionButton>
-                    <ActionButton action={{ type: "favor", favorId: f.id, accept: false }} revision={revision} variant="ghost">
-                      Absagen
-                    </ActionButton>
-                    {f.blocker && <small className="muted">{f.blocker}</small>}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Disclosure>
-      </section>
+        <div className="net-lower">
+          <section className="net-col" data-npane="bitten" id="bitten" aria-labelledby="favors-title">
+            <h2 id="favors-title" className="net-col__t">
+              Bitten an dich {view.favors.length > 0 && <span className="net-col__n">{view.favors.length}</span>}
+            </h2>
+            {view.favors.length === 0 ? (
+              <p className="net-empty">Gerade bittet dich niemand um etwas. Bitten kommen per Post, mit Frist bis Ende des nächsten Monats.</p>
+            ) : (
+              <ul className="nt-cards">
+                {view.favors.map((f) => (
+                  <FavorItem key={f.id} favor={f} revision={revision} />
+                ))}
+              </ul>
+            )}
+          </section>
 
-      <section className="page__section" id="termine" aria-labelledby="events-title">
-        <Disclosure title="Veranstaltungen" as="h2" headingId="events-title" headingClass="section-title" hint={view.events.length > 0 ? `${view.events.length}` : undefined}>
-          {view.events.length === 0 ? (
-            <p className="muted">Gerade keine Einladung. Sie kommen einen Monat vorher in die Post.</p>
-          ) : (
-            <ul className="net-events">
-              {view.events.map((e) => (
-                <li key={e.id} className="panel net-event">
-                  <p className="eyebrow">
-                    {e.month} · {e.city} · {e.days === 1 ? "1 Tag" : `${e.days} Tage`} · {e.travel} · {eur(e.money)}
-                  </p>
-                  <h3 className="item__h">{e.name}</h3>
-                  <p>{e.text}</p>
-                  <p className="muted small">
-                    Wer kommt: {e.guests.map((g) => `${g.name}${g.met ? "" : " (neu)"}`).join(", ")}.{e.deal ? " Manchmal ergibt sich ein Deal." : ""}
-                    {e.mandate ? " Manchmal ein Mandat." : ""}
-                  </p>
-                  {e.status === "invited" ? (
-                    <div className="deal__actions">
-                      <ActionButton action={{ type: "event", eventId: e.id, move: "accept" }} revision={revision} days={e.thisMonth ? e.days : undefined} variant="primary">
-                        {e.thisMonth ? "Hingehen" : "Zusagen"}
-                      </ActionButton>
-                      {e.talk?.possible && (
-                        <ActionButton action={{ type: "event", eventId: e.id, move: "accept", talk: true }} revision={revision} days={e.thisMonth ? e.days + 1 : undefined}>
-                          {`Mit Vortrag (+${e.talk.reputation} Ruf)`}
-                        </ActionButton>
-                      )}
-                      <ActionButton action={{ type: "event", eventId: e.id, move: "decline" }} revision={revision} variant="ghost">
-                        Absagen
-                      </ActionButton>
-                      {e.talk && !e.talk.possible && <small className="muted">Vortrag ab {e.talk.from} Ruf.</small>}
-                    </div>
-                  ) : (
-                    <p className={`notice${e.status === "declined" ? "" : " notice--good"}`}>
-                      {e.status === "attended" ? "Du warst dort." : e.status === "accepted" ? "Zugesagt. Der Termin kommt zu Monatsbeginn in deinen Kalender." : "Abgesagt."}
-                    </p>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </Disclosure>
-      </section>
-
-      <section className="page__section" aria-labelledby="year-title">
-        <Disclosure title="Jahreskalender" as="h2" headingId="year-title" headingClass="section-title">
-          <ul className="list net-year">
-            {view.year.map((y) => (
-              <li key={y.id} className={`list__row${y.open ? "" : " is-locked"}`}>
-                <b>{y.name}</b>
-                <span className="muted">
-                  {y.month} · {y.city} · {y.open ? "du wirst eingeladen" : `ab ${y.minReputation} Ruf`}
-                </span>
-              </li>
-            ))}
-          </ul>
-          <p className="muted small">
-            Alles zu Gegenseitigkeit, Warm Intros und Veranstaltungen steht im <Link href="/notizbuch">Notizbuch</Link>.
-          </p>
-        </Disclosure>
-      </section>
+          <section className="net-col" data-npane="termine" id="termine" aria-labelledby="events-title">
+            <h2 id="events-title" className="net-col__t">
+              Termine {invites > 0 && <span className="net-col__n">{invites}</span>}
+            </h2>
+            {view.events.length === 0 ? (
+              <p className="net-empty">Gerade keine Einladung. Sie kommen einen Monat vorher in die Post.</p>
+            ) : (
+              <ul className="nt-cards">
+                {view.events.map((e) => (
+                  <EventItem key={e.id} event={e} revision={revision} />
+                ))}
+              </ul>
+            )}
+            <h3 className="net-col__sub">Das Jahr im Überblick</h3>
+            <YearGrid year={view.year} invited={status} now={state.month} />
+            <p className="muted small net-note">
+              Alles zu Gegenseitigkeit, Warm Intros und Veranstaltungen steht im <Link href="/notizbuch">Notizbuch</Link>.
+            </p>
+          </section>
+        </div>
+      </NetworkTabs>
     </div>
   );
 }

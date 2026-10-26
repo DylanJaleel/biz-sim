@@ -94,6 +94,9 @@ export interface FavorCard {
   subject: string;
   body: string;
   cost: string;
+  /** What saying yes brings, in words. */
+  gain: string;
+  ring: Ring;
   days: number;
   cash: number;
   expires: string;
@@ -115,7 +118,7 @@ export interface EventCard {
   money: number;
   travel: string;
   status: NetEvent["status"];
-  guests: { id: string; name: string; role: string; met: boolean; open: boolean }[];
+  guests: { id: string; name: string; role: string; met: boolean; open: boolean; ring: Ring }[];
   deal: boolean;
   mandate: boolean;
   talk?: { title: string; from: number; reputation: number; possible: boolean };
@@ -165,6 +168,25 @@ const CAREER_TEXT: Record<CareerKind, (name: string, role: string, org: string) 
   new: (n, _r, o) => `${n} ist neu bei ${o}, als Nachfolge. Die Beziehung startet kühler.`,
 };
 
+/** What a yes brings: trust, warmth and sometimes something on top. */
+function favorGain(def: (typeof FAVORS)[keyof typeof FAVORS]): string {
+  const parts = [`Vertrauenskonto +${def.bal}`, `Wärme +${def.warmth}`];
+  if (def.reputation) parts.push(`+${def.reputation} Ruf`);
+  if (def.reward) {
+    const sometimes = def.reward.chance >= 0.5 ? "oft" : "manchmal";
+    parts.push(
+      def.reward.kind === "fee"
+        ? `${sometimes} ein Honorar`
+        : def.reward.kind === "deal"
+          ? `${sometimes} ein Deal`
+          : def.reward.kind === "reputation"
+            ? `${sometimes} mehr Ruf`
+            : `${sometimes} ein neuer Kontakt`,
+    );
+  }
+  return parts.join(", ");
+}
+
 function favorCard(state: GameState, f: Favor): FavorCard {
   const def = FAVORS[f.kind];
   const text = favorText(state, f);
@@ -179,6 +201,8 @@ function favorCard(state: GameState, f: Favor): FavorCard {
     subject: text.subject,
     body: text.body,
     cost: def.cost,
+    gain: favorGain(def),
+    ring: contactDef(f.contactId).ring,
     days: def.days,
     cash: def.cash ?? 0,
     expires: monthName(f.expires),
@@ -193,7 +217,7 @@ function eventCard(state: GameState, e: NetEvent): EventCard {
   const cost = eventCost(state, def, false);
   const guests = guestsOf(state, def).map((id) => {
     const c = contactRead(state, id);
-    return { id, name: personOf(state, c).name, role: personOf(state, c).role, met: c.met, open: ringOpen(state, contactDef(id).ring) };
+    return { id, name: personOf(state, c).name, role: personOf(state, c).role, met: c.met, open: ringOpen(state, contactDef(id).ring), ring: contactDef(id).ring };
   });
   return {
     id: e.id,
@@ -411,7 +435,9 @@ export interface HelperView {
   id: string;
   name: string;
   role: string;
+  ring: Ring;
   warmth: number;
+  met: boolean;
   why: string;
   /** Null when it can be done now. */
   blocker: string | null;
@@ -431,7 +457,18 @@ export function helpersForCompany(state: GameState, startupId: string): HelperVi
       if (!why) return [];
       const card = contactCard(state, d);
       return [
-        { id: d.id, name: card.name, role: card.role, warmth: card.warmth, why: `${why} ${d.help}`, blocker: card.introBlocker ?? null, action: "intro" as const, warmthCost: 20 },
+        {
+          id: d.id,
+          name: card.name,
+          role: card.role,
+          ring: d.ring,
+          warmth: card.warmth,
+          met: card.met,
+          why: `${why} ${d.help}`,
+          blocker: card.introBlocker ?? null,
+          action: "intro" as const,
+          warmthCost: 20,
+        },
       ];
     })
     .sort((a, b) => Number(a.blocker !== null) - Number(b.blocker !== null) || b.warmth - a.warmth)
@@ -455,7 +492,9 @@ export function specialistsFor(state: GameState, targetId: string): HelperView[]
         id: d.id,
         name: card.name,
         role: card.role,
+        ring: d.ring,
         warmth: card.warmth,
+        met: card.met,
         why: card.specialist?.text ?? d.help,
         blocker: specialistBlocker(state, d.id, targetId),
         action: "specialist" as const,
@@ -469,6 +508,7 @@ export interface RivalView {
   contactId: string;
   name: string;
   org: string;
+  ring: Ring;
   warmth: number;
   needed: number;
   premium: number;
@@ -485,6 +525,7 @@ export function rivalView(state: GameState, rival: Rival | undefined): RivalView
     contactId: rival.contactId,
     name: p.name,
     org: p.org,
+    ring: contactDef(rival.contactId).ring,
     warmth: c.warmth,
     needed: RIVAL_WARMTH,
     premium: rival.premium,
@@ -497,9 +538,9 @@ export function rivalView(state: GameState, rival: Rival | undefined): RivalView
 export interface HintView {
   itemId: string;
   /** The hint once given. */
-  tip?: { name: string; text: string };
+  tip?: { name: string; text: string; ring: Ring };
   /** Who could give one, and what they know. */
-  options: { id: string; name: string; role: string; knows: string[]; warmth: number; blocker: string | null }[];
+  options: { id: string; name: string; role: string; ring: Ring; knows: string[]; warmth: number; blocker: string | null }[];
   cost: number;
   min: number;
 }
@@ -518,14 +559,14 @@ export function hintText(state: GameState, contactId: string, itemId: string): s
 
 export function hintsFor(state: GameState, itemId: string): HintView {
   const item = state.items.find((i) => i.id === itemId);
-  const tip = item?.tip ? { name: personOf(state, contactRead(state, item.tip)).name, text: hintText(state, item.tip, itemId) } : undefined;
+  const tip = item?.tip ? { name: personOf(state, contactRead(state, item.tip)).name, text: hintText(state, item.tip, itemId), ring: contactDef(item.tip).ring } : undefined;
   // Only people who know at least one of the conditions on the table; ready ones first.
   const onTable = item ? covenantsOf(state, item).options : [];
   const options = CONTACTS.filter((d) => d.hint && d.hint.some((h) => onTable.includes(h)) && ringOpen(state, d.ring) && contactRead(state, d.id).met)
     .map((d) => {
       const c = contactRead(state, d.id);
       const p = personOf(state, c);
-      return { id: d.id, name: p.name, role: p.role, knows: d.hint!.map((h) => COVENANTS[h].name), warmth: c.warmth, blocker: hintBlocker(state, d.id, itemId) };
+      return { id: d.id, name: p.name, role: p.role, ring: d.ring, knows: d.hint!.map((h) => COVENANTS[h].name), warmth: c.warmth, blocker: hintBlocker(state, d.id, itemId) };
     })
     .sort((a, b) => Number(a.blocker !== null) - Number(b.blocker !== null) || b.warmth - a.warmth);
   return { itemId, ...(tip ? { tip } : {}), options, cost: HINT_WARMTH_COST, min: HINT_WARMTH_MIN };
@@ -539,6 +580,8 @@ export interface NetworkTask {
   text: string;
   href: string;
   tone: "urgent" | "normal" | "calm";
+  /** Runs out soon (favour, invitation this month, contact about to cool): belongs near the top of the desk list. */
+  hurry?: boolean;
 }
 
 /** Open favours, invitations and important contacts about to cool off. */
@@ -551,11 +594,17 @@ export function networkTasks(state: GameState): NetworkTask[] {
       text: `${card.contactName} bittet um einen Gefallen: ${card.subject} ${card.urgent ? "Antwort bis Monatsende." : `Bis Ende ${card.expires}.`}`,
       href: card.mailId ? `/post?mail=${card.mailId}` : "/netzwerk",
       tone: card.urgent ? "urgent" : "normal",
+      hurry: true,
     });
   }
   for (const e of net.events.filter((x) => x.status === "invited" && x.month >= state.month)) {
     const def = eventDef(e.def)!;
-    out.push({ text: `Einladung: ${def.name} im ${monthName(e.month)}. Zusagen oder absagen.`, href: "/netzwerk#termine", tone: e.month === state.month ? "normal" : "calm" });
+    out.push({
+      text: `Einladung: ${def.name} im ${monthName(e.month)}. Zusagen oder absagen.`,
+      href: "/netzwerk#termine",
+      tone: e.month === state.month ? "normal" : "calm",
+      ...(e.month === state.month ? { hurry: true } : {}),
+    });
   }
   // Important: a contact who helps one of your companies or deals right now.
   const cooling = CONTACTS.map((d) => contactCard(state, d)).filter((c) => c.cooling && c.useful.length > 0);
@@ -564,6 +613,7 @@ export function networkTasks(state: GameState): NetworkTask[] {
       text: `${c.name} kühlt ab (Wärme ${c.warmth}, nächsten Monat ${c.nextWarmth}). Unter ${WARMTH_INTRO_MIN} hilft niemand mehr. Ein Treffen kostet einen Tag.`,
       href: `/netzwerk?kontakt=${c.id}`,
       tone: "normal",
+      hurry: true,
     });
   }
   for (const s of state.startups.filter((x) => x.status === "offered" && x.offer?.rival && !x.offer.rival.defused)) {

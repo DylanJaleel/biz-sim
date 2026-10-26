@@ -241,7 +241,11 @@ export function deskView(state: GameState, lessonsTotal: number): DeskView {
       tone: expires <= 0 ? "urgent" : "normal",
     });
   }
-  tasks.push(...networkTasks(state));
+  // Hurried network tasks (favour about to run out, invitation this month, contact cooling off) go right behind the urgent ones (and the lead task), the rest stays at the end.
+  const network = networkTasks(state);
+  const lastUrgent = tasks.reduce((at, t, i) => (t.tone === "urgent" ? i : at), -1);
+  tasks.splice(Math.max(lastUrgent + 1, Math.min(tasks.length, 1)), 0, ...network.filter((t) => t.hurry).map(({ text, href, tone }) => ({ text, href, tone })));
+  tasks.push(...network.filter((t) => !t.hurry));
   const step = nextStepView(state);
   if (step?.action) tasks.unshift({ text: `Alles bereit: ${step.action.label}. Das ist dein nächster Karriereschritt.`, href: "/holding", tone: "urgent" });
   const unread = state.mails.filter((m) => !m.read).length;

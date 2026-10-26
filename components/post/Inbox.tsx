@@ -8,6 +8,9 @@ import { ActionButton } from "@/components/game/ActionButton";
 import { eur, pct, runwayText } from "@/components/game/format";
 import { usePlay } from "@/components/game/usePlay";
 import type { EventCard, FavorCard } from "@/lib/game/network-views";
+import { EventButtons, EventFacts, GuestStack } from "@/components/network/EventParts";
+import { FavorButtons, FavorDue, FavorFacts } from "@/components/network/FavorParts";
+import { NetAvatar } from "@/components/network/NetAvatar";
 
 export type MailView = Mail & { when: string };
 
@@ -303,23 +306,14 @@ function Deal({ deal, revision, cash, ddDays }: { deal: DealView; revision: numb
 function FavorAnswer({ favor, revision }: { favor?: FavorCard; revision: number }) {
   if (!favor) return <p className="notice">Diese Bitte ist erledigt oder verstrichen.</p>;
   return (
-    <div className="deal__actions net-answer">
-      <p className="muted small">
-        {favor.cost}. Zusagen füllt dein Vertrauenskonto bei {favor.contactName}; absagen oder liegen lassen kühlt die Beziehung ab. Antwort bis Ende {favor.expires}.
-      </p>
-      <ActionButton
-        action={{ type: "favor", favorId: favor.id, accept: true }}
-        revision={revision}
-        days={favor.days > 0 ? favor.days : undefined}
-        variant="primary"
-        disabled={Boolean(favor.blocker)}
-      >
-        Zusagen
-      </ActionButton>
-      <ActionButton action={{ type: "favor", favorId: favor.id, accept: false }} revision={revision} variant="ghost">
-        Absagen
-      </ActionButton>
-      {favor.blocker && <small className="muted">{favor.blocker}</small>}
+    <div className="net-answer">
+      <div className="net-answer__head">
+        <NetAvatar name={favor.contactName} ring={favor.ring} size="sm" />
+        <b>{favor.contactName}</b>
+        <FavorDue favor={favor} />
+      </div>
+      <FavorFacts favor={favor} />
+      <FavorButtons favor={favor} revision={revision} />
     </div>
   );
 }
@@ -327,30 +321,18 @@ function FavorAnswer({ favor, revision }: { favor?: FavorCard; revision: number 
 /** An invitation: go (with or without a talk) or decline. */
 function EventAnswer({ event, revision }: { event?: EventCard; revision: number }) {
   if (!event) return <p className="notice">Diese Veranstaltung ist vorbei.</p>;
-  if (event.status === "attended") return <p className="notice notice--good">Du warst dort.</p>;
-  if (event.status === "declined") return <p className="notice">Du hast abgesagt.</p>;
-  if (event.status === "accepted") return <p className="notice notice--good">Zugesagt: Der Termin steht am Monatsanfang in deinem Kalender ({event.month}).</p>;
   return (
-    <div className="deal__actions net-answer">
-      <p className="muted small">
-        {event.city}, {event.month}. {event.days === 1 ? "1 Tag" : `${event.days} Tage`} ({event.travel}), Ticket und Reise {eur(event.money)}. Da sind unter anderem:{" "}
-        {event.guests
-          .filter((g) => g.open)
-          .map((g) => g.name)
-          .join(", ") || "lauter neue Gesichter"}
-        .
-      </p>
-      <ActionButton action={{ type: "event", eventId: event.id, move: "accept" }} revision={revision} days={event.thisMonth ? event.days : undefined} variant="primary">
-        {event.thisMonth ? "Hingehen" : "Zusagen"}
-      </ActionButton>
-      {event.talk?.possible && (
-        <ActionButton action={{ type: "event", eventId: event.id, move: "accept", talk: true }} revision={revision} days={event.thisMonth ? event.days + 1 : undefined}>
-          {`Mit Vortrag: ${event.talk.title}`}
-        </ActionButton>
+    <div className="net-answer">
+      {event.status === "invited" && (
+        <>
+          <div className="net-answer__head">
+            <span className="nt-due">{event.month}</span>
+          </div>
+          <EventFacts event={event} />
+          <GuestStack event={event} />
+        </>
       )}
-      <ActionButton action={{ type: "event", eventId: event.id, move: "decline" }} revision={revision} variant="ghost">
-        Absagen
-      </ActionButton>
+      <EventButtons event={event} revision={revision} />
     </div>
   );
 }

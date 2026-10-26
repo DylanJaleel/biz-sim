@@ -19,6 +19,7 @@ import { EVENTS, eventIn } from "../lib/game/network-events";
 import { networkMonth, planNetwork } from "../lib/game/network-life";
 import { hintText, networkPage, networkTasks } from "../lib/game/network-views";
 import { parseAction } from "../lib/game/validate";
+import { deskView } from "../lib/game/views";
 import type { Favor, GameAction, GameState } from "../lib/game/types";
 
 const act = (state: GameState, action: GameAction) => applyAction(state, action).state;
@@ -128,6 +129,19 @@ describe("favours", () => {
     expect(called).toBeGreaterThan(0);
     expect(called).toBeLessThan(15);
     expect(paid).toBeGreaterThan(10);
+  });
+});
+
+describe("desk", () => {
+  it("puts a favour that runs out this month before the routine tasks", () => {
+    const state = withFavor(invested(), { expires: invested().month });
+    const tasks = deskView(state, 30).tasks;
+    const at = tasks.findIndex((t) => t.text.includes("bittet um einen Gefallen"));
+    expect(at).toBeGreaterThanOrEqual(0);
+    expect(tasks[at]!.tone).toBe("urgent");
+    // At most the lead task stands in front of it, and the list stays within what the office shows.
+    expect(tasks.slice(0, at).filter((t) => t.tone !== "urgent").length).toBeLessThanOrEqual(1);
+    expect(at).toBeLessThan(6);
   });
 });
 

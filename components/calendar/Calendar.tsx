@@ -8,6 +8,8 @@ import { GigList } from "@/components/game/GigList";
 import { ReportButton } from "./ReportButton";
 import Link from "next/link";
 import { calendarEvents } from "@/lib/game/network-views";
+import { EventFacts } from "@/components/network/EventParts";
+import { dateParts } from "@/components/network/ring";
 
 const KIND_LABEL: Partial<Record<ActionKind, string>> = {
   dd: "Prüfung",
@@ -84,21 +86,32 @@ export async function Calendar() {
               <h2 id="cal-events" className="section-title">
                 Termine im Netzwerk
               </h2>
-              <ul className="list cal-events">
-                {events.map((e) => (
-                  <li key={e.id} className="list__row">
-                    <b>{e.name}</b>
-                    <span className="muted">
-                      {e.month} · {e.city} · {e.days === 1 ? "1 Tag" : `${e.days} Tage`} · {eur(e.money)} ·{" "}
-                      {e.status === "attended" ? "besucht" : e.status === "accepted" ? "zugesagt" : "Einladung offen"}
-                    </span>
-                    {e.status === "invited" && (
-                      <Link className="btn btn--sm" href={e.mailId ? `/post?mail=${e.mailId}` : "/netzwerk#termine"}>
-                        Antworten
-                      </Link>
-                    )}
-                  </li>
-                ))}
+              <ul className="nt-cards nt-cards--tight">
+                {events.map((e) => {
+                  const d = dateParts(e.month);
+                  return (
+                    <li key={e.id} className={`nt-card nt-event nt-event--row${e.thisMonth ? " is-now" : ""}`}>
+                      <div className="nt-date" aria-label={e.month}>
+                        <b>{d.month}</b>
+                        <small>{d.year}</small>
+                      </div>
+                      <div className="nt-event__main">
+                        <h3 className="nt-card__h">{e.name}</h3>
+                        <EventFacts event={e} />
+                        <p className="nt-event__status">
+                          <span className={`tag ${e.status === "invited" ? "net-tag--favor" : "tag--go"}`}>
+                            {e.status === "attended" ? "Besucht" : e.status === "accepted" ? "Zugesagt" : "Einladung offen"}
+                          </span>
+                          {e.status === "invited" && (
+                            <Link className="btn btn--sm" href={e.mailId ? `/post?mail=${e.mailId}` : "/netzwerk#termine"}>
+                              Antworten
+                            </Link>
+                          )}
+                        </p>
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             </section>
           )}

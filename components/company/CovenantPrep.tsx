@@ -3,6 +3,7 @@ import { ACTION_DAYS, monthName } from "@/lib/game/config";
 import type { CompanyView } from "@/lib/game/views";
 import type { HintView } from "@/lib/game/network-views";
 import { ActionButton } from "@/components/game/ActionButton";
+import { NetAvatar } from "@/components/network/NetAvatar";
 
 // Eigener Bereich der Firmenseite: Welche Auflage passt zu welchem Punkt, was
 // verraten Kennzahlen, Rückfrage und Vorgespräche, und welche Auflagen warten
@@ -91,30 +92,34 @@ function NetworkHint({ hint, revision }: { hint?: HintView; revision: number }) 
   if (!hint) return null;
   if (hint.tip)
     return (
-      <p className="covenant-answer covenant-answer--network">
-        <b>{hint.tip.name} am Telefon:</b> {hint.tip.text}
-      </p>
+      <div className="covenant-answer covenant-answer--network net-tip">
+        <NetAvatar name={hint.tip.name} ring={hint.tip.ring} size="sm" />
+        <p>
+          <b>{hint.tip.name} am Telefon:</b> {hint.tip.text}
+        </p>
+      </div>
     );
   if (hint.options.length === 0) return null;
   const ready = hint.options.filter((o) => o.blocker === null);
   const cold = hint.options.filter((o) => o.blocker !== null);
   return (
     <div className="covenant-hint">
+      <p className="eyebrow">Netzwerk</p>
       <p className="muted small">
-        Oder frag jemanden aus deinem Netzwerk, der sich mit Auflagen auskennt. Das kostet keinen Tag, aber {hint.cost} Wärme (ab {hint.min} Wärme möglich). Wer das Gebiet kennt,
-        nennt die passende Auflage; sonst erfährst du, welche es nicht ist.
+        Wer sich mit Auflagen auskennt, nennt die passende oder sagt, welche es nicht ist. Das kostet keinen Tag, aber {hint.cost} Wärme (ab {hint.min} Wärme).
       </p>
       {ready.length > 0 && (
         <ul className="covenant-hint__list">
           {ready.slice(0, 3).map((o) => (
             <li key={o.id}>
-              <span>
-                <b>{o.name}</b>{" "}
+              <NetAvatar name={o.name} ring={o.ring} warmth={o.warmth} size="sm" />
+              <span className="covenant-hint__who">
+                <b>{o.name}</b>
                 <small className="muted">
-                  kennt sich aus mit {o.knows.join(" und ")} · Wärme {o.warmth}
+                  {o.role} · kennt {o.knows.join(" und ")} · Wärme {o.warmth}
                 </small>
               </span>
-              <ActionButton action={{ type: "contactHint", contactId: o.id, itemId: hint.itemId }} revision={revision} size="sm" variant="ghost">
+              <ActionButton action={{ type: "contactHint", contactId: o.id, itemId: hint.itemId }} revision={revision} size="sm" variant="primary">
                 Anrufen
               </ActionButton>
             </li>
