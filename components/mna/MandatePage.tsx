@@ -5,6 +5,7 @@ import { monthLabel } from "@/lib/game/config";
 import { mandateView } from "@/lib/game/mna-views";
 import { ActionButton } from "@/components/game/ActionButton";
 import { eur } from "@/components/game/format";
+import { Disclosure } from "@/components/ui/Disclosure";
 import { MandateForm } from "./MandateForm";
 
 // Ein M&A-Mandat: Du verkaufst eine Firma für ihre Eigentümer oder kaufst
@@ -23,7 +24,7 @@ export async function MandatePage({ params }: { params: Promise<{ id: string }> 
   const step = STEP_OF[view.status];
   const best = [...view.bids].sort((a, b) => b.ev - a.ev)[0];
   return (
-    <div className="page mna">
+    <div className="page mna mna--mandate">
       <header className="page__head">
         <nav className="crumbs" aria-label="Pfad">
           <Link href="/">Büro</Link>
@@ -103,10 +104,12 @@ export async function MandatePage({ params }: { params: Promise<{ id: string }> 
             <h2 id="mandate-comps" className="panel__title">
               Bewertung
             </h2>
-            <p>
-              Der Preis eines Familienbetriebs ist ein Vielfaches seines EBITDA. Wie hoch, hängt von Größe, Wachstum, Kundenstruktur und Markt ab. Eine Vergleichsanalyse sucht
-              ähnliche Verkäufe der letzten Jahre.
-            </p>
+            <Disclosure title="Wie entsteht der Preis?" quietOnWide>
+              <p>
+                Der Preis eines Familienbetriebs ist ein Vielfaches seines EBITDA. Wie hoch, hängt von Größe, Wachstum, Kundenstruktur und Markt ab. Eine Vergleichsanalyse sucht
+                ähnliche Verkäufe der letzten Jahre.
+              </p>
+            </Disclosure>
             {view.comps ? (
               <p className="notice notice--good">
                 Vergleichbare Verkäufe lagen zwischen <b>{x(view.comps[0])}</b> und <b>{x(view.comps[1])}</b> EBITDA. Die Mitte ist meist ein fairer Preis.
@@ -167,7 +170,7 @@ export async function MandatePage({ params }: { params: Promise<{ id: string }> 
                 </li>
               ))}
           </ul>
-          <div className="panel__actions">
+          <div className="panel__actions mna-bar">
             {!(!sell && view.process === "auction") && (
               <ActionButton action={{ type: "mandate", mandateId: view.id, move: "accept_bid" }} revision={revision} days={view.days.close} variant="primary">
                 {sell ? `Zuschlag an ${best.buyer}` : "Preis annehmen"}

@@ -1688,4 +1688,8 @@ a.grow:hover {
     align-items: center;
     min-height: 40px;
   }
+
+  .assist__tasks a {
+    min-height: 40px;
+  }
 }

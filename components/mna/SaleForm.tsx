@@ -41,9 +41,11 @@ export function SaleForm({ id, revision, days, months }: { id: string; revision:
           </label>
         </div>
       </fieldset>
-      <ActionButton action={{ type: "platform", startupId: id, move: "sell", process, buyers }} revision={revision} days={days[process]} variant="primary">
-        Verkaufsprozess starten
-      </ActionButton>
+      <div className="mna-bar">
+        <ActionButton action={{ type: "platform", startupId: id, move: "sell", process, buyers }} revision={revision} days={days[process]} variant="primary">
+          Verkaufsprozess starten
+        </ActionButton>
+      </div>
     </div>
   );
 }

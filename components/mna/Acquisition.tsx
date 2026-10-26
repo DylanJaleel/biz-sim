@@ -20,7 +20,7 @@ export async function Acquisition({ params }: { params: Promise<{ id: string }> 
   if (!v) notFound();
   const addon = v.kind === "addon";
   return (
-    <div className="page mna">
+    <div className="page mna mna--acq">
       <header className="page__head">
         <nav className="crumbs" aria-label="Pfad">
           {addon ? <Link href={`/plattform/${v.platform!.id}`}>{v.platform!.name}</Link> : <Link href="/nachfolge">Nachfolge-Programm</Link>}

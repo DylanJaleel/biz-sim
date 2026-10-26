@@ -6,6 +6,7 @@ import type { DdModule } from "@/lib/game/mna-config";
 import type { IntegrationKind } from "@/lib/game/types";
 import { ActionButton } from "@/components/game/ActionButton";
 import { eur, pct } from "@/components/game/format";
+import { Disclosure } from "@/components/ui/Disclosure";
 
 // Der Strukturierungs-Tisch: erst prüfen, dann Preis und Finanzierung wählen.
 // Die Rechnung im Browser ist dieselbe, die der Kauf danach verwendet.
@@ -64,10 +65,12 @@ export function DealDesk(p: DealDeskProps) {
         <h2 id="dd-title" className="panel__title">
           Due Diligence
         </h2>
-        <p className="muted small">
-          Jeder Baustein kostet einen Tag und Beraterhonorar. Was du findest, senkt den Preis. Was du übersiehst, trifft dich nach dem Kauf: als Nachzahlung, als verlorener Kunde,
-          als niedrigeres EBITDA.
-        </p>
+        <Disclosure title="Warum prüfen?" quietOnWide>
+          <p className="muted small">
+            Jeder Baustein kostet einen Tag und Beraterhonorar. Was du findest, senkt den Preis. Was du übersiehst, trifft dich nach dem Kauf: als Nachzahlung, als verlorener
+            Kunde, als niedrigeres EBITDA.
+          </p>
+        </Disclosure>
         <div className="mna-options mna-options--grid">
           {p.dd.map((d) => (
             <label key={d.module} className={d.done ? "is-done" : checks.includes(d.module) ? "is-on" : undefined}>
@@ -202,15 +205,18 @@ export function DealDesk(p: DealDeskProps) {
         {tight && <p className="notice notice--warn">Wenig Luft bis zum Covenant. Ein schwaches Quartal, ein verlorener Kunde, und die Bank greift ein.</p>}
         {short && <p className="notice notice--bad">Dafür fehlen dir {eur(s.fromPlayer - p.cash)}.</p>}
         {p.blocker && <p className="notice notice--warn">{p.blocker}</p>}
-        <ActionButton
-          action={{ type: "acquire", targetId: p.id, bid, bank, vendor, earnout, ...(p.kind === "addon" ? { integration } : {}) }}
-          revision={p.revision}
-          days={p.acquireDays}
-          variant="primary"
-          disabled={short || Boolean(p.blocker) || p.daysLeft < p.acquireDays}
-        >
-          {p.kind === "addon" ? "Zukauf unterschreiben" : "Kaufvertrag unterschreiben"}
-        </ActionButton>
+        <div className="mna-bar">
+          <ActionButton
+            action={{ type: "acquire", targetId: p.id, bid, bank, vendor, earnout, ...(p.kind === "addon" ? { integration } : {}) }}
+            revision={p.revision}
+            days={p.acquireDays}
+            variant="primary"
+            disabled={short || Boolean(p.blocker) || p.daysLeft < p.acquireDays}
+          >
+            {p.kind === "addon" ? "Zukauf unterschreiben" : "Kaufvertrag unterschreiben"}
+          </ActionButton>
+          <span className={`mna-bar__text${short ? " neg" : ""}`}>Dein Geld jetzt {eur(s.fromPlayer)}</span>
+        </div>
       </section>
     </div>
   );

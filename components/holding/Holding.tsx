@@ -5,6 +5,7 @@ import { holdingView } from "@/lib/game/views";
 import { holdingMna } from "@/lib/game/mna-views";
 import { ActionButton } from "@/components/game/ActionButton";
 import { eur } from "@/components/game/format";
+import { Disclosure } from "@/components/ui/Disclosure";
 import { AssignSelect } from "./AssignSelect";
 
 // Die Holding: Family Office, Team, eigener Fonds, Kaufkredite und Aktien in
@@ -27,7 +28,8 @@ export async function Holding() {
         <p className="eyebrow">Holding</p>
         <h1 className="page__title">{view.founded ? "Dein Family Office" : "Vom Angel zum Family Office"}</h1>
         <p className="page__lead">
-          Ab einer gewissen Größe arbeitet niemand mehr allein. Ein Family Office bündelt dein Vermögen, ein Team übernimmt Mandate, und mit genug Erfolgen vertrauen dir andere ihr Geld an.
+          Ab einer gewissen Größe arbeitet niemand mehr allein. Ein Family Office bündelt dein Vermögen, ein Team übernimmt Mandate, und mit genug Erfolgen vertrauen dir andere ihr
+          Geld an.
         </p>
         <div className="market__summary">
           <span>
@@ -57,7 +59,13 @@ export async function Holding() {
               </li>
             ))}
           </ul>
-          <ActionButton action={{ type: "foundFamilyOffice" }} revision={revision} days={ACTION_DAYS.foundFamilyOffice} variant="primary" disabled={view.foundRequirements.some((r) => !r.done)}>
+          <ActionButton
+            action={{ type: "foundFamilyOffice" }}
+            revision={revision}
+            days={ACTION_DAYS.foundFamilyOffice}
+            variant="primary"
+            disabled={view.foundRequirements.some((r) => !r.done)}
+          >
             Gründen
           </ActionButton>
         </section>
@@ -137,13 +145,15 @@ export async function Holding() {
                   </span>
                 </div>
                 <p className="muted">
-                  Seit {monthLabel(fund.raised)}. Bei jedem neuen Einstieg legt der Fonds das {FUND_MATCH}-Fache deines Tickets dazu, höchstens ein Viertel des Fonds pro Firma. Du bekommst {FUND_FEE * 100} % Verwaltungsgebühr im Jahr ({eur((fund.size * FUND_FEE) / 12)} im Monat) und 20 % Carry auf den Gewinn bei jedem Verkauf.
+                  Seit {monthLabel(fund.raised)}. Bei jedem neuen Einstieg legt der Fonds das {FUND_MATCH}-Fache deines Tickets dazu, höchstens ein Viertel des Fonds pro Firma. Du
+                  bekommst {FUND_FEE * 100} % Verwaltungsgebühr im Jahr ({eur((fund.size * FUND_FEE) / 12)} im Monat) und 20 % Carry auf den Gewinn bei jedem Verkauf.
                 </p>
               </>
             ) : (
               <>
                 <p>
-                  Investoren würden dir heute etwa <b>{eur(view.fundSize)}</b> anvertrauen. Der Fonds investiert bei jedem neuen Einstieg das {FUND_MATCH}-Fache deines Tickets mit, stimmt wie du und zahlt dir {FUND_FEE * 100} % Gebühr im Jahr plus 20 % Carry.
+                  Investoren würden dir heute etwa <b>{eur(view.fundSize)}</b> anvertrauen. Der Fonds investiert bei jedem neuen Einstieg das {FUND_MATCH}-Fache deines Tickets mit,
+                  stimmt wie du und zahlt dir {FUND_FEE * 100} % Gebühr im Jahr plus 20 % Carry.
                 </p>
                 {view.fundBlocker && <p className="notice notice--warn">{view.fundBlocker}</p>}
                 <ActionButton action={{ type: "raiseFund" }} revision={revision} days={ACTION_DAYS.raiseFund} variant="primary" disabled={Boolean(view.fundBlocker)}>
@@ -155,15 +165,17 @@ export async function Holding() {
         </>
       )}
 
-      <section className="panel" aria-labelledby="mna-title">
+      <section className="panel mna-holding" aria-labelledby="mna-title">
         <p className="eyebrow">Mittelstand</p>
         <h2 id="mna-title" className="panel__title">
           M&A, Nachfolge und Buy-and-Build
         </h2>
-        <p className="muted">
-          Als M&A-Berater lernst du, wie Familienbetriebe verkauft werden. Im Nachfolge-Programm kaufst du selbst einen, mit Bank und Verkäufer. Als Plattform kauft er kleinere
-          dazu, bis die Gruppe verkauft wird. Alles dazu steht auf einer eigenen Seite.
-        </p>
+        <Disclosure title="Worum geht es?" quietOnWide>
+          <p className="muted">
+            Als M&A-Berater lernst du, wie Familienbetriebe verkauft werden. Im Nachfolge-Programm kaufst du selbst einen, mit Bank und Verkäufer. Als Plattform kauft er kleinere
+            dazu, bis die Gruppe verkauft wird. Alles dazu steht auf einer eigenen Seite.
+          </p>
+        </Disclosure>
         <div className="kpis kpis--compact">
           <span>
             <small>Mandate abgeschlossen</small>
