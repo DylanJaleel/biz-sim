@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { trackClient } from "./usage";
 
 declare global {
   var prismaGlobal: PrismaClient | undefined;
@@ -12,7 +13,9 @@ declare global {
  */
 export function getDb(): PrismaClient {
   if (!globalThis.prismaGlobal) {
-    globalThis.prismaGlobal = new PrismaClient();
+    globalThis.prismaGlobal = new PrismaClient({ log: [{ emit: "event", level: "query" }] });
+    // Counts database activity for the cost estimate on the account page.
+    trackClient(globalThis.prismaGlobal);
   }
   return globalThis.prismaGlobal;
 }

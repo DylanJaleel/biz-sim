@@ -1,6 +1,7 @@
 import { gunzipSync, gzipSync } from "node:zlib";
 import type { Prisma } from "@prisma/client";
 import type { GameState } from "../game/types";
+import { noteBytes } from "../usage";
 
 // Spielstände liegen komprimiert in der Datenbank. Ein spätes Spiel ist als
 // JSON rund 600 KB groß und wird bei jedem Zug gelesen und geschrieben; gzip
@@ -17,10 +18,13 @@ function isPacked(value: unknown): value is Packed {
 }
 
 export function packState(state: GameState): Prisma.InputJsonValue {
-  return { gz: gzipSync(JSON.stringify(state)).toString("base64") };
+  const gz = gzipSync(JSON.stringify(state)).toString("base64");
+  noteBytes("written", gz.length);
+  return { gz };
 }
 
 export function unpackState(value: Prisma.JsonValue): GameState {
-  if (isPacked(value)) return JSON.parse(gunzipSync(Buffer.from(value.gz, "base64")).toString("utf8")) as GameState;
-  return value as unknown as GameState;
+  if (!isPacked(value)) return value as unknown as GameState;
+  noteBytes("read", value.gz.length);
+  return JSON.parse(gunzipSync(Buffer.from(value.gz, "base64")).toString("utf8")) as GameState;
 }

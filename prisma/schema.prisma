@@ -12,12 +12,12 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
+  id            String     @id @default(cuid())
+  email         String     @unique
   emailVerified DateTime?
   name          String?
   image         String?
-  createdAt     DateTime  @default(now())
+  createdAt     DateTime   @default(now())
   game          Game?
   saves         GameSave[]
 }
@@ -68,4 +68,17 @@ model RateLimitBucket {
   key         String   @id
   count       Int
   windowStart DateTime
+}
+
+// Estimated database usage per calendar month (see lib/usage.ts). Feeds the
+// cost estimate on the account page and the monthly budget stop.
+model DbUsage {
+  /// "2026-10"
+  month         String    @id
+  activeSeconds Int       @default(0)
+  bytesRead     BigInt    @default(0)
+  bytesWritten  BigInt    @default(0)
+  queries       Int       @default(0)
+  lastActiveAt  DateTime?
+  updatedAt     DateTime  @updatedAt
 }

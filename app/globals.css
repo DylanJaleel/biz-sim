@@ -3707,3 +3707,34 @@ a.desk__item:focus-visible {
   background: var(--surface-2);
   font-size: 13.5px;
 }
+
+/* Konto: Kosten der Datenbank */
+.usage__status {
+  margin: 8px 0 0;
+  color: var(--ink-2);
+}
+
+.usage__status--warn b {
+  color: var(--maybe);
+}
+
+.usage__status--stopped b {
+  color: var(--disagree);
+}
+
+.usage__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px 20px;
+  margin: 14px 0;
+}
+
+.usage__list dt {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.usage__list dd {
+  margin: 2px 0 0;
+  font-weight: 600;
+}

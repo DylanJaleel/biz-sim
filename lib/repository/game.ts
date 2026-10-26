@@ -4,6 +4,7 @@ import { getDb } from "../db";
 import { applyAction, GameRuleError, newGame, planAgenda, upgradeState, type ActionResult } from "../game/engine";
 import { monthLabel } from "../game/config";
 import type { GameAction, GameState } from "../game/types";
+import { budgetReached, flushIfDue } from "../usage";
 import { packState, unpackState } from "./codec";
 import { writeSave } from "./save-store";
 
@@ -58,8 +59,11 @@ export async function loadGame(userId: string): Promise<StoredGame> {
  * twice.
  */
 export async function performAction(userId: string, action: GameAction, expectedRevision: number): Promise<{ game: StoredGame; result: ActionResult }> {
+  if (await budgetReached(getDb())) {
+    throw new GameRuleError("Das Monatsbudget für die Datenbank ist erreicht. Spielzüge pausieren bis zum Monatsende, ansehen geht weiter. Details unter Konto.");
+  }
   await ensureGame(userId);
-  return getDb().$transaction(async (tx) => {
+  const done = await getDb().$transaction(async (tx) => {
     await tx.$queryRaw`SELECT "id" FROM "Game" WHERE "userId" = ${userId} FOR UPDATE`;
     const row = await tx.game.findUniqueOrThrow({ where: { userId } });
     // Marking mail as read changes nothing that matters, so it neither checks nor bumps the revision.
@@ -77,6 +81,8 @@ export async function performAction(userId: string, action: GameAction, expected
     if (action.type === "closeMonth") await writeSave(tx, userId, "auto", `Nach dem Abschluss von ${monthLabel(state.month - 1)}`, state);
     return { game: { ...updated, state }, result };
   });
+  await flushIfDue(getDb());
+  return done;
 }
 
 /** Deletes the game; the next visit starts over. A copy stays among the saves. */
