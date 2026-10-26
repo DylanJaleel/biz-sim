@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ACTION_DAYS, monthName } from "@/lib/game/config";
 import type { CompanyView } from "@/lib/game/views";
 import type { HintView } from "@/lib/game/network-views";
@@ -95,28 +96,37 @@ function NetworkHint({ hint, revision }: { hint?: HintView; revision: number }) 
       </p>
     );
   if (hint.options.length === 0) return null;
+  const ready = hint.options.filter((o) => o.blocker === null);
+  const cold = hint.options.filter((o) => o.blocker !== null);
   return (
     <div className="covenant-hint">
       <p className="muted small">
         Oder frag jemanden aus deinem Netzwerk, der sich mit Auflagen auskennt. Das kostet keinen Tag, aber {hint.cost} Wärme (ab {hint.min} Wärme möglich). Wer das Gebiet kennt,
         nennt die passende Auflage; sonst erfährst du, welche es nicht ist.
       </p>
-      <ul className="covenant-hint__list">
-        {hint.options.map((o) => (
-          <li key={o.id}>
-            <span>
-              <b>{o.name}</b>{" "}
-              <small className="muted">
-                kennt sich aus mit {o.knows.join(" und ")} · Wärme {o.warmth}
-              </small>
-              {o.blocker && <small className="muted"> · {o.blocker}</small>}
-            </span>
-            <ActionButton action={{ type: "contactHint", contactId: o.id, itemId: hint.itemId }} revision={revision} size="sm" variant="ghost" disabled={o.blocker !== null}>
-              Anrufen
-            </ActionButton>
-          </li>
-        ))}
-      </ul>
+      {ready.length > 0 && (
+        <ul className="covenant-hint__list">
+          {ready.slice(0, 3).map((o) => (
+            <li key={o.id}>
+              <span>
+                <b>{o.name}</b>{" "}
+                <small className="muted">
+                  kennt sich aus mit {o.knows.join(" und ")} · Wärme {o.warmth}
+                </small>
+              </span>
+              <ActionButton action={{ type: "contactHint", contactId: o.id, itemId: hint.itemId }} revision={revision} size="sm" variant="ghost">
+                Anrufen
+              </ActionButton>
+            </li>
+          ))}
+        </ul>
+      )}
+      {cold.length > 0 && (
+        <p className="muted small">
+          {ready.length > 0 ? "Auch" : "Wüssten etwas, sind aber gerade nicht erreichbar"}: {cold.map((o) => `${o.name} (Wärme ${o.warmth})`).join(", ")}. Ein Treffen im{" "}
+          <Link href="/netzwerk">Netzwerk</Link> wärmt die Beziehung.
+        </p>
+      )}
     </div>
   );
 }

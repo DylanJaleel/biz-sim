@@ -642,7 +642,7 @@ export function helpStrength(c: ContactState): number {
 }
 
 export function introCooldown(c: ContactState, base: number): number {
-  return generous(c) ? GENEROUS.cooldown : base;
+  return generous(c) ? Math.max(1, base - (3 - GENEROUS.cooldown)) : base;
 }
 
 export function introWarmthCost(c: ContactState, base: number): number {

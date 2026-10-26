@@ -61,8 +61,9 @@ export const LEVFIN_RATE_CUT = 0.005;
 export const INTERIM = { months: 6, fee: 30_000, handoverRisk: 0.4, synergy: 0.15, churn: -0.15 } as const;
 /** Antitrust lawyer: fee and the chance of a block with her filing. */
 export const KARTELL = { fee: 8_000, block: 0.04 } as const;
-/** A warm M&A boutique: more mandate offers per month. */
-export const BOUTIQUE_MANDATE_BONUS = 0.08;
+/** A warm M&A boutique: more mandate offers per month; passing one on directly only every so many months. */
+export const BOUTIQUE_MANDATE_BONUS = 0.05;
+export const BOUTIQUE_COOLDOWN = 6;
 
 // Hinweis vor der Sitzung
 export const HINT_WARMTH_MIN = 25;

@@ -54,7 +54,7 @@ export const EVENTS: EventDef[] = [
     text: "Zwei Tage Panels über Bewertungen, Finanzierung und Nachfolge. Die eigentlichen Deals entstehen in den Pausen.",
     guests: ["boutique", "wp", "kanzlei", "levfin", "bank", "kartell"],
     traits: ["zahlen"],
-    mandate: 0.35,
+    mandate: 0.25,
     talk: { from: 55, reputation: 2, title: "Panel über Nachfolge im Mittelstand" },
   },
   {

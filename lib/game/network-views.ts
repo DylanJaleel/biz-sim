@@ -519,11 +519,15 @@ export function hintText(state: GameState, contactId: string, itemId: string): s
 export function hintsFor(state: GameState, itemId: string): HintView {
   const item = state.items.find((i) => i.id === itemId);
   const tip = item?.tip ? { name: personOf(state, contactRead(state, item.tip)).name, text: hintText(state, item.tip, itemId) } : undefined;
-  const options = CONTACTS.filter((d) => d.hint && ringOpen(state, d.ring) && contactRead(state, d.id).met).map((d) => {
-    const c = contactRead(state, d.id);
-    const p = personOf(state, c);
-    return { id: d.id, name: p.name, role: p.role, knows: d.hint!.map((h) => COVENANTS[h].name), warmth: c.warmth, blocker: hintBlocker(state, d.id, itemId) };
-  });
+  // Only people who know at least one of the conditions on the table; ready ones first.
+  const onTable = item ? covenantsOf(state, item).options : [];
+  const options = CONTACTS.filter((d) => d.hint && d.hint.some((h) => onTable.includes(h)) && ringOpen(state, d.ring) && contactRead(state, d.id).met)
+    .map((d) => {
+      const c = contactRead(state, d.id);
+      const p = personOf(state, c);
+      return { id: d.id, name: p.name, role: p.role, knows: d.hint!.map((h) => COVENANTS[h].name), warmth: c.warmth, blocker: hintBlocker(state, d.id, itemId) };
+    })
+    .sort((a, b) => Number(a.blocker !== null) - Number(b.blocker !== null) || b.warmth - a.warmth);
   return { itemId, ...(tip ? { tip } : {}), options, cost: HINT_WARMTH_COST, min: HINT_WARMTH_MIN };
 }
 

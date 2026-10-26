@@ -61,6 +61,11 @@ export function HelpersPanel({
                 <span className="net-help__why">{h.why}</span>
                 {h.blocker && <small className="muted">{h.blocker}</small>}
               </span>
+              {h.blocker && (h.blocker.includes("kühl") || h.blocker.includes("kennst du noch nicht")) && (
+                <ActionButton action={{ type: "meetContact", contactId: h.id }} revision={revision} days={ACTION_DAYS.meetContact} size="sm" variant="ghost">
+                  Treffen
+                </ActionButton>
+              )}
               <ActionButton
                 action={h.action === "intro" ? { type: "introContact", contactId: h.id, startupId: targetId } : { type: "specialist", contactId: h.id, targetId }}
                 revision={revision}

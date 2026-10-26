@@ -8,6 +8,7 @@ import { offerMandate } from "./mna";
 import { addBal, balOf, castPerson, contactDef, contactOf, contactRead, introCooldown, networkOf, personOf, refuses, ringOpen, tieKey, type ContactDef } from "./network";
 import {
   BAL_FORGIVE_MONTHS,
+  BOUTIQUE_COOLDOWN,
   CAREER_CHANCE,
   EVENT_MEET_CHANCE,
   EVENT_MEET_WARMTH,
@@ -568,7 +569,9 @@ export function helpBlocker(state: GameState, c: ContactState, def: ContactDef, 
 }
 
 export function cooldownLeft(state: GameState, c: ContactState): number {
-  return c.lastIntro === undefined ? 0 : Math.max(0, introCooldown(c, INTRO_COOLDOWN) - (state.month - c.lastIntro));
+  // The boutique passes on a mandate only every half year: they are its own business.
+  const base = c.id === "boutique" ? BOUTIQUE_COOLDOWN : INTRO_COOLDOWN;
+  return c.lastIntro === undefined ? 0 : Math.max(0, introCooldown(c, base) - (state.month - c.lastIntro));
 }
 
 /** What a specialist can work on: offered deals, add-ons, mandates or own companies. */
