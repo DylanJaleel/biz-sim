@@ -29,7 +29,7 @@ export interface SaveListItem {
 }
 
 /** How many copies of each kind are kept; the oldest go first. */
-export const KEEP: Record<SaveKind, number> = { auto: 12, manual: 10, backup: 5 };
+export const KEEP: Record<SaveKind, number> = { auto: 2, manual: 2, backup: 2 };
 
 type Tx = Prisma.TransactionClient;
 
@@ -50,6 +50,15 @@ export async function writeSave(tx: Tx, userId: string, kind: SaveKind, name: st
   await tx.gameSave.create({
     data: { userId, kind, name: name.slice(0, 80), state: packState(state), summary: summarize(state) as unknown as Prisma.InputJsonValue },
   });
+  await dropOld(tx, userId, kind);
+}
+
+async function dropOld(tx: Tx, userId: string, kind: SaveKind): Promise<void> {
   const old = await tx.gameSave.findMany({ where: { userId, kind }, orderBy: { createdAt: "desc" }, skip: KEEP[kind], select: { id: true } });
   if (old.length > 0) await tx.gameSave.deleteMany({ where: { id: { in: old.map((o) => o.id) } } });
+}
+
+/** Drops copies beyond the limits, e.g. after the limits were lowered. */
+export async function pruneSaves(tx: Tx, userId: string): Promise<void> {
+  for (const kind of Object.keys(KEEP) as SaveKind[]) await dropOld(tx, userId, kind);
 }

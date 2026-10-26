@@ -2,12 +2,12 @@
 
 import { useId, useState, useSyncExternalStore, type ElementType, type ReactNode } from "react";
 
-// Auf Telefon und Tablet (bis 1100 px) klappt dieser Block zu, damit die Seite
+// Auf Telefon und Tablet (bis 1100 px, mit Touch bis 1400 px, also auch das iPad quer) klappt dieser Block zu, damit die Seite
 // kurz bleibt. Auf dem Desktop ist alles offen und die Kopfzeile ist ein
 // gewöhnlicher Text, genau wie vorher. Das Verhalten steckt im CSS
 // (.disc in globals.css); der State sorgt nur für aria-expanded.
 
-const NARROW = "(max-width: 1100px)";
+const NARROW = "(max-width: 1100px), (pointer: coarse) and (max-width: 1400px)";
 
 function subscribe(cb: () => void) {
   const mq = window.matchMedia(NARROW);

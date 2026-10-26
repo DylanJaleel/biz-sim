@@ -5,7 +5,7 @@ import { GameRuleError, upgradeState } from "../game/engine";
 import type { GameState } from "../game/types";
 import { packState, unpackState } from "./codec";
 import { ensureGame, loadGame } from "./game";
-import { KEEP, summarize, writeSave, type SaveKind, type SaveListItem, type SaveSummary } from "./save-store";
+import { KEEP, pruneSaves, summarize, writeSave, type SaveKind, type SaveListItem, type SaveSummary } from "./save-store";
 
 export { KEEP, summarize, type SaveKind, type SaveListItem, type SaveSummary } from "./save-store";
 
@@ -15,6 +15,7 @@ export { KEEP, summarize, type SaveKind, type SaveListItem, type SaveSummary } f
 // dazu eigene, benannte Sicherungen und eine signierte Datei zum Mitnehmen.
 
 export async function listSaves(userId: string): Promise<SaveListItem[]> {
+  await pruneSaves(getDb(), userId);
   const rows = await getDb().gameSave.findMany({
     where: { userId },
     orderBy: { createdAt: "desc" },
