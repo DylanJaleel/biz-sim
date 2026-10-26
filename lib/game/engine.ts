@@ -28,7 +28,6 @@ import {
   ROUND_RUNWAY,
   SECONDARY_CHANCE,
   SECONDARY_DISCOUNT,
-  WARMTH_DECAY,
   WARMTH_INTRO_COST,
   WARMTH_INTRO_MIN,
   WARMTH_MEET,
@@ -102,7 +101,8 @@ import {
 import { CORPORATE_ID, corporateStartup } from "./corporate";
 import { NEWS, targetsOf } from "./news";
 import { monthDays, OFFICES, officeOf } from "./office";
-import { contactDef, initialContacts, ringOpen } from "./network";
+import { addBal, contactDef, contactOf, helpStrength, initialContacts, introCooldown, introWarmthCost, personOf, refuses, ringOpen } from "./network";
+import { afterAcquire, defuseRivals, networkMonth, planNetwork, playEvent, playFavor, playHint, playSpecialist } from "./network-life";
 import { boardFee, drawGigs } from "./gigs";
 import { awardTrophies } from "./trophies";
 import { cityOf, ensureGigLog, garageUpkeep, garageValue, RESALE, resolveTrip, travelOptions, vehicleBlocker, vehicleOf } from "./travel";
@@ -207,7 +207,7 @@ export function newGame(seed: number): GameState {
     counter: 0,
     rounds: [],
     shareOffers: [],
-    contacts: initialContacts(),
+    contacts: initialContacts(seed),
     ledRounds: 0,
     gigs: [],
     market: initialMarket(),
@@ -429,7 +429,26 @@ function playAction(current: GameState, action: GameAction): { state: GameState;
       return { state, result: { kind: "none" } };
     }
     case "acquire": {
+      // A rival the player has warmed up to steps back before the price is set.
+      defuseRivals(ctxOf(state));
       acquire(ctxOf(state), action.targetId, { bid: action.bid, bank: action.bank, vendor: action.vendor, earnout: action.earnout }, action.integration);
+      afterAcquire(state, action.targetId);
+      return { state, result: { kind: "none" } };
+    }
+    case "favor": {
+      playFavor(ctxOf(state), action.favorId, action.accept);
+      return { state, result: { kind: "none" } };
+    }
+    case "event": {
+      playEvent(ctxOf(state), action.eventId, action.move, action.talk ?? false);
+      return { state, result: { kind: "none" } };
+    }
+    case "specialist": {
+      playSpecialist(ctxOf(state), action.contactId, action.targetId);
+      return { state, result: { kind: "none" } };
+    }
+    case "contactHint": {
+      playHint(ctxOf(state), action.contactId, action.itemId);
       return { state, result: { kind: "none" } };
     }
     case "platform": {
@@ -649,36 +668,49 @@ function playAction(current: GameState, action: GameAction): { state: GameState;
       return { state, result: { kind: "none" } };
     }
     case "meetContact": {
-      const c = state.contacts.find((x) => x.id === action.contactId);
+      const c = contactOf(state, action.contactId);
       if (!c) throw new GameRuleError("Diesen Kontakt gibt es nicht.");
       const def = contactDef(c.id);
+      const name = personOf(state, c).name;
       if (!ringOpen(state, def.ring)) throw new GameRuleError("Dieser Kreis öffnet sich erst mit mehr Ruf.");
-      if (state.calendar.some((e) => e.kind === "meetContact" && e.label.endsWith(def.name))) {
+      if (state.calendar.some((e) => e.kind === "meetContact" && e.label.endsWith(name))) {
         throw new GameRuleError("Ihr habt euch diesen Monat schon getroffen.");
       }
-      spendDays(state, "meetContact", `Treffen mit ${def.name}`);
+      spendDays(state, "meetContact", `Treffen mit ${name}`);
       c.warmth = Math.min(100, c.warmth + (c.met ? WARMTH_MEET : WARMTH_MEET_FIRST));
       c.met = true;
       unlockLesson(state, "netzwerk");
+      // Warm enough now, a contact who bid against the player may step back.
+      defuseRivals(ctxOf(state));
       return { state, result: { kind: "none" } };
     }
     case "introContact": {
-      const c = state.contacts.find((x) => x.id === action.contactId);
+      const c = contactOf(state, action.contactId);
       if (!c) throw new GameRuleError("Diesen Kontakt gibt es nicht.");
       const def = contactDef(c.id);
+      const name = personOf(state, c).name;
+      if (def.kind === "specialist") throw new GameRuleError(`${name} hilft bei Übernahmen, Mandaten und Plattformen, nicht bei Startups.`);
       if (!c.met || !ringOpen(state, def.ring)) throw new GameRuleError("Diesen Kontakt kennst du noch nicht gut genug.");
+      if (refuses(c)) {
+        const net = state.network;
+        if (net) net.log.refusals += 1;
+        throw new GameRuleError(`${name} sagt Nein: Du hast in letzter Zeit nur genommen. Tu erst selbst einen Gefallen.`);
+      }
       if (c.warmth < WARMTH_INTRO_MIN) throw new GameRuleError(`Die Beziehung ist zu kühl. Ab ${WARMTH_INTRO_MIN} Wärme kannst du um einen Gefallen bitten.`);
-      if (c.lastIntro !== undefined && state.month - c.lastIntro < INTRO_COOLDOWN) {
-        throw new GameRuleError(`${def.name} hat dir gerade erst geholfen. Frag in ein paar Monaten wieder.`);
+      if (c.lastIntro !== undefined && state.month - c.lastIntro < introCooldown(c, INTRO_COOLDOWN)) {
+        throw new GameRuleError(`${name} hat dir gerade erst geholfen. Frag in ein paar Monaten wieder.`);
       }
       const s = startupOf(state, action.startupId);
       if (s.status !== "active" || s.corporate) throw new GameRuleError("Du bist an dieser Firma nicht beteiligt.");
-      spendDays(state, "introContact", `${def.name} für ${s.name}`);
-      c.warmth = Math.max(0, c.warmth - WARMTH_INTRO_COST);
+      spendDays(state, "introContact", `${name} für ${s.name}`);
+      const strength = helpStrength(c);
+      c.warmth = Math.max(0, c.warmth - introWarmthCost(c, WARMTH_INTRO_COST));
       c.lastIntro = state.month;
+      addBal(c, -1);
       state.reputation = Math.min(100, state.reputation + reputationGain(state, 1));
       unlockLesson(state, "netzwerk");
-      introduce(state, s, def.id);
+      unlockLesson(state, "warm_intro");
+      introduce(state, s, def.id, strength, name);
       return { state, result: { kind: "none" } };
     }
     case "gig": {
@@ -1087,28 +1119,31 @@ function settleExit(state: GameState, offer: ExitOffer, vote: GvVote | "abstain"
   mail(state, { kind: "exit", from: s.name, subject: offer.ipo ? "Börsengang geglückt" : `Verkauft an ${offer.buyer}`, body: text, startupId: s.id, exitId: offer.id });
 }
 
-function introduce(state: GameState, s: Startup, contactId: string): void {
+/** A contact helps a company. Career level and a generous trust account make the help stronger. */
+function introduce(state: GameState, s: Startup, contactId: string, strength = 1, name = contactDef(contactId).name): void {
   const def = contactDef(contactId);
+  const result = def.result.replace("{name}", name);
   switch (def.kind) {
     case "delta":
     case "loan": {
       // A second favour for the same company helps less: the easy wins are taken.
       const times = s.helped?.[contactId] ?? 0;
-      const factor = def.kind === "delta" ? Math.pow(INTRO_REPEAT, times) : 1;
-      const text = times > 0 && factor < 1 ? `${def.result} Beim ${times + 1}. Mal für dieselbe Firma wirkt es schwächer.` : def.result;
+      const factor = (def.kind === "delta" ? Math.pow(INTRO_REPEAT, times) : 1) * strength;
+      const extra = def.kind === "loan" ? ` Betrag: ${Math.round(((def.delta?.cash ?? 0) * strength) / 1000).toLocaleString("de-DE")}.000 €.` : "";
+      const text = times > 0 && def.kind === "delta" ? `${result} Beim ${times + 1}. Mal für dieselbe Firma wirkt es schwächer.` : `${result}${extra}`;
       state.effects.push({ delay: 1, text, delta: scaleDelta(def.delta ?? {}, factor), startupId: s.id, due: state.month + 1, itemId: `intro-${contactId}-${state.month}` });
       replaceStartup(state, { ...s, helped: { ...s.helped, [contactId]: times + 1 } });
       break;
     }
     case "investor":
       replaceStartup(state, { ...s, flags: s.flags.includes("investor_intro") ? s.flags : [...s.flags, "investor_intro"] });
-      mail(state, { kind: "network", from: def.name, subject: `${s.name}: gern beim nächsten Mal`, body: def.result, startupId: s.id });
+      mail(state, { kind: "network", from: name, subject: `${s.name}: gern beim nächsten Mal`, body: result, startupId: s.id });
       break;
     case "shares": {
       const options = sellers({ ...s, metrics: { ...s.metrics, trust: 0 } });
       const pick = options[0];
       if (pick) createShareOffer(state, s, pick.holder.id, pick.pct, SECONDARY_DISCOUNT);
-      else mail(state, { kind: "network", from: def.name, subject: "Gerade niemand", body: "Bei dieser Firma will gerade niemand verkaufen.", startupId: s.id });
+      else mail(state, { kind: "network", from: name, subject: "Gerade niemand", body: "Bei dieser Firma will gerade niemand verkaufen.", startupId: s.id });
       break;
     }
     case "deal": {
@@ -1697,7 +1732,8 @@ export function closeMonth(state: GameState): MonthReport {
   }
 
   for (const o of state.shareOffers.filter((x) => x.status === "open" && x.expires < state.month)) o.status = "expired";
-  for (const c of state.contacts.filter((x) => x.met)) c.warmth = Math.max(0, c.warmth - WARMTH_DECAY);
+  // The network: warmth fades by ring, favours run out, careers move on.
+  networkMonth(mna, month, notes);
   if (month % 3 === 0) grantAdvisorShares(state, month, notes);
   for (const s of state.startups.filter((x) => x.status === "active")) {
     const random = randomFor(state.seed, `secondary|${s.id}|${state.month}`);
@@ -1725,6 +1761,8 @@ export function closeMonth(state: GameState): MonthReport {
 
   state.daysUsed = 0;
   state.calendar = [];
+  // Favours asked, invitations sent, events accepted earlier now in the calendar.
+  planNetwork(mna);
   planAgenda(state);
 
   const report: MonthReport = {

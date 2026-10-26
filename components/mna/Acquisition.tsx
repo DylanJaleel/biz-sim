@@ -6,6 +6,8 @@ import { acquisitionView } from "@/lib/game/mna-views";
 import { ActionButton } from "@/components/game/ActionButton";
 import { eur, pct } from "@/components/game/format";
 import { DealDesk } from "./DealDesk";
+import { HelpersPanel } from "@/components/network/HelpersPanel";
+import { rivalFor, specialistsFor } from "@/lib/game/network-views";
 
 // Übernahme strukturieren: ein Familienbetrieb aus der Post, von der
 // Suchenden, oder ein Zukauf für die Plattform.
@@ -73,6 +75,15 @@ export async function Acquisition({ params }: { params: Promise<{ id: string }> 
           senkt das Risiko der Übergabe.
         </p>
       )}
+
+      <HelpersPanel
+        helpers={specialistsFor(state, id)}
+        rival={rivalFor(state, id)}
+        revision={revision}
+        targetId={id}
+        title="Spezialisten aus deinem Netzwerk"
+        lead="Kennst du die richtigen Leute, wird die Prüfung billiger, die Finanzierung lockerer und das Kartellamt harmloser."
+      />
 
       {v.found.length > 0 && (
         <section className="panel" aria-labelledby="found">

@@ -132,6 +132,10 @@ export interface Startup {
     source?: "market" | "search" | "referral";
     /** Modules of the due diligence already done. */
     dd?: import("./mna-config").DdModule[];
+    /** A contact bids for the same company (see network-life.ts). */
+    rival?: Rival;
+    /** Specialists from the network already working on this deal (contact ids). */
+    spec?: string[];
   };
   /** Stage label of a generated deal (Pre-Seed, Seed, Wachstum, Nachfolge). */
   stage?: string;
@@ -254,6 +258,8 @@ export interface BoardItem {
   cfo: boolean;
   /** Not decided in its month and carried over once (non-urgent items only). */
   postponed?: boolean;
+  /** A contact gave a hint on the fitting condition (contact id). */
+  tip?: string;
   decision?: MeetingDecision;
   /** Filled when the risky part of the outcome has been rolled. */
   result?: { good: boolean; text: string; month: number };
@@ -283,8 +289,10 @@ export interface Mail {
   roundId?: string;
   offerId?: string;
   exitId?: string;
-  /** The mail carries a decision (the corporate seat). */
-  action?: "corporate";
+  /** The mail carries a decision (the corporate seat, a favour asked, an invitation). */
+  action?: "corporate" | "favor" | "event";
+  favorId?: string;
+  eventId?: string;
   read: boolean;
 }
 
@@ -500,6 +508,62 @@ export interface ContactState {
   warmth: number;
   met: boolean;
   lastIntro?: number;
+  /** Trust account: favours given minus favours taken (see network.ts). Missing = 0. */
+  bal?: number;
+  /** Who holds the role: a person drawn from the pool; missing = the classic cast of older games. */
+  p?: number;
+  /** Organisation (index in the role's list); missing = the first one. */
+  org?: number;
+  /** Career level 0..2 (title and strength of help). */
+  lv?: number;
+  /** Month the current person took the role. */
+  since?: number;
+  /** Month the contact last asked the player for a favour. */
+  lastAsk?: number;
+  /** The last career step, for the network page. */
+  ev?: { month: number; kind: CareerKind };
+}
+
+export type CareerKind = "up" | "move" | "new";
+
+/** A contact bidding for the same company: the price is higher until the relationship is warm enough. */
+export interface Rival {
+  contactId: string;
+  /** Price before the rival pushed it up (EV of a deal, multiple of an add-on). */
+  base: number;
+  premium: number;
+  defused?: boolean;
+}
+
+export type FavorKind = "mandant" | "vortrag" | "neffe" | "buergschaft" | "treffen" | "praktikum" | "spende" | "zweitmeinung" | "jury";
+
+/** A contact asks the player for something; it expires at the end of `expires`. */
+export interface Favor {
+  id: string;
+  contactId: string;
+  kind: FavorKind;
+  month: number;
+  expires: number;
+  /** For "treffen": whom to introduce. For "praktikum": which company. */
+  via?: string;
+}
+
+export interface NetEvent {
+  id: string;
+  /** Id of the event in the yearly calendar (network-events.ts). */
+  def: string;
+  month: number;
+  status: "invited" | "accepted" | "declined" | "attended";
+  talk?: boolean;
+}
+
+/** Network beyond the contact list: open favours, invitations, ties and running counters (missing in older games). */
+export interface NetworkState {
+  favors: Favor[];
+  events: NetEvent[];
+  /** Pairs of contacts introduced by the player ("a~b"); at most a few dozen. */
+  ties: string[];
+  log: { given: number; declined: number; lapsed: number; events: number; talks: number; refusals: number; specialists: number; hints: number };
 }
 
 export interface ReportLine {
@@ -583,6 +647,8 @@ export interface GameState {
   mna?: MnaState;
   /** Paid jobs done so far and the cities they took place in (for tombstones; the gig list itself is cleared after six months). */
   gigLog?: { done: number; cities: string[] };
+  /** Favours, invitations and counters of the network (missing in older games). */
+  network?: NetworkState;
 }
 
 export type ActionKind =
@@ -616,7 +682,10 @@ export type ActionKind =
   | "mandate"
   | "search"
   | "acquire"
-  | "platform";
+  | "platform"
+  | "favor"
+  | "event"
+  | "specialist";
 
 export type GameAction =
   | { type: "dd"; startupId: string }
@@ -636,6 +705,10 @@ export type GameAction =
   | { type: "askShares"; startupId: string }
   | { type: "meetContact"; contactId: string }
   | { type: "introContact"; contactId: string; startupId: string }
+  | { type: "favor"; favorId: string; accept: boolean }
+  | { type: "event"; eventId: string; move: "accept" | "decline"; talk?: boolean }
+  | { type: "specialist"; contactId: string; targetId?: string }
+  | { type: "contactHint"; contactId: string; itemId: string }
   | { type: "gig"; gigId: string; travel?: string; approach?: GigApproach }
   | { type: "buyVehicle"; vehicleId: string }
   | { type: "sellVehicle"; vehicleId: string }
@@ -719,6 +792,8 @@ export interface Mandate {
   status: MandateStatus;
   expires: number;
   findings: Finding[];
+  /** Specialists from the network working on the mandate (contact ids). */
+  spec?: string[];
   /** Range of comparable deals once analysed. */
   comps?: [number, number];
   multiple?: number;
@@ -793,6 +868,10 @@ export interface AddonTarget {
   findings: Finding[];
   dd: import("./mna-config").DdModule[];
   status: "open" | "review" | "bought" | "blocked" | "expired" | "lost";
+  /** A contact bids too (see network-life.ts). */
+  rival?: Rival;
+  /** Specialists from the network working on this add-on (contact ids). */
+  spec?: string[];
   /** Competition authority: closing waits until this month. */
   reviewDue?: number;
   /** Signed terms while the authority reviews; the player's money sits in escrow. */
@@ -824,6 +903,10 @@ export interface LboState {
   margin?: number;
   /** Gross margin of the business at purchase: price wars and windfalls fade back towards it. */
   grossMargin?: number;
+  /** A leveraged-finance contact negotiated more room: added to the covenant limit (net debt / EBITDA). */
+  headroom?: number;
+  /** An interim manager from the network steadies handover and integrations until this month. */
+  interim?: number;
 }
 
 export interface PlatformState {

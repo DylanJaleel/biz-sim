@@ -6,6 +6,8 @@ import type { ActionKind } from "@/lib/game/types";
 import { eur, signed } from "@/components/game/format";
 import { GigList } from "@/components/game/GigList";
 import { ReportButton } from "./ReportButton";
+import Link from "next/link";
+import { calendarEvents } from "@/lib/game/network-views";
 
 const KIND_LABEL: Partial<Record<ActionKind, string>> = {
   dd: "Prüfung",
@@ -25,6 +27,9 @@ const KIND_LABEL: Partial<Record<ActionKind, string>> = {
   exit: "Verkauf",
   negotiate: "Verhandlung",
   joinCorporate: "Aufsichtsrat",
+  favor: "Gefallen",
+  event: "Veranstaltung",
+  specialist: "Spezialist",
 };
 
 const WEEKDAYS = ["Mo", "Di", "Mi", "Do", "Fr"];
@@ -41,6 +46,7 @@ export async function Calendar() {
     return { day, entry, start: entry?.day === day };
   });
   const reports = [...state.reports].reverse();
+  const events = calendarEvents(state);
 
   return (
     <div className="page">
@@ -73,6 +79,30 @@ export async function Calendar() {
         </div>
 
         <div className="cal-layout__side">
+          {events.length > 0 && (
+            <section className="page__section" aria-labelledby="cal-events">
+              <h2 id="cal-events" className="section-title">
+                Termine im Netzwerk
+              </h2>
+              <ul className="list cal-events">
+                {events.map((e) => (
+                  <li key={e.id} className="list__row">
+                    <b>{e.name}</b>
+                    <span className="muted">
+                      {e.month} · {e.city} · {e.days === 1 ? "1 Tag" : `${e.days} Tage`} · {eur(e.money)} ·{" "}
+                      {e.status === "attended" ? "besucht" : e.status === "accepted" ? "zugesagt" : "Einladung offen"}
+                    </span>
+                    {e.status === "invited" && (
+                      <Link className="btn btn--sm" href={e.mailId ? `/post?mail=${e.mailId}` : "/netzwerk#termine"}>
+                        Antworten
+                      </Link>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
           <section className="page__section">
             <h2 className="section-title">Bezahlte Aufträge</h2>
             <GigList gigs={state.gigs.filter((g) => g.month === state.month)} reputation={state.reputation} daysLeft={daysLeft(state)} />

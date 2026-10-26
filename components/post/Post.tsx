@@ -5,6 +5,7 @@ import { officeOf } from "@/lib/game/office";
 import { BUYOUT_LOAN_SHARE, BUYOUT_REPUTATION, FUND_MATCH, FUND_MAX_DEAL } from "@/lib/game/config";
 import { definitionIn } from "@/lib/game/engine";
 import { Inbox, type DealView, type MailView } from "./Inbox";
+import { postNetwork } from "@/lib/game/network-views";
 
 export async function Post({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const params = await searchParams;
@@ -42,8 +43,7 @@ export async function Post({ searchParams }: { searchParams: Promise<Record<stri
       board: s.board.map((b) => `${b.name} (${b.title})`),
     };
   }
-  const initial =
-    (wanted && mails.find((m) => m.id === wanted)?.id) ?? (firma && mails.find((m) => m.startupId === firma && m.kind === "deal")?.id) ?? mails[0]?.id ?? null;
+  const initial = (wanted && mails.find((m) => m.id === wanted)?.id) ?? (firma && mails.find((m) => m.startupId === firma && m.kind === "deal")?.id) ?? mails[0]?.id ?? null;
 
   return (
     <div className="page post">
@@ -60,6 +60,7 @@ export async function Post({ searchParams }: { searchParams: Promise<Record<stri
         cash={state.cash}
         ddDays={officeOf(state).ddDays}
         corporateSeat={state.corporateSeat}
+        network={postNetwork(state)}
       />
     </div>
   );

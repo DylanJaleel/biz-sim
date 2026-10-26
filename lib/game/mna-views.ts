@@ -540,7 +540,8 @@ export function platformView(state: GameState, id: string): PlatformView | null 
     cash: s.metrics.cash,
     lbo,
     leverage: netLeverage(s),
-    covenant: COVENANT,
+    // A leveraged-finance contact may have negotiated more room (network).
+    covenant: COVENANT + (lbo.headroom ?? 0),
     dividends: lboAllowsDividends(s),
     dividendMax: DIVIDEND_MAX_LEVERAGE,
     entryMultiple: lbo.entryEv / Math.max(1, lbo.entryEbitda),

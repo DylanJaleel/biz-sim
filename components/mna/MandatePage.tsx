@@ -7,6 +7,8 @@ import { ActionButton } from "@/components/game/ActionButton";
 import { eur } from "@/components/game/format";
 import { Disclosure } from "@/components/ui/Disclosure";
 import { MandateForm } from "./MandateForm";
+import { HelpersPanel } from "@/components/network/HelpersPanel";
+import { specialistsFor } from "@/lib/game/network-views";
 
 // Ein M&A-Mandat: Du verkaufst eine Firma für ihre Eigentümer oder kaufst
 // eine für einen Mandanten. Wenige Entscheidungen, echtes Risiko.
@@ -235,6 +237,16 @@ export async function MandatePage({ params }: { params: Promise<{ id: string }> 
             ))}
           </ul>
         </section>
+      )}
+
+      {view.status === "prep" && (
+        <HelpersPanel
+          helpers={specialistsFor(state, view.id)}
+          revision={revision}
+          targetId={view.id}
+          title="Spezialisten aus deinem Netzwerk"
+          lead="Eine Verkäuferprüfung vor dem Start: Was du kennst, kannst du offenlegen, statt dass der Käufer es findet."
+        />
       )}
 
       <p className="muted small">

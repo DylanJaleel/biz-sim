@@ -7,6 +7,7 @@ import type { GameState, Mail, StartupStatus } from "@/lib/game/types";
 import { ActionButton } from "@/components/game/ActionButton";
 import { eur, pct, runwayText } from "@/components/game/format";
 import { usePlay } from "@/components/game/usePlay";
+import type { EventCard, FavorCard } from "@/lib/game/network-views";
 
 export type MailView = Mail & { when: string };
 
@@ -55,6 +56,7 @@ export function Inbox({
   cash,
   ddDays,
   corporateSeat,
+  network,
 }: {
   mails: MailView[];
   deals: Record<string, DealView>;
@@ -63,6 +65,7 @@ export function Inbox({
   cash: number;
   ddDays: number;
   corporateSeat: GameState["corporateSeat"];
+  network?: { favors: Record<string, FavorCard>; events: Record<string, EventCard> };
 }) {
   const [selected, setSelected] = useState(initial);
   const { play } = usePlay(revision);
@@ -133,12 +136,23 @@ export function Inbox({
                 )}
               </p>
             ))}
+          {mail.action === "favor" && mail.favorId && <FavorAnswer favor={network?.favors[mail.favorId]} revision={revision} />}
+          {mail.action === "event" && mail.eventId && <EventAnswer event={network?.events[mail.eventId]} revision={revision} />}
           {mail.roundId && (
             <Link className="btn btn--primary" href={`/gv/${mail.roundId}`}>
               Zur Gesellschafterversammlung
             </Link>
           )}
-          {!mail.roundId && mail.startupId && (mail.kind === "shares" || mail.kind === "network") && (
+          {!mail.roundId &&
+            mail.startupId &&
+            (mail.kind === "shares" || mail.kind === "network") &&
+            deals[mail.startupId]?.status === "offered" &&
+            deals[mail.startupId]?.structured && (
+              <Link className="btn" href={`/uebernahme/${mail.startupId}`}>
+                Zur Übernahme
+              </Link>
+            )}
+          {!mail.roundId && mail.startupId && (mail.kind === "shares" || mail.kind === "network") && deals[mail.startupId]?.status !== "offered" && (
             <Link className="btn" href={`/firma/${mail.startupId}#anteile`}>
               Zur Firma
             </Link>
@@ -281,6 +295,62 @@ function Deal({ deal, revision, cash, ddDays }: { deal: DealView; revision: numb
           Absagen
         </ActionButton>
       </div>
+    </div>
+  );
+}
+
+/** A contact asks for a favour: yes costs days, money or a little risk; no cools the relationship. */
+function FavorAnswer({ favor, revision }: { favor?: FavorCard; revision: number }) {
+  if (!favor) return <p className="notice">Diese Bitte ist erledigt oder verstrichen.</p>;
+  return (
+    <div className="deal__actions net-answer">
+      <p className="muted small">
+        {favor.cost}. Zusagen füllt dein Vertrauenskonto bei {favor.contactName}; absagen oder liegen lassen kühlt die Beziehung ab. Antwort bis Ende {favor.expires}.
+      </p>
+      <ActionButton
+        action={{ type: "favor", favorId: favor.id, accept: true }}
+        revision={revision}
+        days={favor.days > 0 ? favor.days : undefined}
+        variant="primary"
+        disabled={Boolean(favor.blocker)}
+      >
+        Zusagen
+      </ActionButton>
+      <ActionButton action={{ type: "favor", favorId: favor.id, accept: false }} revision={revision} variant="ghost">
+        Absagen
+      </ActionButton>
+      {favor.blocker && <small className="muted">{favor.blocker}</small>}
+    </div>
+  );
+}
+
+/** An invitation: go (with or without a talk) or decline. */
+function EventAnswer({ event, revision }: { event?: EventCard; revision: number }) {
+  if (!event) return <p className="notice">Diese Veranstaltung ist vorbei.</p>;
+  if (event.status === "attended") return <p className="notice notice--good">Du warst dort.</p>;
+  if (event.status === "declined") return <p className="notice">Du hast abgesagt.</p>;
+  if (event.status === "accepted") return <p className="notice notice--good">Zugesagt: Der Termin steht am Monatsanfang in deinem Kalender ({event.month}).</p>;
+  return (
+    <div className="deal__actions net-answer">
+      <p className="muted small">
+        {event.city}, {event.month}. {event.days === 1 ? "1 Tag" : `${event.days} Tage`} ({event.travel}), Ticket und Reise {eur(event.money)}. Da sind unter anderem:{" "}
+        {event.guests
+          .filter((g) => g.open)
+          .map((g) => g.name)
+          .join(", ") || "lauter neue Gesichter"}
+        .
+      </p>
+      <ActionButton action={{ type: "event", eventId: event.id, move: "accept" }} revision={revision} days={event.thisMonth ? event.days : undefined} variant="primary">
+        {event.thisMonth ? "Hingehen" : "Zusagen"}
+      </ActionButton>
+      {event.talk?.possible && (
+        <ActionButton action={{ type: "event", eventId: event.id, move: "accept", talk: true }} revision={revision} days={event.thisMonth ? event.days + 1 : undefined}>
+          {`Mit Vortrag: ${event.talk.title}`}
+        </ActionButton>
+      )}
+      <ActionButton action={{ type: "event", eventId: event.id, move: "decline" }} revision={revision} variant="ghost">
+        Absagen
+      </ActionButton>
     </div>
   );
 }

@@ -2089,6 +2089,12 @@ a.desk__item:focus-visible {
   --k: #d48a10;
 }
 
+.cal__day--favor,
+.cal__day--event,
+.cal__day--specialist {
+  --k: #b8650a;
+}
+
 @media (prefers-color-scheme: dark) {
   .cal__day--meeting {
     --k: #f2f3f5;
@@ -2688,6 +2694,108 @@ a.desk__item:focus-visible {
   color: var(--ink);
   font: inherit;
   font-size: 14px;
+}
+
+/* Netzwerk: Kanten, Bitten, Termine, Helfer (funktional; Gestaltung folgt) */
+
+.net__edge {
+  stroke: var(--muted);
+  stroke-width: 1;
+  stroke-opacity: 0.25;
+}
+
+.net__edge--base {
+  stroke-dasharray: 2 4;
+}
+
+.net__edge--made {
+  stroke: var(--ink);
+  stroke-opacity: 0.45;
+}
+
+.net__edge.is-lit {
+  stroke-opacity: 0.8;
+}
+
+.net__badge {
+  position: absolute;
+  top: -4%;
+  right: -4%;
+  width: 26%;
+  height: 26%;
+  border: 2px solid var(--room-bg);
+  border-radius: 50%;
+  background: #e0457b;
+}
+
+.net__contact.is-refusing .net__avatar {
+  outline: 2px dashed #c0392b;
+  outline-offset: 2px;
+}
+
+.net__bal--good {
+  color: #1c9a5a;
+}
+
+.net__bal--warn {
+  color: #b8650a;
+}
+
+.net__bal--bad {
+  color: #c0392b;
+}
+
+.net__useful ul {
+  display: grid;
+  gap: 4px;
+  margin: 4px 0 10px;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+}
+
+.net-favors,
+.net-events,
+.net-help__list,
+.covenant-hint__list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.net-favors,
+.net-events {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+}
+
+.net-favor.is-urgent {
+  border-color: #e0457b;
+}
+
+.net-help__row,
+.covenant-hint__list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.net-help__who {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 220px;
+}
+
+.net-help__why {
+  font-size: 14px;
+}
+
+.net-year .is-locked {
+  opacity: 0.6;
 }
 
 /* Zeitung, Aufträge, Börse */

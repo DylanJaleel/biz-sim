@@ -1,12 +1,13 @@
 import { ACTION_DAYS, monthName } from "@/lib/game/config";
 import type { CompanyView } from "@/lib/game/views";
+import type { HintView } from "@/lib/game/network-views";
 import { ActionButton } from "@/components/game/ActionButton";
 
 // Eigener Bereich der Firmenseite: Welche Auflage passt zu welchem Punkt, was
 // verraten Kennzahlen, Rückfrage und Vorgespräche, und welche Auflagen warten
 // noch auf ihren Folgetermin.
 
-export function CovenantPrep({ view, revision }: { view: CompanyView; revision: number }) {
+export function CovenantPrep({ view, revision, hints = [] }: { view: CompanyView; revision: number; hints?: HintView[] }) {
   const prepDays = view.analyst ? 0 : ACTION_DAYS.question;
   if (view.agenda.length === 0 && view.followUps.length === 0) return null;
   return (
@@ -56,6 +57,7 @@ export function CovenantPrep({ view, revision }: { view: CompanyView; revision: 
               <b>{h.short} im Vorgespräch:</b> „{h.text}“
             </p>
           ))}
+          <NetworkHint hint={hints.find((h) => h.itemId === item.id)} revision={revision} />
           {!item.cfo && <p className="muted small">Der CFO rechnet auf der Tagesordnung jede Auflage mit durch.</p>}
         </div>
       ))}
@@ -80,5 +82,41 @@ export function CovenantPrep({ view, revision }: { view: CompanyView; revision: 
         </div>
       )}
     </section>
+  );
+}
+
+/** A call to someone in the network who knows these conditions: costs warmth instead of days. */
+function NetworkHint({ hint, revision }: { hint?: HintView; revision: number }) {
+  if (!hint) return null;
+  if (hint.tip)
+    return (
+      <p className="covenant-answer covenant-answer--network">
+        <b>{hint.tip.name} am Telefon:</b> {hint.tip.text}
+      </p>
+    );
+  if (hint.options.length === 0) return null;
+  return (
+    <div className="covenant-hint">
+      <p className="muted small">
+        Oder frag jemanden aus deinem Netzwerk, der sich mit Auflagen auskennt. Das kostet keinen Tag, aber {hint.cost} Wärme (ab {hint.min} Wärme möglich). Wer das Gebiet kennt,
+        nennt die passende Auflage; sonst erfährst du, welche es nicht ist.
+      </p>
+      <ul className="covenant-hint__list">
+        {hint.options.map((o) => (
+          <li key={o.id}>
+            <span>
+              <b>{o.name}</b>{" "}
+              <small className="muted">
+                kennt sich aus mit {o.knows.join(" und ")} · Wärme {o.warmth}
+              </small>
+              {o.blocker && <small className="muted"> · {o.blocker}</small>}
+            </span>
+            <ActionButton action={{ type: "contactHint", contactId: o.id, itemId: hint.itemId }} revision={revision} size="sm" variant="ghost" disabled={o.blocker !== null}>
+              Anrufen
+            </ActionButton>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

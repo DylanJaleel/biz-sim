@@ -21,6 +21,7 @@ import {
   type DdModule,
 } from "./mna-config";
 import { between, eur, generateFindings, mio, mnaOf, pickOf, roundTo, times, type Ctx } from "./mna-core";
+import { BOUTIQUE_MANDATE_BONUS } from "./network-config";
 import type { BuyerFocus, GameAction, GameState, IncomeLines, Mandate, MandateBid, ProcessKind } from "./types";
 
 // M&A-Mandate: Du berätst einen Familienunternehmer beim Verkauf oder einen
@@ -65,8 +66,23 @@ export function planMandates(ctx: Ctx): void {
   if (m.mandates.some((x) => x.status === "offered")) return;
   const r = mnaRandom(state, `mandate|${state.month}`);
   const warm = state.contacts.some((c) => c.id === "bank" && c.met && c.warmth >= 40);
-  if (r() > MANDATE_CHANCE + (warm ? MANDATE_WARM_BONUS : 0)) return;
+  const boutique = state.contacts.some((c) => c.id === "boutique" && c.met && c.warmth >= 40);
+  if (r() > MANDATE_CHANCE + (warm ? MANDATE_WARM_BONUS : 0) + (boutique ? BOUTIQUE_MANDATE_BONUS : 0)) return;
   m.mandates.push(drawMandate(ctx, r));
+}
+
+/** A mandate offered through the network (M&A boutique, a conference): at once, if none is waiting. */
+export function offerMandate(ctx: Ctx): void {
+  const state = ctx.state;
+  const m = mnaOf(state);
+  if (state.reputation < MANDATE_REPUTATION || m.mandates.some((x) => x.status === "offered")) return;
+  m.mandates.push(drawMandate(ctx, mnaRandom(state, `mandate-net|${state.month}|${state.counter}`)));
+  ctx.mail({
+    kind: "system",
+    from: "Netzwerk",
+    subject: "Neue Mandatsanfrage",
+    body: "Über dein Netzwerk fragt jemand nach einem M&A-Berater. Die Anfrage findest du bei deinen Aufträgen.",
+  });
 }
 
 function drawMandate(ctx: Ctx, r: () => number): Mandate {
