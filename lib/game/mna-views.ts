@@ -467,6 +467,45 @@ export function acquisitionView(state: GameState, id: string): AcquisitionView |
   };
 }
 
+/**
+ * Where an address leads once it no longer shows what it used to: a purchase is
+ * signed, an offer expired, an add-on merged into its platform. Saves the
+ * player a 404 after a purchase (the page re-renders with the new state) and
+ * on old links in mails and tasks. Null when the id never existed.
+ */
+export function acquisitionRedirect(state: GameState, id: string): string | null {
+  const s = state.startups.find((x) => x.id === id);
+  if (s) {
+    if (s.status === "offered") return s.offer?.ev ? null : `/post?firma=${s.id}`;
+    if (s.status === "declined") return s.offer?.searchId ? "/nachfolge" : `/post?firma=${s.id}`;
+    return `/firma/${s.id}`;
+  }
+  const addon = mnaRead(state).addons.find((a) => a.id === id);
+  if (addon?.status === "open") return null;
+  if (addon) return state.startups.some((x) => x.id === addon.platformId && x.status === "active") ? `/plattform/${addon.platformId}` : `/firma/${addon.platformId}`;
+  return null;
+}
+
+/** A company page for something that is not (or no longer) a company of yours: where to go instead. */
+export function companyRedirect(state: GameState, id: string): string | null {
+  const s = state.startups.find((x) => x.id === id);
+  if (!s) {
+    const addon = mnaRead(state).addons.find((a) => a.id === id);
+    if (!addon) return null;
+    return addon.status === "open" ? `/uebernahme/${id}` : acquisitionRedirect(state, id);
+  }
+  if (s.status === "offered") return s.offer?.ev ? `/uebernahme/${s.id}` : `/post?firma=${s.id}`;
+  if (s.status === "declined") return `/post?firma=${s.id}`;
+  return null;
+}
+
+/** A platform page for a company that is not (or no longer) a platform. */
+export function platformRedirect(state: GameState, id: string): string | null {
+  const s = state.startups.find((x) => x.id === id);
+  if (!s) return null;
+  return companyRedirect(state, id) ?? `/firma/${s.id}`;
+}
+
 export function integrationCapacity(state: GameState, s: Startup): number {
   const partners = state.team.filter((t) => t.role === "partner").length;
   const associate = state.team.some((t) => t.role === "associate" && t.mandate === s.id);

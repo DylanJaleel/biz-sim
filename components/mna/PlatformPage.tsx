@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { HelpersPanel } from "@/components/network/HelpersPanel";
 import { specialistsFor } from "@/lib/game/network-views";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { currentGame } from "@/lib/current-game";
 import { monthLabel } from "@/lib/game/config";
-import { platformView } from "@/lib/game/mna-views";
+import { platformRedirect, platformView } from "@/lib/game/mna-views";
 import { ActionButton } from "@/components/game/ActionButton";
 import { eur, pct } from "@/components/game/format";
 import { Disclosure } from "@/components/ui/Disclosure";
@@ -24,7 +24,11 @@ export async function PlatformPage({ params }: { params: Promise<{ id: string }>
   const { id } = await params;
   const { state, revision } = await currentGame();
   const v = platformView(state, id);
-  if (!v) notFound();
+  if (!v) {
+    const next = platformRedirect(state, id);
+    if (next) redirect(next);
+    notFound();
+  }
   const p = v.platform;
   const lbo = v.lbo;
   const headroom = Math.max(0, Math.min(1, (Number.isFinite(v.leverage) ? v.leverage : v.covenant) / v.covenant));
