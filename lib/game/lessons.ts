@@ -486,6 +486,35 @@ export const LESSONS: Lesson[] = [
     example: "Die Financial DD zeigt, dass das EBITDA 15 % niedriger ist. Bei 5× sind das 450.000 € weniger Kaufpreis für eine Firma mit 600.000 € EBITDA.",
     inGame: "Beim Kauf von Firmen und in Mandaten wählst du die Bausteine. Jeder kostet einen Tag und Beraterhonorar.",
   },
+  {
+    id: "werttreiber",
+    title: "Werttreiber: woher der Wert einer Firma kommt",
+    summary:
+      "Der Wert eines Familienbetriebs für die Eigentümer hat vier Treiber: das EBITDA, das Multiple, die Schulden und die freie Kasse. Steigt das EBITDA um 10 %, steigt der Unternehmenswert um etwa 10 %; der Eigenkapitalwert steigt stärker, weil die Schulden gleich bleiben. Das ist der Hebel, in beide Richtungen.",
+    rule: "Eigenkapitalwert = EBITDA × Multiple + freie Kasse − Bankkredit − Verkäuferdarlehen − erwarteter Earn-out",
+    example: "2 Mio. € EBITDA × 6 = 12 Mio. € Unternehmenswert, 5 Mio. € Schulden: 7 Mio. € für die Eigentümer. Fällt das EBITDA auf 1,6 Mio. € und das Multiple auf 5,5, sind es 8,8 − 5 = 3,8 Mio. €: −20 % Ertrag, −46 % Eigenkapital.",
+    inGame:
+      "Auf der Firmenseite siehst du die Treiber und ihren Verlauf, im Monatsbericht steht bei jeder größeren Wertänderung, woher sie kommt. Ein Earn-out zählt nur so weit, wie sein Ziel erreichbar ist.",
+  },
+  {
+    id: "interim_management",
+    title: "Interim-Management und Führungswechsel",
+    summary:
+      "Läuft eine Firma über Monate schlecht, liegt es oft an der Führung. Eine Interim-Managerin kommt für einige Monate, ordnet Abläufe und Kosten und entlastet die Geschäftsführung. Reicht das nicht, tauscht der Gesellschafter die Geschäftsführung aus: teuer, riskant, aber manchmal der einzige Weg.",
+    rule: "Erst verstehen (Zahlen, Gespräch), dann stützen (Interim), erst zuletzt austauschen.",
+    example: "Nach dem Abgang des Prokuristen fällt das EBITDA zwei Quartale. Eine Interim-Managerin für sechs Monate kostet 45.000 € und bringt die Kosten wieder zum Umsatz.",
+    inGame:
+      "Bei eigenen Mittelstandsfirmen mit Mehrheit findest du unter „Eingreifen“ Interim-Management und den Wechsel der Geschäftsführung; über das Netzwerk bekommst du die Interim-Managerin günstiger.",
+  },
+  {
+    id: "refinanzierung",
+    title: "Refinanzierung",
+    summary:
+      "Ein laufender Kredit wird durch einen neuen ersetzt, meist mit längerer Laufzeit oder besserem Zins. Die monatliche Rate sinkt, die Firma hat mehr Luft. Der Preis: Die Schulden bleiben länger, insgesamt zahlt man oft mehr Zinsen. Banken refinanzieren nur, solange die Kreditbedingungen eingehalten sind.",
+    rule: "Niedrigere Rate = mehr freier Cashflow heute, mehr Zinsen über die Laufzeit",
+    example: "3 Mio. € Restschuld, noch drei Jahre: 90.000 € Rate im Monat. Neu über sieben Jahre zu 6,5 %: 44.500 €. Die Firma behält jeden Monat 45.500 € mehr.",
+    inGame: "Unter „Eingreifen“ refinanzierst du den Bankkredit einer gekauften Firma, auch fällige Verkäuferdarlehen kann die Bank übernehmen. Bei gebrochenem Covenant verhandelt sie nicht.",
+  },
 ];
 
 /** Order in which "Weiterbildung" unlocks cards. */
@@ -543,6 +572,9 @@ export const CURRICULUM = [
   "pmi",
   "berater_mna",
   "netzwerk_events",
+  "werttreiber",
+  "interim_management",
+  "refinanzierung",
 ];
 
 export function lessonOf(id: string): Lesson {

@@ -1,8 +1,12 @@
 import {
   EBITDA_BASE,
+  EBITDA_GROWTH_CAP,
+  EBITDA_GROWTH_FLOOR,
   EBITDA_MULTIPLE_MAX,
   EBITDA_MULTIPLE_MIN,
   EQUITY_FLOOR,
+  FAMILY_GROWTH,
+  FAMILY_NOISE,
   LOSS_MAKER_REVENUE_MULTIPLE,
   MULTIPLE_AT_BASE,
   MULTIPLE_GROWTH_CAP,
@@ -18,6 +22,17 @@ import type { Metrics } from "./types";
 // Buy-and-Build: klein kaufen, groß verkaufen (Multiple-Arbitrage).
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
+
+export { FAMILY_NOISE };
+
+/** Monthly interest on an overdrawn company account (about 10 % a year). */
+export const FAMILY_OVERDRAFT_RATE = 0.008;
+
+/** Growth a family business drifts towards: around zero, more with a strong product, market and management. */
+export function familyGrowth(m: Pick<Metrics, "axes" | "morale">): number {
+  const strength = ((m.axes.product + m.axes.market + m.axes.edge) / 300) * 0.7 + (m.axes.management / 100) * 0.3;
+  return clamp(FAMILY_GROWTH.slope * (strength - FAMILY_GROWTH.center) + (FAMILY_GROWTH.morale * (m.morale - 60)) / 20, EBITDA_GROWTH_FLOOR, EBITDA_GROWTH_CAP);
+}
 
 /** Operating profit per month: gross profit minus running costs. */
 export function monthlyEbitda(m: Pick<Metrics, "revenue" | "grossMargin" | "opex">): number {
@@ -48,8 +63,10 @@ export function fairMultiple(m: Metrics): number {
 /** Enterprise value: what the business is worth without its cash and debt. */
 export function enterpriseValue(m: Metrics): number {
   const ebitda = annualEbitda(m);
-  if (ebitda <= 0) return Math.max(0, m.revenue * 12 * LOSS_MAKER_REVENUE_MULTIPLE);
-  return ebitda * fairMultiple(m);
+  // Substance (customers, staff, equipment) is the floor: a thin profit is never worth less than a small loss.
+  const substance = Math.max(0, m.revenue * 12 * LOSS_MAKER_REVENUE_MULTIPLE);
+  if (ebitda <= 0) return substance;
+  return Math.max(substance, ebitda * fairMultiple(m));
 }
 
 /**

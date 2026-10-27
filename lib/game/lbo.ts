@@ -1,5 +1,5 @@
 import { generateDeal, LAST } from "./dealgen";
-import { annualEbitda, enterpriseValue, fairMultiple, sizeMultiple } from "./ebitda";
+import { annualEbitda, enterpriseValue, fairMultiple, familyGrowth, sizeMultiple } from "./ebitda";
 import {
   ACQUIRE_DAYS,
   BANK_MAX_LEVERAGE,
@@ -19,8 +19,11 @@ import {
   MARGIN_CEILING,
   MARGIN_REVERSION,
   DIVIDEND_MAX_LEVERAGE,
+  EARNOUT_FLOOR,
   EARNOUT_MAX,
   EARNOUT_MONTHS,
+  EBITDA_GROWTH_FLOOR,
+  MARGIN_RECOVERY,
   FORCED_SALE,
   HANDOVER_MONTHS,
   HANDOVER_RISK,
@@ -319,9 +322,19 @@ export function netLeverage(s: Startup): number {
   return e > 0 ? net / e : Infinity;
 }
 
+/**
+ * An earn-out is only owed when the target is met: on target it counts in full,
+ * below EARNOUT_FLOOR of the target not at all, in between pro rata.
+ */
+export function expectedEarnout(e: { amount: number; target: number }, ebitda: number): number {
+  if (e.target <= 0) return e.amount;
+  return e.amount * clamp((ebitda / e.target - EARNOUT_FLOOR) / (1 - EARNOUT_FLOOR), 0, 1);
+}
+
 export function syncDebt(s: Startup): Startup {
   if (!s.lbo) return s;
-  const total = s.lbo.bank + s.lbo.vendors.reduce((sum, v) => sum + v.amount, 0) + s.lbo.earnouts.reduce((sum, e) => sum + e.amount, 0);
+  const ebitda = annualEbitda(s.metrics);
+  const total = s.lbo.bank + s.lbo.vendors.reduce((sum, v) => sum + v.amount, 0) + s.lbo.earnouts.reduce((sum, e) => sum + expectedEarnout(e, ebitda), 0);
   return { ...s, metrics: { ...s.metrics, acqDebt: Math.round(total) } };
 }
 
@@ -394,6 +407,7 @@ export function acquireDeal(ctx: Ctx, s: Startup, terms: Terms): void {
     refRevenue: next.metrics.revenue,
     margin: Math.max(0.03, ebitda / Math.max(1, next.metrics.revenue * 12)),
     grossMargin: next.metrics.grossMargin,
+    model: 2,
     ...(search ? { searchId: search.id } : {}),
   };
   let stake = offer.stake;
@@ -470,6 +484,11 @@ export function lboMonth(ctx: Ctx, month: number, notes: string[], lines: Map<st
   for (const current of state.startups.filter((x) => x.status === "active" && x.metrics.valuedOn === "ebitda")) {
     let s = current;
     const texts = lines.get(s.id) ?? [];
+    // Older games ran family businesses on the startup growth path, which shrank big ones every month: corrected once.
+    if (s.lbo && (s.lbo.model ?? 1) < 2) s = correctOldValuation(s, texts);
+    // An interim manager on site: the management gets stronger month by month.
+    const interimOn = (s.lbo?.interim ?? 0) >= month;
+    if (interimOn && s.metrics.axes.management < INTERIM_MANAGEMENT) s = applyDelta(s, { axes: { management: (INTERIM_MANAGEMENT - s.metrics.axes.management) * 0.15 } });
     // A family business is no startup: growth is capped, and most costs follow revenue.
     let opex = s.metrics.opex;
     const ref = s.lbo?.refRevenue;
@@ -480,13 +499,15 @@ export function lboMonth(ctx: Ctx, month: number, notes: string[], lines: Map<st
       const margin = (s.metrics.revenue * s.metrics.grossMargin - opex) / s.metrics.revenue;
       const ceiling = base * MARGIN_CEILING;
       if (margin > ceiling) opex += MARGIN_REVERSION * (margin - ceiling) * s.metrics.revenue;
+      // Below the margin at purchase, a management that knows its trade slowly adapts the fixed costs to the volume.
+      else if (margin < base) opex -= (MARGIN_RECOVERY.base + (MARGIN_RECOVERY.management * s.metrics.axes.management) / 100) * (interimOn ? 2 : 1) * (base - margin) * s.metrics.revenue;
     }
     // Price wars and windfalls fade: the gross margin drifts back to what the business made at purchase.
     const gmBase = s.lbo?.grossMargin;
     const grossMargin = gmBase ? s.metrics.grossMargin + GROSS_MARGIN_REVERSION * (gmBase - s.metrics.grossMargin) : s.metrics.grossMargin;
     // Family businesses feel the business cycle.
     const cycle = CYCLE_REVENUE[regime];
-    s = { ...s, metrics: { ...s.metrics, opex, grossMargin, growth: Math.min(EBITDA_GROWTH_CAP, s.metrics.growth), revenue: s.metrics.revenue * (1 + cycle) } };
+    s = { ...s, metrics: { ...s.metrics, opex, grossMargin, growth: clamp(s.metrics.growth, EBITDA_GROWTH_FLOOR, EBITDA_GROWTH_CAP), revenue: s.metrics.revenue * (1 + cycle) } };
     if (!s.lbo) {
       ctx.replace(s);
       continue;
@@ -538,14 +559,21 @@ export function lboMonth(ctx: Ctx, month: number, notes: string[], lines: Map<st
       ctx.lesson("earn_out");
     }
     lbo.earnouts = lbo.earnouts.filter((x) => x.due > month);
+    const revenueBefore = s.metrics.revenue;
     s = handover(ctx, s, month, texts);
+    // A customer lost in the handover takes its share of the costs with it in the same month.
+    if (s.metrics.revenue !== revenueBefore && revenueBefore > 0) {
+      const opexNow = Math.max(0, s.metrics.opex * (1 + COST_FLEX * (s.metrics.revenue / revenueBefore - 1)));
+      s = { ...s, metrics: { ...s.metrics, opex: opexNow }, lbo: { ...s.lbo!, refRevenue: s.metrics.revenue } };
+    }
     s = earnIn(ctx, s, month, texts);
     s = syncDebt(s);
     // The bank looks at the numbers every quarter.
     if (month % 3 === 0) s = covenantTest(ctx, s, month, texts);
-    if (s.metrics.cash < 0 && s.lbo!.status !== "cure") {
+    // A profitable company bridges a short dip with its overdraft; the bank steps in when the hole is deep or the business loses money.
+    if (cashTrouble(s) && s.lbo!.status !== "cure") {
       const amount = roundTo(-s.metrics.cash + s.metrics.opex, 1000);
-      s = { ...s, lbo: { ...s.lbo!, status: "cure", cure: { amount, due: month + 1 } } };
+      s = { ...s, lbo: { ...s.lbo!, status: "cure", cure: { amount, due: month + 1, reason: "cash" } } };
       ctx.mail({
         kind: "system",
         from: "Hausbank",
@@ -555,10 +583,70 @@ export function lboMonth(ctx: Ctx, month: number, notes: string[], lines: Map<st
       });
       texts.push("Die Kasse ist leer. Die Bank verlangt frisches Eigenkapital.");
     }
+    // The cash is back without fresh money: the bank withdraws a demand that was only about the empty till.
+    if (s.lbo!.status === "cure" && s.lbo!.cure?.reason === "cash" && s.lbo!.cure.due <= month && !cashTrouble(s)) {
+      const rest = { ...s.lbo!, status: "ok" as const, breach: 0 };
+      delete rest.cure;
+      s = { ...s, lbo: rest };
+      texts.push("Die Kasse ist wieder im Plus. Die Bank zieht ihre Forderung zurück.");
+    }
+    s = withTrendPoint(s, month + 1);
     ctx.replace(s);
     lines.set(s.id, texts);
     if (s.lbo!.status === "cure" && s.lbo!.cure && s.lbo!.cure.due <= month) forcedSale(ctx, s, notes);
   }
+}
+
+/**
+ * The bank only steps in when the till is empty and the company cannot refill
+ * it: no operating profit after debt service, or an overdraft beyond two months
+ * of costs. A profitable company bridges a one-off hole with its overdraft.
+ */
+export function cashTrouble(s: Startup): boolean {
+  if (s.metrics.cash >= 0) return false;
+  const lbo = s.lbo;
+  const service = lbo ? lbo.payment + lbo.vendors.reduce((sum, v) => sum + (v.amount * VENDOR_RATE) / 12, 0) : 0;
+  const free = annualEbitda(s.metrics) / 12 - service;
+  return free <= 0 || s.metrics.cash < -2 * s.metrics.opex;
+}
+
+/** Management level an interim manager works towards. */
+const INTERIM_MANAGEMENT = 75;
+
+/** The month-end point of the value trend: equity value after debt service, with EBITDA, multiple and debt. */
+function withTrendPoint(s: Startup, month: number): Startup {
+  const last = s.history[s.history.length - 1];
+  if (!last || last.month !== month) return s;
+  const e = annualEbitda(s.metrics);
+  const point = {
+    ...last,
+    cash: s.metrics.cash,
+    valuation: valuation(s.metrics),
+    stake: s.stake,
+    ebitda: Math.round(e),
+    multiple: e > 0 ? Math.round((enterpriseValue(s.metrics) / e) * 100) / 100 : 0,
+    netDebt: Math.round(s.metrics.debt + (s.metrics.acqDebt ?? 0) - Math.max(0, s.metrics.cash - 2 * s.metrics.opex)),
+  };
+  return { ...s, history: [...s.history.slice(0, -1), point] };
+}
+
+/**
+ * Games from before the fix: the startup growth path (with its drag for big
+ * companies) made family businesses shrink by several percent a month. The
+ * trend is reset, and half of the cost overhang the shrinking left behind is
+ * removed. Cash lost on the way stays lost.
+ */
+export function correctOldValuation(s: Startup, texts: string[]): Startup {
+  const lbo = s.lbo!;
+  const m = s.metrics;
+  const bugged = m.growth < -0.003;
+  let metrics: Metrics = { ...m, growth: bugged ? Math.min(0, familyGrowth(m)) : m.growth };
+  if (bugged && lbo.margin && m.revenue > 0) {
+    const margin = (m.revenue * m.grossMargin - m.opex) / m.revenue;
+    if (margin < lbo.margin) metrics = { ...metrics, opex: Math.max(0, m.opex - 0.5 * (lbo.margin - margin) * m.revenue) };
+  }
+  if (bugged) texts.push("Neu bewertet: Der Umsatz schrumpft nicht mehr wie bei einem Startup, die Kosten passen sich teilweise an. Verlorener Umsatz kommt nur mit guter Arbeit zurück.");
+  return { ...s, metrics, lbo: { ...lbo, model: 2 } };
 }
 
 function covenantTest(ctx: Ctx, s: Startup, month: number, texts: string[]): Startup {
@@ -606,7 +694,7 @@ function covenantTest(ctx: Ctx, s: Startup, month: number, texts: string[]): Sta
     const e = Math.max(0, annualEbitda(s.metrics));
     const amount = roundTo(Math.max(lbo.bank * 0.1, lbo.bank - 0.9 * limit * e - Math.max(0, s.metrics.cash - 2 * s.metrics.opex)), 1000);
     lbo.status = "cure";
-    lbo.cure = { amount, due: month + 1 };
+    lbo.cure = { amount, due: month + 1, reason: "covenant" };
     texts.push(`Covenant zum zweiten Mal gebrochen (${levText}). Die Bank verlangt ${eur(amount)} Eigenkapital.`);
     ctx.mail({
       kind: "system",

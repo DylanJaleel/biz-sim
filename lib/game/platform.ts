@@ -274,6 +274,7 @@ function closeAddon(ctx: Ctx, platform: Startup, a: AddonTarget, p: NonNullable<
         breach: 0,
         status: "ok" as const,
         handover: [],
+        model: 2,
       };
   const ebitda = annualEbitda(s.metrics);
   lbo.bank += p.bank;
