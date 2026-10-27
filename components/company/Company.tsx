@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { currentGame } from "@/lib/current-game";
 import { ACTION_DAYS, monthLabel } from "@/lib/game/config";
 import { companyView } from "@/lib/game/views";
+import { companyRedirect } from "@/lib/game/mna-views";
 import { ActionButton } from "@/components/game/ActionButton";
 import { eur, pct, runwayText } from "@/components/game/format";
 import { INTEREST_LABEL, PERSONALITY_LABEL, peopleOf } from "@/components/boardroom/people";
@@ -28,7 +29,12 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { state, revision } = await currentGame();
   const found = state.startups.find((s) => s.id === id);
-  if (!found || found.status === "offered" || found.status === "declined") notFound();
+  if (!found || found.status === "offered" || found.status === "declined") {
+    // An offer has its own page, an add-on lives on in its platform.
+    const next = companyRedirect(state, id);
+    if (next) redirect(next);
+    notFound();
+  }
   const view = companyView(state, id);
   const s = view.startup;
   const m = s.metrics;
