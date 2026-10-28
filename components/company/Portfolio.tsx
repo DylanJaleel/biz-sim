@@ -1,18 +1,14 @@
 import Link from "next/link";
 import { currentGame } from "@/lib/current-game";
-import { CORPORATE_FEE } from "@/lib/game/config";
-import { openItems } from "@/lib/game/engine";
-import { runwayMonths, valuation } from "@/lib/game/sim";
-import { eur, pct, runwayText } from "@/components/game/format";
-import { PACE_LABEL, PHASE_LABEL } from "./labels";
+import { cockpitRows } from "@/lib/game/cockpit";
+import { eur } from "@/components/game/format";
+import { PortfolioCockpit } from "./PortfolioCockpit";
 
 export async function Portfolio() {
   const { state } = await currentGame();
-  const active = state.startups.filter((s) => s.status === "active" && !s.corporate);
-  const corporate = state.startups.filter((s) => s.status === "active" && s.corporate);
+  const rows = cockpitRows(state);
   const closed = state.startups.filter((s) => s.status === "dead" || s.status === "exited" || s.status === "sold");
   const offered = state.startups.filter((s) => s.status === "offered");
-  const open = new Set(openItems(state).map((i) => i.startupId));
 
   return (
     <div className="page">
@@ -20,12 +16,12 @@ export async function Portfolio() {
         <p className="eyebrow">Portfolio</p>
         <h1 className="page__title">Deine Mandate</h1>
         <p className="page__lead">
-          Jede Beteiligung ist ein Sitz im Beirat. Dein Anteil steigt im Wert, wenn die Firma wächst und gesund bleibt. Team, Fonds und Kredite verwaltest du in der{" "}
-          <Link href="/holding">Holding</Link>.
+          Jede Beteiligung ist ein Sitz im Beirat. Die Ampel zeigt dir auf einen Blick, wo es brennt. Dein Anteil steigt im Wert, wenn die Firma wächst und gesund bleibt. Team,
+          Fonds und Kredite verwaltest du in der <Link href="/holding">Holding</Link>.
         </p>
       </header>
 
-      {active.length === 0 && (
+      {rows.length === 0 && (
         <div className="panel">
           <p className="panel__title">Noch keine Beteiligung</p>
           <p>
@@ -41,80 +37,7 @@ export async function Portfolio() {
         </div>
       )}
 
-      <div className="grid-cards">
-        {active.map((s) => {
-          const value = valuation(s.metrics);
-          return (
-            <Link key={s.id} href={`/firma/${s.id}`} className="company-card">
-              <span className="company-card__head">
-                <span>
-                  <b className="company-card__name">{s.name}</b>
-                  <span className="company-card__tag">{s.tagline}</span>
-                </span>
-                <span className="company-card__pills">
-                  <span className="pill">{s.flags.includes("mittelstand") ? "Nachfolge" : PHASE_LABEL[s.phase]}</span>
-                  {s.pace && s.pace.kind !== "normal" && <span className={`pill pill--pace-${s.pace.kind}`}>{PACE_LABEL[s.pace.kind]}</span>}
-                </span>
-              </span>
-              <span className="kpis kpis--compact">
-                <span>
-                  <small>Umsatz/Monat</small>
-                  <b>{eur(s.metrics.revenue)}</b>
-                </span>
-                <span>
-                  <small>Wachstum</small>
-                  <b>{pct(s.metrics.growth)}</b>
-                </span>
-                <span>
-                  <small>Runway</small>
-                  <b>{runwayText(runwayMonths(s.metrics))}</b>
-                </span>
-                <span>
-                  <small>Dein Anteil</small>
-                  <b>
-                    {s.stake.toLocaleString("de-DE", { maximumFractionDigits: 1 })} % · {eur((s.stake / 100) * value)}
-                  </b>
-                </span>
-              </span>
-              {open.has(s.id) && <span className="company-card__alert">Vorlage wartet auf den Beirat</span>}
-            </Link>
-          );
-        })}
-      </div>
-
-      {corporate.map((s) => (
-        <section key={s.id} className="page__section">
-          <h2 className="section-title">Aufsichtsrat</h2>
-          <Link href={`/firma/${s.id}`} className="company-card">
-            <span className="company-card__head">
-              <span>
-                <b className="company-card__name">{s.name}</b>
-                <span className="company-card__tag">{s.tagline}</span>
-              </span>
-              <span className="pill">Mandat</span>
-            </span>
-            <span className="kpis kpis--compact">
-              <span>
-                <small>Umsatz/Monat</small>
-                <b>{eur(s.metrics.revenue)}</b>
-              </span>
-              <span>
-                <small>Wachstum</small>
-                <b>{pct(s.metrics.growth)}</b>
-              </span>
-              <span>
-                <small>Firmenwert</small>
-                <b>{eur(valuation(s.metrics))}</b>
-              </span>
-              <span>
-                <small>Vergütung</small>
-                <b>{eur(CORPORATE_FEE)} / Monat</b>
-              </span>
-            </span>
-            {open.has(s.id) && <span className="company-card__alert">Der Aufsichtsrat tagt diesen Monat</span>}
-          </Link>
-        </section>
-      ))}
+      {rows.length > 0 && <PortfolioCockpit rows={rows} />}
 
       {closed.length > 0 && (
         <section className="page__section">

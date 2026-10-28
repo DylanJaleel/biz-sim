@@ -5542,3 +5542,436 @@ a.desk__item:focus-visible {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Portfolio-Cockpit: eine Zeile pro Beteiligung mit Ampel */
+
+.cockpit {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 18px;
+}
+
+.cockpit-sum {
+  display: grid;
+  grid-template-columns: 1.3fr 1.5fr 1fr;
+  gap: 12px;
+}
+
+.cockpit-sum__item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.cockpit-sum__item small,
+.cockpit-cell small {
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.cockpit-sum__item > b {
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.cockpit-sum__item > span:not(.cockpit-sum__lights) {
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.cockpit-sum__lights {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin-top: 4px;
+}
+
+.cockpit-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+.cockpit-count b {
+  color: var(--ink);
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+.cockpit-count i,
+.cockpit-lamp {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.cockpit-count--green i,
+.cockpit-lamp--green {
+  background: var(--agree-soft);
+  color: var(--agree);
+  box-shadow: inset 0 0 0 2px var(--agree);
+}
+
+.cockpit-count--yellow i,
+.cockpit-lamp--yellow {
+  background: var(--maybe-soft);
+  color: var(--maybe);
+  box-shadow: inset 0 0 0 2px var(--maybe);
+}
+
+.cockpit-count--red i,
+.cockpit-lamp--red {
+  background: var(--disagree-soft);
+  color: var(--disagree);
+  box-shadow: inset 0 0 0 2px var(--disagree);
+}
+
+.cockpit-lamp {
+  width: 26px;
+  height: 26px;
+  font-size: 14px;
+  align-self: start;
+  margin-top: 2px;
+}
+
+.is-up {
+  color: var(--agree);
+}
+
+.is-down {
+  color: var(--disagree);
+}
+
+.cockpit-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.cockpit-tools__label {
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.cockpit-seg {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.cockpit-seg button {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cockpit-seg button[aria-pressed="true"] {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+
+.cockpit-group__title {
+  margin: 0 0 2px;
+}
+
+.cockpit-group__hint {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.cockpit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cockpit-row {
+  display: grid;
+  grid-template-columns: 26px minmax(170px, 1.3fr) 116px 136px minmax(250px, 2fr) minmax(130px, 1fr) minmax(120px, 0.9fr);
+  align-items: start;
+  gap: 8px 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--line-strong);
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--ink);
+  text-decoration: none;
+  box-shadow: var(--shadow);
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+
+.cockpit-row:hover,
+.cockpit-row:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lift);
+}
+
+.cockpit-row--green {
+  border-left-color: var(--agree);
+}
+
+.cockpit-row--yellow {
+  border-left-color: var(--maybe);
+}
+
+.cockpit-row--red {
+  border-left-color: var(--disagree);
+}
+
+.cockpit-main,
+.cockpit-cell,
+.cockpit-todo__list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cockpit-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(98px, 1fr));
+  gap: 8px 14px;
+  min-width: 0;
+}
+
+.cockpit-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+
+.cockpit-name b {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.cockpit-name .pill {
+  padding: 1px 9px;
+  font-size: 11.5px;
+}
+
+.cockpit-reason {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.cockpit-reason--green {
+  color: var(--agree);
+}
+
+.cockpit-reason--yellow {
+  color: var(--maybe);
+}
+
+.cockpit-reason--red {
+  color: var(--disagree);
+}
+
+.cockpit-tag,
+.cockpit-sub {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.cockpit-val b,
+.cockpit-chg b,
+.cockpit-fact b,
+.cockpit-cell small {
+  white-space: nowrap;
+}
+
+.cockpit-cell .cockpit-sub {
+  overflow-wrap: anywhere;
+}
+
+.cockpit-cell b {
+  font-size: 14.5px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.cockpit-fact.is-yellow b {
+  color: var(--maybe);
+}
+
+.cockpit-fact.is-red b {
+  color: var(--disagree);
+}
+
+.cockpit-chg__row {
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cockpit-spark {
+  flex: none;
+}
+
+.cockpit-todo .company-card__alert {
+  max-width: 100%;
+  padding: 3px 10px;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.cockpit-legend {
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: 13.5px;
+}
+
+.cockpit-legend summary {
+  cursor: pointer;
+  font-weight: 650;
+}
+
+.cockpit-legend dt {
+  margin-top: 8px;
+  color: var(--ink);
+  font-weight: 650;
+}
+
+.cockpit-legend dd {
+  margin: 2px 0 0;
+}
+
+@media (max-width: 1100px), (pointer: coarse) and (max-width: 1400px) {
+  .cockpit {
+    gap: 12px;
+  }
+
+  .cockpit-sum {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .cockpit-sum__item {
+    padding: 8px 12px;
+  }
+
+  .cockpit-sum__item > b {
+    font-size: 18px;
+  }
+
+  .cockpit-row {
+    grid-template-columns: 24px minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      "lamp main main val chg"
+      ". facts facts next todo";
+    gap: 6px 12px;
+    padding: 10px 12px;
+  }
+
+  .cockpit-row > .cockpit-lamp {
+    grid-area: lamp;
+    width: 22px;
+    height: 22px;
+    font-size: 12px;
+  }
+
+  .cockpit-row > .cockpit-main {
+    grid-area: main;
+  }
+
+  .cockpit-row > .cockpit-val {
+    grid-area: val;
+  }
+
+  .cockpit-row > .cockpit-chg {
+    grid-area: chg;
+  }
+
+  .cockpit-row > .cockpit-facts {
+    grid-area: facts;
+  }
+
+  .cockpit-row > .cockpit-next {
+    grid-area: next;
+  }
+
+  .cockpit-row > .cockpit-todo {
+    grid-area: todo;
+  }
+
+  .cockpit-name b {
+    font-size: 17px;
+  }
+
+  .cockpit-tag {
+    display: none;
+  }
+
+  .cockpit-facts {
+    gap: 4px 12px;
+  }
+
+  .cockpit-next b,
+  .cockpit-todo .company-card__alert {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .cockpit-todo--empty,
+  .cockpit-chg small {
+    display: none;
+  }
+
+  .cockpit-cell b {
+    font-size: 13.5px;
+  }
+
+  .cockpit-group__hint {
+    margin-bottom: 6px;
+  }
+}
+
+.cockpit-next b {
+  overflow-wrap: anywhere;
+}
