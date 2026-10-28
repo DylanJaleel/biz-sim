@@ -12,13 +12,20 @@ import { THEME_TEMPLATES } from "./themes";
 function forFamilies(t: Template): Template {
   if (t.corporate) return t;
   const scale = t.id.startsWith("m_") ? FAMILY_THEME_SCALE : FAMILY_TEMPLATE_SCALE;
-  const outcomes = Object.fromEntries(Object.entries(t.outcomes).map(([vote, o]) => [vote, { ...o, resolve: (s: Startup) => familyOutcome(o.resolve(s), s, scale) }])) as Template["outcomes"];
+  const outcomes = Object.fromEntries(
+    Object.entries(t.outcomes).map(([vote, o]) => [vote, { ...o, resolve: (s: Startup) => familyOutcome(o.resolve(s), s, scale) }]),
+  ) as Template["outcomes"];
   return { ...t, outcomes };
 }
 
-export const TEMPLATES: Template[] = [...GROWTH_TEMPLATES, ...FINANCE_TEMPLATES, ...PEOPLE_TEMPLATES, ...MORE_TEMPLATES, ...THEME_TEMPLATES.filter((t) => t.id.startsWith("m_")), ...CORPORATE_TEMPLATES].map(
-  forFamilies,
-);
+export const TEMPLATES: Template[] = [
+  ...GROWTH_TEMPLATES,
+  ...FINANCE_TEMPLATES,
+  ...PEOPLE_TEMPLATES,
+  ...MORE_TEMPLATES,
+  ...THEME_TEMPLATES.filter((t) => t.id.startsWith("m_")),
+  ...CORPORATE_TEMPLATES,
+].map(forFamilies);
 
 export function templateOf(id: string): Template {
   const t = TEMPLATES.find((x) => x.id === id);

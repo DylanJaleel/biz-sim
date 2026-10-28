@@ -111,6 +111,7 @@ export function applyDelta(s: Startup, d: Delta, scale = 1): Startup {
     debt: Math.max(0, m.debt + (d.debt ?? 0) * scale),
     ...(m.valuedOn ? { valuedOn: m.valuedOn } : {}),
     ...(m.acqDebt ? { acqDebt: m.acqDebt } : {}),
+    ...(m.ebitdaLtm !== undefined ? { ebitdaLtm: m.ebitdaLtm } : {}),
   };
   const dil = clamp((d.dilution ?? 0) * scale, 0, 0.9);
   const stake = s.stake * (1 - dil);

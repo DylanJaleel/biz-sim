@@ -1778,15 +1778,16 @@ export function closeMonth(state: GameState): MonthReport {
   planAgenda(state);
 
   // Family businesses: one line on why the value moved, so a drop is never a riddle.
-  const whyCache = new Map<string, string | null>();
-  const why = (s: Startup) => {
-    if (!whyCache.has(s.id)) {
-      const b = before.get(s.id);
-      whyCache.set(s.id, s.status === "active" && s.metrics.valuedOn === "ebitda" && b ? explainValueChange(b.metrics, s.metrics, { payout: payouts.get(s.id) }) : null);
-    }
-    return whyCache.get(s.id) ?? null;
-  };
-  if (state.startups.some((s) => why(s))) unlockLesson(state, "werttreiber");
+  const whyOf = new Map<string, string>();
+  for (const s of state.startups) {
+    const b = before.get(s.id);
+    if (s.status === "active" && s.metrics.valuedOn === "ebitda" && !s.corporate && b) whyOf.set(s.id, explainValueChange(b.metrics, s.metrics, { payout: payouts.get(s.id) }));
+  }
+  const why = (s: Startup) => whyOf.get(s.id) ?? null;
+  if (whyOf.size > 0) {
+    unlockLesson(state, "werttreiber");
+    unlockLesson(state, "ltm_ebitda");
+  }
   const report: MonthReport = {
     month,
     worth: netWorth(state),

@@ -16,7 +16,7 @@ const COVENANT_IDS: readonly CovenantId[] = ["budget", "stagegate", "pilot", "se
 const MANDATE_MOVES: readonly MandateMove[] = ["accept", "decline", "comps", "launch", "accept_bid", "final", "negotiate"];
 const BUYER_FOCUS: readonly BuyerFocus[] = ["strategic", "financial", "mixed"];
 const PROCESSES: readonly ProcessKind[] = ["exclusive", "auction"];
-const LEVER_IDS: readonly LeverId[] = ["interim", "ceo", "costs", "pricing", "sales", "workingCapital", "refinance", "earnout"];
+const LEVER_IDS: readonly LeverId[] = ["interim", "costs", "pricing", "workingCapital", "refinance"];
 
 /** A share between 0 and max, or null. */
 function share(value: unknown, max: number): number | null {

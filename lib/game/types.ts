@@ -70,6 +70,8 @@ export interface Metrics {
   valuedOn?: "ebitda";
   /** Acquisition debt at company level: bank loan, vendor loans, open earn-outs (see LboState). */
   acqDebt?: number;
+  /** Family businesses: EBITDA of about the last twelve months (smoothed), the basis of value and covenant. */
+  ebitdaLtm?: number;
 }
 
 export interface StartupHistoryPoint {
@@ -571,7 +573,7 @@ export interface NetworkState {
 }
 
 /** What the majority owner of a family business can do when things go badly (see family.ts). */
-export type LeverId = "interim" | "ceo" | "costs" | "pricing" | "sales" | "workingCapital" | "refinance" | "earnout";
+export type LeverId = "interim" | "costs" | "pricing" | "workingCapital" | "refinance";
 
 export interface ReportLine {
   startupId: string;

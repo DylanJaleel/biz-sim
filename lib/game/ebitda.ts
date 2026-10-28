@@ -43,6 +43,24 @@ export function annualEbitda(m: Pick<Metrics, "revenue" | "grossMargin" | "opex"
   return monthlyEbitda(m) * 12;
 }
 
+/** Weight of the latest month in the smoothed EBITDA (about the last twelve months, like a buyer or bank looks at it). */
+export const LTM_WEIGHT = 1 / 6;
+
+/**
+ * EBITDA a buyer or bank values a family business on: the smoothed last twelve
+ * months, so a single bad or good month moves the value only a little. Falls
+ * back to the run rate (this month × 12) for startups and fresh purchases.
+ */
+export function valueEbitda(m: Pick<Metrics, "revenue" | "grossMargin" | "opex" | "valuedOn" | "ebitdaLtm">): number {
+  return m.valuedOn === "ebitda" && m.ebitdaLtm !== undefined ? m.ebitdaLtm : annualEbitda(m);
+}
+
+/** The smoothed EBITDA after this month. */
+export function nextLtm(m: Metrics): number {
+  const now = annualEbitda(m);
+  return m.ebitdaLtm === undefined ? now : m.ebitdaLtm + (now - m.ebitdaLtm) * LTM_WEIGHT;
+}
+
 /** Multiple a buyer pays for this much annual EBITDA, before growth and quality. */
 export function sizeMultiple(ebitda: number): number {
   const doublings = Math.log2(Math.max(1, ebitda) / EBITDA_BASE);
@@ -57,12 +75,12 @@ export function qualityFactor(m: Pick<Metrics, "axes" | "topCustomer">): number 
 /** The multiple the market pays today: size, growth and quality. */
 export function fairMultiple(m: Metrics): number {
   const growth = clamp(m.growth * 100 * MULTIPLE_PER_GROWTH_POINT, MULTIPLE_GROWTH_CAP[0], MULTIPLE_GROWTH_CAP[1]);
-  return clamp((sizeMultiple(annualEbitda(m)) + growth) * qualityFactor(m), EBITDA_MULTIPLE_MIN, EBITDA_MULTIPLE_MAX + 1);
+  return clamp((sizeMultiple(valueEbitda(m)) + growth) * qualityFactor(m), EBITDA_MULTIPLE_MIN, EBITDA_MULTIPLE_MAX + 1);
 }
 
 /** Enterprise value: what the business is worth without its cash and debt. */
 export function enterpriseValue(m: Metrics): number {
-  const ebitda = annualEbitda(m);
+  const ebitda = valueEbitda(m);
   // Substance (customers, staff, equipment) is the floor: a thin profit is never worth less than a small loss.
   const substance = Math.max(0, m.revenue * 12 * LOSS_MAKER_REVENUE_MULTIPLE);
   if (ebitda <= 0) return substance;

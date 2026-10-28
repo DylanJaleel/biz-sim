@@ -1,11 +1,11 @@
-import { annualEbitda, ebitdaEquityValue, enterpriseValue, fairMultiple, qualityFactor, sizeMultiple } from "./ebitda";
-import { annuityOf, bankRate, expectedEarnout, mnaRandom, netLeverage, syncDebt } from "./lbo";
-import { BANK_MAX_LEVERAGE, BANK_YEARS, EBITDA_GROWTH_CAP, MULTIPLE_GROWTH_CAP, MULTIPLE_PER_GROWTH_POINT, VENDOR_MONTHS } from "./mna-config";
+import { annualEbitda, ebitdaEquityValue, enterpriseValue, fairMultiple, LTM_WEIGHT, qualityFactor, sizeMultiple, valueEbitda } from "./ebitda";
+import { annuityOf, bankRate, expectedEarnout, netLeverage, syncDebt } from "./lbo";
+import { BANK_MAX_LEVERAGE, BANK_YEARS, MULTIPLE_GROWTH_CAP, MULTIPLE_PER_GROWTH_POINT } from "./mna-config";
 import { eur, mio, roundTo, times, type Ctx } from "./mna-core";
 import { INTERIM } from "./network-config";
 import { applyDelta } from "./sim";
 import type { ResolvedOutcome } from "./templates";
-import type { Delta, GameState, LeverId, Metrics, Startup } from "./types";
+import type { Delta, GameState, LeverId, Metrics, PendingEffect, Startup } from "./types";
 
 export type { LeverId };
 
@@ -16,7 +16,7 @@ export type { LeverId };
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 const pctText = (v: number, digits = 0) => `${v >= 0 ? "+" : "−"}${Math.abs(v * 100).toLocaleString("de-DE", { maximumFractionDigits: digits })} %`;
-const mioText = (v: number) => `${v >= 0 ? "+" : "−"}${Math.abs(v) >= 1_000_000 ? mio(Math.abs(v)) : `${Math.round(Math.abs(v) / 1000).toLocaleString("de-DE")} Tsd. €`}`;
+const mioText = (v: number) => `${v >= 0 ? "+" : "−"}${Math.abs(v) >= 1_000_000 ? mio(Math.abs(v)) : eur(roundTo(Math.abs(v), 1000))}`;
 
 export const isFamily = (s: Startup) => s.metrics.valuedOn === "ebitda";
 
@@ -142,7 +142,7 @@ export interface ValueParts {
 }
 
 export function valueParts(m: Metrics): ValueParts {
-  const ebitda = annualEbitda(m);
+  const ebitda = valueEbitda(m);
   const ev = enterpriseValue(m);
   const excessCash = Math.max(0, m.cash - 2 * m.opex);
   const debt = m.debt + (m.acqDebt ?? 0);
@@ -154,11 +154,11 @@ export function valueParts(m: Metrics): ValueParts {
 function multipleReason(before: Metrics, after: Metrics): string {
   const growth = (m: Metrics) => clamp(m.growth * 100 * MULTIPLE_PER_GROWTH_POINT, MULTIPLE_GROWTH_CAP[0], MULTIPLE_GROWTH_CAP[1]);
   const g = growth(after) - growth(before);
-  const size = sizeMultiple(annualEbitda(after)) - sizeMultiple(annualEbitda(before));
+  const size = sizeMultiple(valueEbitda(after)) - sizeMultiple(valueEbitda(before));
   const quality = (qualityFactor(after) - qualityFactor(before)) * fairMultiple(before);
   const pick = [
     { v: g, up: "weil das Wachstum anzieht", down: "weil das Wachstum nachlässt" },
-    { v: size, up: "weil die Firma größer wird", down: "weil das EBITDA kleiner ist (kleine Firmen kosten weniger je Euro Ertrag)" },
+    { v: size, up: "weil die Firma größer wird", down: "weil das EBITDA kleiner ist (kleine Firmen kosten weniger je Euro)" },
     {
       v: quality,
       up: "weil Zahlen und Kundenbasis solider sind",
@@ -168,82 +168,89 @@ function multipleReason(before: Metrics, after: Metrics): string {
   return pick.v >= 0 ? pick.up : pick.down;
 }
 
-/** Why the EBITDA moved: revenue, gross margin or running costs. */
+/** Money with sign: Mio. € from a million on, else euros rounded to the thousand. */
+const moneyText = (v: number) => (Math.abs(v) >= 1_000_000 ? mio(v) : eur(roundTo(v, 1000)));
+
+/**
+ * Why the twelve-month EBITDA moved: this month's revenue, gross margin or
+ * costs, or earlier months still working through the twelve-month figure.
+ */
 function ebitdaReason(before: Metrics, after: Metrics): string {
-  const rev = (after.revenue - before.revenue) * before.grossMargin;
-  const gm = (after.grossMargin - before.grossMargin) * after.revenue;
-  const cost = -(after.opex - before.opex);
+  const total = valueEbitda(after) - valueEbitda(before);
+  const fresh = (annualEbitda(after) - annualEbitda(before)) * LTM_WEIGHT;
+  const catchUp = total - fresh;
+  const dir = Math.sign(total) || 1;
   const parts = [
-    { v: rev, text: `Umsatz ${pctText(after.revenue / Math.max(1, before.revenue) - 1, 1)}` },
+    { v: (after.revenue - before.revenue) * before.grossMargin, text: `Umsatz ${pctText(after.revenue / Math.max(1, before.revenue) - 1, 1)}` },
     {
-      v: gm,
+      v: (after.grossMargin - before.grossMargin) * after.revenue,
       text: `Rohmarge ${after.grossMargin >= before.grossMargin ? "+" : "−"}${Math.abs((after.grossMargin - before.grossMargin) * 100).toLocaleString("de-DE", { maximumFractionDigits: 1 })} Punkte`,
     },
-    { v: cost, text: `Kosten ${pctText(after.opex / Math.max(1, before.opex) - 1, 1)}` },
+    { v: -(after.opex - before.opex), text: `Kosten ${pctText(after.opex / Math.max(1, before.opex) - 1, 1)}` },
   ]
-    .filter((p) => Math.abs(p.v) > 0.0005 * Math.max(1, before.revenue))
+    .filter((p) => Math.abs(p.v) > 0.0005 * Math.max(1, before.revenue) && Math.sign(p.v) === dir)
     .sort((a, b) => Math.abs(b.v) - Math.abs(a.v))
-    .slice(0, 2);
-  return parts.length > 0 ? parts.map((p) => p.text).join(", ") : "kleine Schwankung";
+    .map((p) => p.text);
+  // A drop or jump a few months ago is still working through the twelve months.
+  const lag =
+    Math.abs(catchUp) > Math.abs(fresh) && Math.abs(catchUp) > 0.002 * Math.abs(valueEbitda(before))
+      ? `${catchUp < 0 ? "die schwächeren" : "die stärkeren"} Monate davor wirken nach, laufend ${moneyText(annualEbitda(after))} im Jahr`
+      : null;
+  const out = [...(lag ? [lag] : []), ...parts].slice(0, 2);
+  return out.length > 0 ? out.join(", ") : "kleine Schwankung";
 }
 
 /**
  * One short line for the monthly report: by how much and why the equity value
- * of a family business changed (EBITDA, multiple, debt, cash). Null when the
- * change is small.
+ * of a family business changed (EBITDA, multiple, debt, cash). Every month, so a
+ * drop is never a riddle.
  */
-export function explainValueChange(before: Metrics, after: Metrics, extra: { payout?: number } = {}): string | null {
+export function explainValueChange(before: Metrics, after: Metrics, extra: { payout?: number } = {}): string {
   const a = valueParts(before);
   const b = valueParts(after);
   const delta = b.equity - a.equity;
-  if (Math.abs(delta) < Math.max(50_000, 0.03 * Math.max(1, a.equity))) return null;
-  const parts: { v: number; text: string }[] = [];
+  const rel = delta / Math.max(1, Math.abs(a.equity));
+  const head = Math.abs(rel) < 0.005 ? "Wert kaum verändert" : `Wert ${mioText(delta)} (${pctText(rel, Math.abs(rel) < 0.1 ? 1 : 0)})`;
+  const parts: string[] = [];
   if (!a.substance && !b.substance) {
-    parts.push({ v: (b.ebitda - a.ebitda) * a.multiple, text: `EBITDA ${pctText(b.ebitda / a.ebitda - 1)} (${ebitdaReason(before, after)})` });
-    parts.push({ v: b.ebitda * (b.multiple - a.multiple), text: `Multiple ${times(a.multiple)} → ${times(b.multiple)}, ${multipleReason(before, after)}` });
+    const ebitdaMove = b.ebitda / a.ebitda - 1;
+    parts.push(Math.abs(ebitdaMove) < 0.005 ? "EBITDA unverändert" : `EBITDA ${pctText(ebitdaMove, Math.abs(ebitdaMove) < 0.1 ? 1 : 0)} (${ebitdaReason(before, after)})`);
+    parts.push(times(a.multiple) === times(b.multiple) ? "Multiple unverändert" : `Multiple ${times(a.multiple)} → ${times(b.multiple)}, ${multipleReason(before, after)}`);
+  } else if (b.substance) {
+    parts.push(`${b.ebitda <= 0 ? "kein operativer Gewinn" : "kaum operativer Gewinn"} (${ebitdaReason(before, after)}): bewertet wird nur die Substanz`);
   } else {
-    parts.push({
-      v: b.ev - a.ev,
-      text: b.substance
-        ? `${b.ebitda <= 0 ? "kein operativer Gewinn mehr" : "kaum noch operativer Gewinn"} (${ebitdaReason(before, after)}): bewertet wird nur die Substanz`
-        : `wieder operativer Gewinn (${ebitdaReason(before, after)})`,
-    });
+    parts.push(`wieder operativer Gewinn (${ebitdaReason(before, after)})`);
   }
+  const money: { v: number; text: string }[] = [];
   const debt = b.debt - a.debt;
-  if (Math.abs(debt) > 1000)
-    parts.push({
-      v: -debt,
-      text:
-        debt < 0
-          ? `Schulden ${mioText(debt)} (Tilgung oder ein Earn-out, dessen Ziel wackelt)`
-          : `Schulden ${mioText(debt)} (neue Kredite oder ein Earn-out, dessen Ziel wieder erreichbar ist)`,
+  if (Math.abs(debt) >= 1000)
+    money.push({
+      v: debt,
+      text: `Schulden ${mioText(debt)}${Math.abs(debt) > 0.05 * Math.max(1, a.debt) ? (debt < 0 ? " (Tilgung oder ein Earn-out, dessen Ziel wackelt)" : " (neue Kredite oder ein Earn-out, dessen Ziel wieder erreichbar ist)") : ""}`,
     });
   const cash = b.excessCash - a.excessCash;
-  if (Math.abs(cash) > 1000) parts.push({ v: cash, text: `freie Kasse ${mioText(cash)}${extra.payout && cash < 0 ? " (Ausschüttung an die Gesellschafter)" : ""}` });
-  const main = parts
-    .filter((p) => Math.abs(p.v) >= Math.abs(delta) * 0.15 || Math.abs(p.v) >= 100_000)
-    .sort((x, y) => Math.abs(y.v) - Math.abs(x.v))
-    .slice(0, 3);
-  if (main.length === 0) return null;
-  return `Wert ${mioText(delta)}: ${main.map((p) => p.text).join("; ")}.`;
+  if (Math.abs(cash) >= 1000) money.push({ v: cash, text: `freie Kasse ${mioText(cash)}${extra.payout && cash < 0 ? " (Ausschüttung an die Gesellschafter)" : ""}` });
+  parts.push(...money.sort((x, y) => Math.abs(y.v) - Math.abs(x.v)).map((p) => p.text));
+  return `${head}: ${parts.join("; ")}.`;
 }
 
 // ---------------------------------------------------------------------------
 // Hebel für eigene Mittelstandsfirmen
 // ---------------------------------------------------------------------------
 
-export const LEVER_IDS: LeverId[] = ["interim", "ceo", "costs", "pricing", "sales", "workingCapital", "refinance", "earnout"];
+export const LEVER_IDS: LeverId[] = ["interim", "costs", "pricing", "workingCapital", "refinance"];
 
-/** Fees, effects and risks of the levers; the effects are monthly figures relative to the company. */
+/**
+ * Fees, effects and risks of the levers. Effects are relative to the company
+ * and arrive with a delay (`delay` months); the value follows the smoothed
+ * EBITDA, so a lever shows in the value over about half a year.
+ */
 export const LEVERS = {
-  interim: { title: "Interim-Management", days: 1, fee: 45_000, months: 6, cooldown: 6 },
-  ceo: { title: "Geschäftsführung austauschen", days: 2, fee: [60_000, 300_000] as [number, number], feeShare: 0.04, cooldown: 18, good: 0.65 },
-  costs: { title: "Kostenprogramm", days: 1, saving: 0.05, oneOff: 3, cooldown: 9, risk: 0.3 },
-  pricing: { title: "Preise anpassen", days: 1, margin: 0.02, keeps: 0.5, loss: 0.01, cooldown: 12 },
-  sales: { title: "Vertriebsoffensive", days: 1, cost: 0.015, months: 6, cooldown: 9 },
-  workingCapital: { title: "Working-Capital-Programm", days: 1, freed: 0.35, fee: 0.02, cooldown: 12, risk: 0.2 },
+  interim: { title: "Interim-Management", days: 1, fee: 45_000, months: 6, cooldown: 6, clash: 0.2 },
+  costs: { title: "Kostenprogramm", days: 1, saving: 0.05, oneOff: 3, delay: 2, cooldown: 9, risk: 0.3 },
+  pricing: { title: "Preise anpassen", days: 1, margin: 0.02, keeps: 0.5, loss: 0.01, delay: 1, cooldown: 12 },
+  workingCapital: { title: "Working-Capital-Programm", days: 1, freed: 0.35, fee: 0.02, delay: 2, cooldown: 12, risk: 0.2 },
   refinance: { title: "Refinanzierung", days: 1, fee: 0.01, cooldown: 12 },
-  earnout: { title: "Earn-out nachverhandeln", days: 1, cooldown: 6 },
 } as const;
 
 export interface LeverView {
@@ -264,26 +271,18 @@ export function steerable(s: Startup): boolean {
   return s.status === "active" && isFamily(s) && s.stake > 50 && Boolean(s.lbo);
 }
 
-function lastUsed(s: Startup, id: LeverId): number | undefined {
-  return s.lbo?.levers?.[id];
-}
-
 function cooldownBlocker(state: GameState, s: Startup, id: LeverId): string | null {
-  const last = lastUsed(s, id);
+  const last = s.lbo?.levers?.[id];
   if (last === undefined) return null;
   const left = last + LEVERS[id].cooldown - state.month;
   return left > 0 ? `Gerade erst gemacht. Wieder in ${left} ${left === 1 ? "Monat" : "Monaten"}.` : null;
-}
-
-function ceoFee(s: Startup): number {
-  return roundTo(clamp(annualEbitda(s.metrics) * LEVERS.ceo.feeShare, LEVERS.ceo.fee[0], LEVERS.ceo.fee[1]), 1000);
 }
 
 /** Interest and repayment per month on today's terms vs a fresh seven-year loan at the market rate. */
 export function refinanceTerms(state: GameState, s: Startup): { rate: number; payment: number; oldPayment: number; fee: number; rolled: number } | null {
   const lbo = s.lbo;
   if (!lbo || lbo.bank <= 0) return null;
-  const e = annualEbitda(s.metrics);
+  const e = valueEbitda(s.metrics);
   const soon = lbo.vendors.filter((v) => v.due <= state.month + 12).reduce((sum, v) => sum + v.amount, 0);
   const rolled = e > 0 && (lbo.bank + soon) / e <= BANK_MAX_LEVERAGE ? soon : 0;
   const bank = lbo.bank + rolled;
@@ -291,51 +290,33 @@ export function refinanceTerms(state: GameState, s: Startup): { rate: number; pa
   return { rate, payment: annuityOf(bank, rate, BANK_YEARS * 12), oldPayment: lbo.payment, fee: roundTo(bank * LEVERS.refinance.fee, 1000), rolled };
 }
 
-/** What the seller would take instead of the open earn-outs: a fixed vendor loan, less the further the target is away. */
-export function earnoutSettlement(s: Startup): { open: number; expected: number; fixed: number } | null {
-  const lbo = s.lbo;
-  if (!lbo || lbo.earnouts.length === 0) return null;
-  const e = annualEbitda(s.metrics);
-  const open = lbo.earnouts.reduce((sum, x) => sum + x.amount, 0);
-  const expected = lbo.earnouts.reduce((sum, x) => sum + expectedEarnout(x, e), 0);
-  const fixed = roundTo(
-    lbo.earnouts.reduce((sum, x) => sum + x.amount * (0.4 + 0.5 * clamp(e / Math.max(1, x.target), 0, 1)), 0),
-    1000,
-  );
-  return { open, expected, fixed };
-}
+const costRisk = (m: Metrics) => clamp(LEVERS.costs.risk - m.axes.management / 400, 0.05, 0.3);
+const priceChance = (m: Metrics) => clamp(0.4 + (m.axes.edge + m.axes.market) / 400, 0.4, 0.85);
+/** "ab nächstem Monat" or "in 2 Monaten"; `cap` for the start of a sentence. */
+const whenText = (n: number, cap = false) => {
+  const t = n === 1 ? "ab nächstem Monat" : `in ${n} Monaten`;
+  return cap ? t.charAt(0).toUpperCase() + t.slice(1) : t;
+};
 
 export function leverViews(state: GameState, s: Startup): LeverView[] {
   if (!steerable(s)) return [];
   const m = s.metrics;
   const lbo = s.lbo!;
   const month = state.month;
-  const days = (id: LeverId) => LEVERS[id].days;
   const cd = (id: LeverId) => cooldownBlocker(state, s, id);
   const cure = lbo.status === "cure" ? "Erst die Forderung der Bank erfüllen." : null;
+  const tooPoor = (amount: number) => (m.cash < amount ? "Die Kasse der Firma reicht dafür nicht." : null);
   const out: LeverView[] = [];
 
-  const interimOn = (lbo.interim ?? 0) >= month;
   out.push({
     id: "interim",
     title: LEVERS.interim.title,
     text: "Eine erfahrene Managerin auf Zeit stellt sich neben die Geschäftsführung, ordnet Abläufe und bringt die Kosten wieder zum Umsatz.",
-    cost: `${eur(LEVERS.interim.fee)} für ${LEVERS.interim.months} Monate, zahlt die Firma (über das Netzwerk ${eur(INTERIM.fee)})`,
-    effect: "Führung wird jeden Monat stärker, Kosten passen sich doppelt so schnell an, Übergaberisiken sinken.",
-    risk: "Gering. Hilft nur, solange sie da ist.",
-    days: days("interim"),
-    blocker: interimOn ? "Die Interim-Managerin ist schon vor Ort." : (cd("interim") ?? (m.cash < LEVERS.interim.fee ? "Die Kasse der Firma reicht dafür nicht." : null)),
-  });
-  const fee = ceoFee(s);
-  out.push({
-    id: "ceo",
-    title: LEVERS.ceo.title,
-    text: "Ein Personalberater sucht eine neue Geschäftsführung. Der letzte Ausweg, wenn die Führung das Problem ist.",
-    cost: `${eur(fee)} Honorar aus deinem Privatkapital, zwei Tage`,
-    effect: "Mit Glück eine starke Führung (Führung mindestens 68/100), die die Firma wieder auf Kurs bringt.",
-    risk: `In etwa ${Math.round((1 - LEVERS.ceo.good) * 100)} % der Fälle passt die neue Person nicht: Unruhe, Kunden vermissen den alten Chef. ${lbo.searchId ? "Die Suchende behält ihre Anteile, verdient aber keine weiteren." : ""}`.trim(),
-    days: days("ceo"),
-    blocker: cd("ceo") ?? (state.cash < fee ? `Dafür fehlen dir ${eur(fee - state.cash)}.` : null),
+    cost: `${eur(LEVERS.interim.fee)} für ${LEVERS.interim.months} Monate aus der Kasse der Firma (über das Netzwerk ${eur(INTERIM.fee)})`,
+    effect: "Führung jeden Monat etwas stärker, die Kosten passen sich doppelt so schnell an, Übergaberisiken sinken.",
+    risk: `In etwa ${Math.round(LEVERS.interim.clash * 100)} % der Fälle reibt sie sich mit der Geschäftsführung: Stimmung und Vertrauen leiden.`,
+    days: LEVERS.interim.days,
+    blocker: (lbo.interim ?? 0) >= month ? "Die Interim-Managerin ist schon vor Ort." : (cd("interim") ?? tooPoor(LEVERS.interim.fee)),
   });
   const saving = m.opex * LEVERS.costs.saving;
   out.push({
@@ -343,31 +324,20 @@ export function leverViews(state: GameState, s: Startup): LeverView[] {
     title: LEVERS.costs.title,
     text: "Sachkosten, Einkauf und Strukturen durchgehen. Spart dauerhaft, kostet einmalig Abfindungen und Berater.",
     cost: `einmalig ${eur(saving * LEVERS.costs.oneOff)} aus der Kasse der Firma`,
-    effect: `Kosten −${Math.round(LEVERS.costs.saving * 100)} %: etwa ${eur(saving)} mehr EBITDA im Monat, rund ${mio(saving * 12 * Math.max(1, fairMultiple(m)))} Unternehmenswert.`,
-    risk: `Die Stimmung leidet. Mit schwacher Führung gehen oft Leistungsträger (etwa ${Math.round(clamp(LEVERS.costs.risk - m.axes.management / 400, 0.05, 0.3) * 100)} %): dann fallen Umsatz und Führung.`,
-    days: days("costs"),
-    blocker: cd("costs") ?? cure ?? (m.cash < saving * LEVERS.costs.oneOff ? "Die Kasse der Firma reicht dafür nicht." : null),
+    effect: `${whenText(LEVERS.costs.delay, true)} Kosten −${Math.round(LEVERS.costs.saving * 100)} %: etwa ${eur(saving)} mehr EBITDA im Monat, auf Dauer rund ${mio(saving * 12 * Math.max(1, fairMultiple(m)))} Unternehmenswert.`,
+    risk: `Die Stimmung leidet sofort. In etwa ${Math.round(costRisk(m) * 100)} % der Fälle gehen Leistungsträger (weniger mit starker Führung): rund 3 % Umsatz weg.`,
+    days: LEVERS.costs.days,
+    blocker: cd("costs") ?? cure ?? tooPoor(saving * LEVERS.costs.oneOff),
   });
-  const priceChance = clamp(0.4 + (m.axes.edge + m.axes.market) / 400, 0.4, 0.85);
   out.push({
     id: "pricing",
     title: LEVERS.pricing.title,
     text: "Die Preise steigen, vor allem bei Kunden, die lange nicht angepasst wurden. Preise sind der stärkste Hebel auf den Gewinn.",
-    cost: "keine, ein Tag mit der Geschäftsführung",
-    effect: `Rohmarge +${Math.round(LEVERS.pricing.margin * 100)} Punkte, die Hälfte davon bleibt dauerhaft; etwa ${Math.round(LEVERS.pricing.loss * 100)} % Umsatz gehen verloren.`,
-    risk: `Gelingt in etwa ${Math.round(priceChance * 100)} % der Fälle (stärker mit Markt und Vorsprung). Sonst wandern Kunden ab: rund 6 % Umsatz.`,
-    days: days("pricing"),
+    cost: "kein Geld, ein Tag mit der Geschäftsführung",
+    effect: `${whenText(LEVERS.pricing.delay, true)} Rohmarge +${Math.round(LEVERS.pricing.margin * 100)} Punkte, die Hälfte davon dauerhaft; etwa ${Math.round(LEVERS.pricing.loss * 100)} % Umsatz gehen verloren.`,
+    risk: `Gelingt in etwa ${Math.round(priceChance(m) * 100)} % der Fälle (besser mit starkem Markt und Vorsprung). Sonst wandern Kunden ab: rund 6 % Umsatz.`,
+    days: LEVERS.pricing.days,
     blocker: cd("pricing"),
-  });
-  out.push({
-    id: "sales",
-    title: LEVERS.sales.title,
-    text: "Zwei zusätzliche Vertriebsleute und ein Budget für Messen und Angebote, ein halbes Jahr lang.",
-    cost: `${eur(m.revenue * LEVERS.sales.cost)} im Monat für ${LEVERS.sales.months} Monate`,
-    effect: "Markt +6, nach drei Monaten mehr Umsatz (+2 bis +4 %), das Wachstum zieht etwas an.",
-    risk: "Mit schwachem Markt bringt es weniger als es kostet.",
-    days: days("sales"),
-    blocker: cd("sales") ?? cure,
   });
   const uses = lbo.levers?.wcUses ?? 0;
   const freed = m.revenue * LEVERS.workingCapital.freed * Math.pow(0.5, uses);
@@ -376,34 +346,23 @@ export function leverViews(state: GameState, s: Startup): LeverView[] {
     title: LEVERS.workingCapital.title,
     text: "Kunden zahlen schneller, das Lager wird kleiner, Lieferanten werden später bezahlt. Gewinn ist nicht Geld: Hier wird gebundenes Geld frei.",
     cost: `${eur(m.revenue * LEVERS.workingCapital.fee)} für Berater und Skonto`,
-    effect: `Etwa ${eur(freed)} mehr in der Kasse. Senkt die Nettoverschuldung, hilft beim Covenant.${uses > 0 ? " Beim zweiten Mal ist weniger zu holen." : ""}`,
+    effect: `${whenText(LEVERS.workingCapital.delay, true)} etwa ${eur(freed)} mehr in der Kasse. Senkt die Nettoverschuldung, hilft beim Covenant.${uses > 0 ? " Beim zweiten Mal ist weniger zu holen." : ""}`,
     risk: `In etwa ${Math.round(LEVERS.workingCapital.risk * 100)} % der Fälle ärgern strengere Zahlungsziele einen Kunden: rund 2 % Umsatz weg.`,
-    days: days("workingCapital"),
+    days: LEVERS.workingCapital.days,
     blocker: cd("workingCapital") ?? (uses >= 3 ? "Hier ist nichts mehr zu holen." : null),
   });
   const refi = refinanceTerms(state, s);
   out.push({
     id: "refinance",
     title: LEVERS.refinance.title,
-    text: "Den Bankkredit neu aufsetzen: wieder sieben Jahre Laufzeit zum heutigen Marktzins, fällige Verkäuferdarlehen kann die Bank mit übernehmen.",
+    text: "Den Bankkredit neu aufsetzen: wieder sieben Jahre Laufzeit zum heutigen Marktzins, bald fällige Verkäuferdarlehen kann die Bank mit übernehmen.",
     cost: refi ? `${eur(refi.fee)} Bankgebühr aus der Kasse der Firma` : "–",
     effect: refi
-      ? `Rate ${eur(refi.oldPayment)} → ${eur(refi.payment)} im Monat, Zins ${(refi.rate * 100).toLocaleString("de-DE", { maximumFractionDigits: 2 })} %.${refi.rolled > 0 ? ` Die Bank übernimmt ${eur(refi.rolled)} Verkäuferdarlehen.` : ""}`
+      ? `Sofort: Rate ${eur(refi.oldPayment)} → ${eur(refi.payment)} im Monat, Zins ${(refi.rate * 100).toLocaleString("de-DE", { maximumFractionDigits: 2 })} %.${refi.rolled > 0 ? ` Die Bank übernimmt ${eur(refi.rolled)} Verkäuferdarlehen.` : ""}`
       : "Ohne Bankkredit gibt es nichts zu refinanzieren.",
-    risk: "Länger Schulden heißt mehr Zinsen insgesamt. Bei Covenant-Bruch verhandelt die Bank nicht.",
-    days: days("refinance"),
-    blocker: !refi ? "Die Firma hat keinen Bankkredit." : lbo.status !== "ok" ? "Mit gebrochenem Covenant verhandelt die Bank nicht." : cd("refinance"),
-  });
-  const eo = earnoutSettlement(s);
-  out.push({
-    id: "earnout",
-    title: LEVERS.earnout.title,
-    text: "Dem Verkäufer statt des unsicheren Earn-outs einen festen Betrag anbieten, als Darlehen in vier Jahren fällig.",
-    cost: eo ? `fest ${eur(eo.fixed)} statt bis zu ${eur(eo.open)} (erwartet: ${eur(eo.expected)})` : "–",
-    effect: "Der Streit über das Ziel ist vom Tisch: Der Verkäufer mischt sich nicht mehr ein, das Vertrauen steigt.",
-    risk: "Liegt das EBITDA weit unter dem Ziel, zahlst du mehr, als der Earn-out wahrscheinlich gekostet hätte. Der Verkäufer kann ablehnen.",
-    days: days("earnout"),
-    blocker: !eo ? "Es gibt keinen offenen Earn-out." : cd("earnout"),
+    risk: "Länger Schulden heißt insgesamt mehr Zinsen. Steigt der Marktzins, kann die neue Rate auch höher sein.",
+    days: LEVERS.refinance.days,
+    blocker: !refi ? "Die Firma hat keinen Bankkredit." : lbo.status !== "ok" ? "Mit gebrochenem Covenant verhandelt die Bank nicht." : (cd("refinance") ?? tooPoor(refi.fee)),
   });
   return out;
 }
@@ -415,101 +374,71 @@ export function playLever(ctx: Ctx, s: Startup, id: LeverId): void {
   const view = leverViews(state, s).find((l) => l.id === id);
   if (!view) ctx.fail("Diesen Hebel gibt es nicht.");
   if (view!.blocker) ctx.fail(view!.blocker);
-  const r = mnaRandom(state, `lever|${s.id}|${id}|${state.month}`);
   const m = s.metrics;
   ctx.spend("platform", `${view!.title}: ${s.name}`, view!.days);
   let next: Startup = s;
   const lbo = () => next.lbo!;
+  const itemId = `lever-${id}-${s.id}-${state.month}`;
+  // Levers work with a delay: the outcome (and its risk) is rolled when it is due.
+  const schedule = (delay: number, risk: NonNullable<PendingEffect["risk"]>) =>
+    state.effects.push({ delay, text: "", delta: {}, startupId: s.id, due: state.month + delay, itemId, risk });
   let text = "";
   switch (id) {
     case "interim": {
       next = { ...next, metrics: { ...next.metrics, cash: next.metrics.cash - LEVERS.interim.fee }, lbo: { ...lbo(), interim: state.month + LEVERS.interim.months } };
+      schedule(1, {
+        chance: 1 - LEVERS.interim.clash,
+        good: {},
+        bad: { morale: -5, trust: -5 },
+        goodText: "Die Interim-Managerin und die Geschäftsführung arbeiten gut zusammen.",
+        badText: "Die Interim-Managerin und die Geschäftsführung reiben sich. Im Betrieb ist Unruhe.",
+      });
       text = `Die Interim-Managerin ist ab sofort ${LEVERS.interim.months} Monate in ${s.name}. Honorar ${eur(LEVERS.interim.fee)}, die Firma zahlt.`;
-      ctx.lesson("interim_management");
-      break;
-    }
-    case "ceo": {
-      const fee = ceoFee(s);
-      state.cash -= fee;
-      const good = r() < LEVERS.ceo.good + (m.trust - 50) / 500;
-      const ceo = s.board.find((b) => b.seat === "ceo");
-      const name = `${["Dr. Annette", "Thomas", "Claudia", "Michael", "Birgit", "Stefan"][Math.floor(r() * 6)]} ${["Wagner", "Hoffmann", "Krüger", "Lehmann", "Brandt", "Vogt"][Math.floor(r() * 6)]}`;
-      next = {
-        ...next,
-        board: next.board.map((b) =>
-          b.seat === "ceo" ? { ...b, name, short: name.split(" ").at(-1)!, title: "Geschäftsführung (neu eingesetzt)", personality: "numbers" as const } : b,
-        ),
-      };
-      // The searcher stays a shareholder but no longer runs the company, so she earns no more shares.
-      if (lbo().searchId) {
-        const rest = { ...lbo() };
-        delete rest.searchId;
-        next = { ...next, lbo: rest };
-      }
-      if (good) {
-        next = applyDelta(next, { morale: -4, trust: 6, axes: { management: Math.max(12, 68 - m.axes.management) } });
-        text = `${ceo?.name ?? "Die bisherige Geschäftsführung"} geht, ${name} übernimmt. Der erste Eindruck ist stark: klare Prioritäten, die Belegschaft zieht mit. Honorar ${eur(fee)}.`;
-      } else {
-        next = applyDelta(next, { morale: -10, trust: -4, revenuePct: -0.02, axes: { management: 3 } });
-        text = `${ceo?.name ?? "Die bisherige Geschäftsführung"} geht, ${name} übernimmt, aber es knirscht: Zwei Großkunden vermissen den alten Chef, im Betrieb ist Unruhe. Honorar ${eur(fee)}.`;
-      }
       ctx.lesson("interim_management");
       break;
     }
     case "costs": {
       const saving = m.opex * LEVERS.costs.saving;
-      next = applyDelta(next, { opex: -saving, cash: -saving * LEVERS.costs.oneOff, morale: -8 });
-      const bad = r() < clamp(LEVERS.costs.risk - m.axes.management / 400, 0.05, 0.3);
-      if (bad) next = applyDelta(next, { revenuePct: -0.03, axes: { management: -4 } });
-      text = `Kostenprogramm in ${s.name}: ${eur(saving)} weniger Kosten im Monat, einmalig ${eur(saving * LEVERS.costs.oneOff)}.${bad ? " Zwei Leistungsträger kündigen, ein Teil der Kunden merkt es: rund 3 % Umsatz weg." : " Die Belegschaft murrt, zieht aber mit."}`;
+      next = applyDelta(next, { cash: -saving * LEVERS.costs.oneOff, morale: -6 });
+      schedule(LEVERS.costs.delay, {
+        chance: 1 - costRisk(m),
+        good: { opex: -saving },
+        bad: { opex: -saving, revenuePct: -0.03, axes: { management: -4 } },
+        goodText: `Das Kostenprogramm greift: ${eur(saving)} weniger Kosten im Monat.`,
+        badText: `Das Kostenprogramm greift (${eur(saving)} weniger Kosten im Monat), aber zwei Leistungsträger kündigen. Kunden merken es: rund 3 % Umsatz weg.`,
+      });
+      text = `Kostenprogramm in ${s.name} beschlossen. Einmalig ${eur(saving * LEVERS.costs.oneOff)} für Abfindungen und Berater. Die Einsparung von ${eur(saving)} im Monat wirkt ${whenText(LEVERS.costs.delay)}.`;
       ctx.lesson("fixkosten");
       break;
     }
     case "pricing": {
-      const chance = clamp(0.4 + (m.axes.edge + m.axes.market) / 400, 0.4, 0.85);
-      if (r() < chance) {
-        next = applyDelta(next, { grossMargin: LEVERS.pricing.margin, revenuePct: -LEVERS.pricing.loss });
-        next = { ...next, lbo: { ...lbo(), grossMargin: (lbo().grossMargin ?? m.grossMargin) + LEVERS.pricing.margin * LEVERS.pricing.keeps } };
-        text = `Neue Preise in ${s.name}: Die Rohmarge steigt um ${Math.round(LEVERS.pricing.margin * 100)} Punkte, nur wenige Kunden gehen.`;
-      } else {
-        next = applyDelta(next, { grossMargin: LEVERS.pricing.margin / 2, revenuePct: -0.06, morale: -3 });
-        text = `Neue Preise in ${s.name}: Mehrere Kunden wechseln zur Konkurrenz, rund 6 % Umsatz sind weg. Die Marge steigt nur wenig.`;
-      }
+      // Half of the increase lasts: the margin the business drifts back to moves up.
+      next = { ...next, lbo: { ...lbo(), grossMargin: (lbo().grossMargin ?? m.grossMargin) + LEVERS.pricing.margin * LEVERS.pricing.keeps } };
+      schedule(LEVERS.pricing.delay, {
+        chance: priceChance(m),
+        good: { grossMargin: LEVERS.pricing.margin, revenuePct: -LEVERS.pricing.loss },
+        bad: { grossMargin: LEVERS.pricing.margin / 2, revenuePct: -0.06, morale: -3 },
+        goodText: `Die neuen Preise gelten: Rohmarge +${Math.round(LEVERS.pricing.margin * 100)} Punkte, nur wenige Kunden gehen.`,
+        badText: "Die neuen Preise gelten, aber mehrere Kunden wechseln zur Konkurrenz: rund 6 % Umsatz weg, die Marge steigt nur wenig.",
+      });
+      text = `Neue Preislisten für ${s.name} gehen raus. Sie gelten ${whenText(LEVERS.pricing.delay)}.`;
       ctx.lesson("preiselastizitaet");
-      break;
-    }
-    case "sales": {
-      const cost = m.revenue * LEVERS.sales.cost;
-      next = applyDelta(next, { opex: cost, axes: { market: 6 }, growth: Math.min(0.003, EBITDA_GROWTH_CAP - m.growth) });
-      const success = r() < clamp(0.45 + m.axes.market / 200, 0.4, 0.85);
-      state.effects.push({
-        delay: 3,
-        text: success ? "Die Vertriebsoffensive trägt: neue Aufträge, mehr Umsatz." : "Die Vertriebsoffensive bringt weniger als erhofft.",
-        delta: { revenuePct: success ? 0.04 : 0.01 },
-        startupId: s.id,
-        due: state.month + 3,
-        itemId: `lever-sales-${s.id}-${state.month}`,
-      });
-      state.effects.push({
-        delay: LEVERS.sales.months,
-        text: "Die Vertriebsoffensive ist vorbei, das Budget fällt weg.",
-        delta: { opex: -cost },
-        startupId: s.id,
-        due: state.month + LEVERS.sales.months,
-        itemId: `lever-sales-end-${s.id}-${state.month}`,
-      });
-      text = `Vertriebsoffensive in ${s.name}: ${eur(cost)} im Monat für ${LEVERS.sales.months} Monate. Ergebnisse in etwa drei Monaten.`;
       break;
     }
     case "workingCapital": {
       const uses = lbo().levers?.wcUses ?? 0;
-      const freed = m.revenue * LEVERS.workingCapital.freed * Math.pow(0.5, uses);
+      const freed = Math.round(m.revenue * LEVERS.workingCapital.freed * Math.pow(0.5, uses));
       const fee = m.revenue * LEVERS.workingCapital.fee;
-      next = applyDelta(next, { cash: freed - fee });
-      const bad = r() < LEVERS.workingCapital.risk;
-      if (bad) next = applyDelta(next, { revenuePct: -0.02, trust: -2 });
+      next = applyDelta(next, { cash: -fee });
       next = { ...next, lbo: { ...lbo(), levers: { ...lbo().levers, wcUses: uses + 1 } } };
-      text = `Working-Capital-Programm in ${s.name}: ${eur(freed)} gebundenes Geld frei, ${eur(fee)} Kosten.${bad ? " Ein Kunde ärgert sich über die strengeren Zahlungsziele und bestellt weniger." : ""}`;
+      schedule(LEVERS.workingCapital.delay, {
+        chance: 1 - LEVERS.workingCapital.risk,
+        good: { cash: freed },
+        bad: { cash: freed, revenuePct: -0.02, trust: -2 },
+        goodText: `Das Working-Capital-Programm wirkt: ${eur(freed)} gebundenes Geld sind frei.`,
+        badText: `Das Working-Capital-Programm bringt ${eur(freed)}, aber ein Kunde ärgert sich über die strengeren Zahlungsziele und bestellt weniger.`,
+      });
+      text = `Working-Capital-Programm in ${s.name} gestartet, ${eur(fee)} Kosten. Das Geld kommt ${whenText(LEVERS.workingCapital.delay)} frei.`;
       ctx.lesson("working_capital");
       break;
     }
@@ -519,27 +448,6 @@ export function playLever(ctx: Ctx, s: Startup, id: LeverId): void {
       next = { ...next, metrics: { ...next.metrics, cash: next.metrics.cash - t.fee }, lbo: { ...lbo(), bank: lbo().bank + t.rolled, rate: t.rate, payment: t.payment, vendors } };
       text = `Refinanzierung von ${s.name}: neue Rate ${eur(t.payment)} statt ${eur(t.oldPayment)} im Monat, ${(t.rate * 100).toLocaleString("de-DE", { maximumFractionDigits: 2 })} % Zins, sieben Jahre.${t.rolled > 0 ? ` Die Bank übernimmt ${eur(t.rolled)} Verkäuferdarlehen.` : ""} Gebühr ${eur(t.fee)}.`;
       ctx.lesson("refinanzierung");
-      break;
-    }
-    case "earnout": {
-      const eo = earnoutSettlement(s)!;
-      if (r() < 0.5 + (0.3 * m.trust) / 100) {
-        next = applyDelta(next, { trust: 6, morale: 2 });
-        next = {
-          ...next,
-          lbo: {
-            ...lbo(),
-            earnouts: [],
-            vendors: [...lbo().vendors, { amount: eo.fixed, due: state.month + VENDOR_MONTHS, label: `Abgelöster Earn-out ${s.name}` }],
-            handover: lbo().handover.includes("patriarch") ? lbo().handover : [...lbo().handover, "patriarch"],
-          },
-        };
-        text = `Der Verkäufer nimmt an: ${eur(eo.fixed)} fest, fällig in vier Jahren, statt bis zu ${eur(eo.open)} Earn-out. Er zieht sich aus dem Tagesgeschäft zurück.`;
-      } else {
-        next = applyDelta(next, { trust: -3 });
-        text = `Der Verkäufer lehnt ab: Er glaubt an das Ziel und will den vollen Earn-out.`;
-      }
-      ctx.lesson("earn_out");
       break;
     }
   }
@@ -555,6 +463,10 @@ export function playLever(ctx: Ctx, s: Startup, id: LeverId): void {
 
 export interface FamilyValueView {
   parts: ValueParts;
+  /** This month's EBITDA × 12; the value uses the smoothed twelve months (parts.ebitda). */
+  runRate: number;
+  /** Why the value moved last month (from the monthly report). */
+  why: string | null;
   margin: number;
   entry: { ev: number; ebitda: number; multiple: number; margin: number } | null;
   bank: number;
@@ -574,7 +486,7 @@ export function familyValueView(state: GameState, s: Startup, covenant: number):
   const parts = valueParts(m);
   const lbo = s.lbo;
   const margin = m.revenue > 0 ? parts.ebitda / (m.revenue * 12) : 0;
-  const e = annualEbitda(m);
+  const e = valueEbitda(m);
   const diagnosis: string[] = [];
   if (lbo) {
     const drop = e / Math.max(1, lbo.entryEbitda) - 1;
@@ -587,8 +499,11 @@ export function familyValueView(state: GameState, s: Startup, covenant: number):
   }
   const earnout =
     lbo && lbo.earnouts.length > 0 ? { open: lbo.earnouts.reduce((sum, x) => sum + x.amount, 0), expected: lbo.earnouts.reduce((sum, x) => sum + expectedEarnout(x, e), 0) } : null;
+  const why = state.reports[0]?.lines.find((l) => l.startupId === s.id)?.valueWhy ?? null;
   return {
     parts,
+    runRate: annualEbitda(m),
+    why,
     margin,
     entry: lbo ? { ev: lbo.entryEv, ebitda: lbo.entryEbitda, multiple: lbo.entryEv / Math.max(1, lbo.entryEbitda), margin: lbo.margin ?? 0 } : null,
     bank: lbo?.bank ?? 0,

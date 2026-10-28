@@ -27,7 +27,10 @@ export function FamilyValue({ view, startupId, revision, daysLeft }: { view: Fam
       <table className="mna-table">
         <tbody>
           <tr>
-            <th>EBITDA im Jahr · Marge {pctText(view.margin)}</th>
+            <th>
+              EBITDA der letzten zwölf Monate · Marge {pctText(view.margin)}
+              {Math.abs(view.runRate - p.ebitda) > 0.02 * Math.abs(p.ebitda) && <small className="muted"> (laufend {mio(view.runRate)} im Jahr)</small>}
+            </th>
             <td>{eur(p.ebitda)}</td>
           </tr>
           <tr>
@@ -71,6 +74,7 @@ export function FamilyValue({ view, startupId, revision, daysLeft }: { view: Fam
           Beim Kauf: EBITDA {mio(view.entry.ebitda)} × {x(view.entry.multiple)} = {mio(view.entry.ev)} Unternehmenswert, Marge {pctText(view.entry.margin)}.
         </p>
       )}
+      {view.why && <p className="report__why">Letzter Monat: {view.why}</p>}
       {trend.length > 1 && (
         <>
           <p className="eyebrow">Verlauf{change !== null ? `: ${change >= 0 ? "+" : "−"}${Math.abs(Math.round(change * 100))} % in ${trend.length - 1} Monaten` : ""}</p>

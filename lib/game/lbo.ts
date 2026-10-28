@@ -1,5 +1,5 @@
 import { generateDeal, LAST } from "./dealgen";
-import { annualEbitda, enterpriseValue, fairMultiple, familyGrowth, sizeMultiple } from "./ebitda";
+import { annualEbitda, enterpriseValue, fairMultiple, familyGrowth, nextLtm, sizeMultiple, valueEbitda } from "./ebitda";
 import {
   ACQUIRE_DAYS,
   BANK_MAX_LEVERAGE,
@@ -316,7 +316,7 @@ export function scheduleSurprises(ctx: Ctx, s: Startup, findings: Finding[], tag
 /** Net bank debt (cash above two months of costs counts against it) per annual EBITDA. */
 export function netLeverage(s: Startup): number {
   if (!s.lbo) return 0;
-  const e = annualEbitda(s.metrics);
+  const e = valueEbitda(s.metrics);
   const net = s.lbo.bank - Math.max(0, s.metrics.cash - 2 * s.metrics.opex);
   if (net <= 0) return 0;
   return e > 0 ? net / e : Infinity;
@@ -333,7 +333,7 @@ export function expectedEarnout(e: { amount: number; target: number }, ebitda: n
 
 export function syncDebt(s: Startup): Startup {
   if (!s.lbo) return s;
-  const ebitda = annualEbitda(s.metrics);
+  const ebitda = valueEbitda(s.metrics);
   const total = s.lbo.bank + s.lbo.vendors.reduce((sum, v) => sum + v.amount, 0) + s.lbo.earnouts.reduce((sum, e) => sum + expectedEarnout(e, ebitda), 0);
   return { ...s, metrics: { ...s.metrics, acqDebt: Math.round(total) } };
 }
@@ -500,7 +500,8 @@ export function lboMonth(ctx: Ctx, month: number, notes: string[], lines: Map<st
       const ceiling = base * MARGIN_CEILING;
       if (margin > ceiling) opex += MARGIN_REVERSION * (margin - ceiling) * s.metrics.revenue;
       // Below the margin at purchase, a management that knows its trade slowly adapts the fixed costs to the volume.
-      else if (margin < base) opex -= (MARGIN_RECOVERY.base + (MARGIN_RECOVERY.management * s.metrics.axes.management) / 100) * (interimOn ? 2 : 1) * (base - margin) * s.metrics.revenue;
+      else if (margin < base)
+        opex -= (MARGIN_RECOVERY.base + (MARGIN_RECOVERY.management * s.metrics.axes.management) / 100) * (interimOn ? 2 : 1) * (base - margin) * s.metrics.revenue;
     }
     // Price wars and windfalls fade: the gross margin drifts back to what the business made at purchase.
     const gmBase = s.lbo?.grossMargin;
@@ -508,6 +509,8 @@ export function lboMonth(ctx: Ctx, month: number, notes: string[], lines: Map<st
     // Family businesses feel the business cycle.
     const cycle = CYCLE_REVENUE[regime];
     s = { ...s, metrics: { ...s.metrics, opex, grossMargin, growth: clamp(s.metrics.growth, EBITDA_GROWTH_FLOOR, EBITDA_GROWTH_CAP), revenue: s.metrics.revenue * (1 + cycle) } };
+    // Value and covenant look at about the last twelve months, not at one good or bad month.
+    s = { ...s, metrics: { ...s.metrics, ebitdaLtm: Math.round(nextLtm(s.metrics)) } };
     if (!s.lbo) {
       ctx.replace(s);
       continue;
@@ -527,7 +530,7 @@ export function lboMonth(ctx: Ctx, month: number, notes: string[], lines: Map<st
     lbo.bank = Math.max(0, lbo.bank - principal);
     const vendorInterest = lbo.vendors.reduce((sum, v) => sum + (v.amount * VENDOR_RATE) / 12, 0);
     s = pay(s, vendorInterest);
-    const ebitda = annualEbitda(s.metrics);
+    const ebitda = valueEbitda(s.metrics);
     // Vendor loans due: pay from cash, else the bank refinances, else it hurts.
     for (const v of lbo.vendors.filter((x) => x.due <= month)) {
       const spare = s.metrics.cash - s.metrics.opex;
@@ -617,7 +620,7 @@ const INTERIM_MANAGEMENT = 75;
 function withTrendPoint(s: Startup, month: number): Startup {
   const last = s.history[s.history.length - 1];
   if (!last || last.month !== month) return s;
-  const e = annualEbitda(s.metrics);
+  const e = valueEbitda(s.metrics);
   const point = {
     ...last,
     cash: s.metrics.cash,
@@ -645,7 +648,8 @@ export function correctOldValuation(s: Startup, texts: string[]): Startup {
     const margin = (m.revenue * m.grossMargin - m.opex) / m.revenue;
     if (margin < lbo.margin) metrics = { ...metrics, opex: Math.max(0, m.opex - 0.5 * (lbo.margin - margin) * m.revenue) };
   }
-  if (bugged) texts.push("Neu bewertet: Der Umsatz schrumpft nicht mehr wie bei einem Startup, die Kosten passen sich teilweise an. Verlorener Umsatz kommt nur mit guter Arbeit zurück.");
+  if (bugged)
+    texts.push("Neu bewertet: Der Umsatz schrumpft nicht mehr wie bei einem Startup, die Kosten passen sich teilweise an. Verlorener Umsatz kommt nur mit guter Arbeit zurück.");
   return { ...s, metrics, lbo: { ...lbo, model: 2 } };
 }
 
@@ -691,7 +695,7 @@ function covenantTest(ctx: Ctx, s: Startup, month: number, texts: string[]): Sta
     return next;
   }
   if (lbo.status !== "cure") {
-    const e = Math.max(0, annualEbitda(s.metrics));
+    const e = Math.max(0, valueEbitda(s.metrics));
     const amount = roundTo(Math.max(lbo.bank * 0.1, lbo.bank - 0.9 * limit * e - Math.max(0, s.metrics.cash - 2 * s.metrics.opex)), 1000);
     lbo.status = "cure";
     lbo.cure = { amount, due: month + 1, reason: "covenant" };
@@ -766,8 +770,8 @@ export function forcedSale(ctx: Ctx, s: Startup, notes: string[]): void {
       name: s.name,
       month: state.month,
       ev: Math.round(ev),
-      ebitda: Math.round(annualEbitda(s.metrics)),
-      multiple: annualEbitda(s.metrics) > 10_000 ? Math.round((ev / annualEbitda(s.metrics)) * 10) / 10 : 0,
+      ebitda: Math.round(valueEbitda(s.metrics)),
+      multiple: valueEbitda(s.metrics) > 10_000 ? Math.round((ev / valueEbitda(s.metrics)) * 10) / 10 : 0,
       entryMultiple: Math.round((lbo.entryEv / Math.max(1, lbo.entryEbitda)) * 10) / 10,
       moic: Math.round((mine / Math.max(1, lbo.equity)) * 100) / 100,
       addons: s.platform.addons.length,

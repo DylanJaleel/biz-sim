@@ -93,6 +93,53 @@ describe("value of a family business", () => {
     expect(Math.abs(familyGrowth(s.metrics))).toBeLessThan(0.006);
   });
 
+  it("reproduces the old crash: on the startup growth path a big family business shrank by 2 to 3 % a month", () => {
+    const { state, id } = boughtBySeller(7, 27_000_000);
+    const s = startupOf(state, id);
+    // The old model: the family business ran on the startup growth path, with its drag for size.
+    const run = (old: boolean) => {
+      let x = s;
+      for (let i = 0; i < 6; i++) {
+        const out = stepMonth(old ? { ...x, metrics: { ...x.metrics, valuedOn: undefined } } : x, () => 0.5).startup;
+        x = { ...out, metrics: { ...out.metrics, valuedOn: "ebitda" } };
+      }
+      return x.metrics;
+    };
+    const old = run(true);
+    const fixed = run(false);
+    expect(old.growth).toBeLessThan(-0.015);
+    expect(old.revenue).toBeLessThan(s.metrics.revenue * 0.92);
+    expect(fixed.growth).toBeGreaterThan(-0.006);
+    expect(fixed.revenue).toBeGreaterThan(s.metrics.revenue * 0.97);
+  });
+
+  it("moves little from month to month: the value rests on the smoothed twelve-month EBITDA", () => {
+    const ev: number[] = [];
+    const equity: number[] = [];
+    for (const size of [3_000_000, 10_000_000, 27_000_000]) {
+      for (let seed = 1; seed <= 4; seed++) {
+        const { state: s0, id } = offered(seed, size, "search");
+        let state = act(s0, { type: "acquire", targetId: id, bid: "ask", bank: 0.5, vendor: 0.1, earnout: 0.1 });
+        let prev = startupOf(state, id).metrics;
+        for (let m = 0; m < 18; m++) {
+          state = calmMonth(state, id);
+          const s = startupOf(state, id);
+          if (s.status !== "active") break;
+          ev.push(Math.abs(enterpriseValue(s.metrics) / enterpriseValue(prev) - 1));
+          equity.push(Math.abs(valuation(s.metrics) / valuation(prev) - 1));
+          expect(valuation(s.metrics)).toBeGreaterThan(0);
+          prev = s.metrics;
+        }
+      }
+    }
+    const p = (a: number[], q: number) => [...a].sort((x, y) => x - y)[Math.floor(q * (a.length - 1))]!;
+    // Enterprise value: a few percent a month at most, also with news and handover events.
+    expect(p(ev, 0.5)).toBeLessThan(0.02);
+    expect(p(ev, 0.95)).toBeLessThan(0.06);
+    // Equity moves more (debt is the lever), but stays in single digits in nine of ten months.
+    expect(p(equity, 0.9)).toBeLessThan(0.1);
+  });
+
   it("a healthy company keeps its value over 24 months in several seeds", () => {
     const ratios: number[] = [];
     for (const ev of [3_000_000, 27_000_000]) {
@@ -140,9 +187,9 @@ describe("value of a family business", () => {
     const worse = { ...m, revenue: m.revenue * 0.9, opex: m.opex * 0.95 };
     const text = explainValueChange(m, worse)!;
     expect(text).toMatch(/^Wert −/);
-    expect(text).toMatch(/EBITDA −\d+ %/);
+    expect(text).toMatch(/EBITDA −[\d,]+ %/);
     expect(text).toMatch(/Umsatz −10 %/);
-    expect(explainValueChange(m, m)).toBeNull();
+    expect(explainValueChange(m, m)).toBe("Wert kaum verändert: EBITDA unverändert; Multiple unverändert.");
   });
 
   it("the monthly report says why the value moved", () => {
@@ -199,40 +246,53 @@ describe("levers for the majority owner", () => {
   it("are offered for an own family business with costs, effect and risk", () => {
     const { state, id } = boughtBySeller(11, 10_000_000);
     const levers = leverViews(state, startupOf(state, id));
-    expect(levers.map((l) => l.id)).toEqual(["interim", "ceo", "costs", "pricing", "sales", "workingCapital", "refinance", "earnout"]);
+    expect(levers.map((l) => l.id)).toEqual(["interim", "costs", "pricing", "workingCapital", "refinance"]);
     for (const l of levers) {
       expect(l.cost.length).toBeGreaterThan(0);
       expect(l.effect.length).toBeGreaterThan(0);
       expect(l.risk.length).toBeGreaterThan(0);
     }
-    // No bank loan: nothing to refinance. An open earn-out: it can be renegotiated.
+    // No bank loan: nothing to refinance.
     expect(levers.find((l) => l.id === "refinance")!.blocker).toMatch(/keinen Bankkredit/);
-    expect(levers.find((l) => l.id === "earnout")!.blocker).toBeNull();
     const view = familyValueView(state, startupOf(state, id), COVENANT)!;
     expect(view.parts.equity).toBeCloseTo(valuation(startupOf(state, id).metrics), 0);
   });
 
-  it("a cost programme lowers the costs for good, costs money once and waits before the next one", () => {
+  it("a cost programme costs money now, lowers the costs two months later and waits before the next one", () => {
     const { state, id } = boughtBySeller(12, 10_000_000);
     const before = startupOf(state, id);
     const next = act(state, { type: "lever", startupId: id, lever: "costs" });
-    const after = startupOf(next, id);
-    expect(after.metrics.opex).toBeLessThan(before.metrics.opex * 0.96);
-    expect(after.metrics.cash).toBeLessThan(before.metrics.cash);
+    const now = startupOf(next, id);
+    expect(now.metrics.opex).toBe(before.metrics.opex);
+    expect(now.metrics.cash).toBeLessThan(before.metrics.cash);
     expect(next.daysUsed).toBe(state.daysUsed + 1);
     expect(() => act(next, { type: "lever", startupId: id, lever: "costs" })).toThrow(/Gerade erst/);
+    // Same months with and without the programme: two months later the costs are about 5 % lower.
+    let withLever = next;
+    let without = state;
+    for (let i = 0; i < 2; i++) {
+      withLever = calmMonth(withLever, id);
+      without = calmMonth(without, id);
+    }
+    expect(startupOf(withLever, id).metrics.opex).toBeLessThan(startupOf(without, id).metrics.opex * 0.97);
   });
 
-  it("a working-capital programme frees cash, less the second time", () => {
+  it("a working-capital programme frees cash two months later, less the second time", () => {
     const { state, id } = boughtBySeller(13, 10_000_000);
-    const c0 = startupOf(state, id).metrics.cash;
-    const once = act(state, { type: "lever", startupId: id, lever: "workingCapital" });
-    const freed = startupOf(once, id).metrics.cash - c0;
-    expect(freed).toBeGreaterThan(0);
-    expect(once.lessons).toContain("working_capital");
-    const later = { ...structuredClone(once), month: once.month + 12, daysUsed: 0 };
-    const twice = act(later, { type: "lever", startupId: id, lever: "workingCapital" });
-    expect(startupOf(twice, id).metrics.cash - startupOf(later, id).metrics.cash).toBeLessThan(freed);
+    const freedAfter = (start: GameState) => {
+      let a = act(start, { type: "lever", startupId: id, lever: "workingCapital" });
+      let b = start;
+      for (let i = 0; i < 2; i++) {
+        a = calmMonth(a, id);
+        b = calmMonth(b, id);
+      }
+      return { freed: startupOf(a, id).metrics.cash - startupOf(b, id).metrics.cash, after: a };
+    };
+    const once = freedAfter(state);
+    expect(once.freed).toBeGreaterThan(startupOf(state, id).metrics.revenue * 0.2);
+    expect(once.after.lessons).toContain("working_capital");
+    const later = { ...structuredClone(once.after), month: once.after.month + 12, daysUsed: 0 };
+    expect(freedAfter(later).freed).toBeLessThan(once.freed);
   });
 
   it("refinancing stretches the bank loan: lower payment, a fee", () => {
