@@ -192,8 +192,10 @@ function ebitdaReason(before: Metrics, after: Metrics): string {
     .sort((a, b) => Math.abs(b.v) - Math.abs(a.v))
     .map((p) => p.text);
   // A drop or jump a few months ago is still working through the twelve months.
+  // (Not after an add-on: its EBITDA counts in full at once, the revenue jump says why.)
+  const jump = Math.abs(after.revenue / Math.max(1, before.revenue) - 1) > 0.05;
   const lag =
-    Math.abs(catchUp) > Math.abs(fresh) && Math.abs(catchUp) > 0.002 * Math.abs(valueEbitda(before))
+    !jump && Math.abs(catchUp) > Math.abs(fresh) && Math.abs(catchUp) > 0.002 * Math.abs(valueEbitda(before))
       ? `${catchUp < 0 ? "die schwächeren" : "die stärkeren"} Monate davor wirken nach, laufend ${moneyText(annualEbitda(after))} im Jahr`
       : null;
   const out = [...(lag ? [lag] : []), ...parts].slice(0, 2);
