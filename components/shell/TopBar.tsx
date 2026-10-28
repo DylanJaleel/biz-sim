@@ -6,6 +6,9 @@ import { currentGame } from "@/lib/current-game";
 import { eur } from "@/components/game/format";
 import { CloseMonth } from "./CloseMonth";
 import { NavLinks } from "./NavLinks";
+import { TopBarStats } from "./TopBarStats";
+import { networkTasks } from "@/lib/game/network-views";
+import type { NavState } from "@/lib/navigation";
 import { AwardPopup } from "@/components/vitrine/AwardPopup";
 
 export async function TopBar() {
@@ -18,6 +21,13 @@ export async function TopBar() {
     const s = state.startups.find((x) => x.id === i.startupId);
     return s?.name ?? "";
   });
+  const nav: NavState = {
+    reputation: state.reputation,
+    unread,
+    openItems: open.length,
+    networkTasks: networkTasks(state).filter((t) => t.hurry).length,
+    familyOffice: state.familyOffice !== undefined,
+  };
   const fresh = state.trophies.filter((t) => !t.seen);
   return (
     <>
@@ -26,39 +36,18 @@ export async function TopBar() {
           <span className="topbar__logo" aria-hidden="true" />
           <span className="topbar__name">Boardroom</span>
         </div>
-        <NavLinks unread={unread} />
-        <dl className="topbar__stats">
-          <div>
-            <dt>Monat</dt>
-            <dd>
-              <span className="topbar__long">{monthLabel(state.month)}</span>
-              <span className="topbar__short">
-                {monthName(state.month).slice(0, 3)} · J{Math.floor((state.month + 8) / 12) + 1}
-              </span>
-            </dd>
-          </div>
-          <div>
-            <dt>Tage frei</dt>
-            <dd>
-              <span className="days" aria-hidden="true">
-                <i style={{ width: `${(free / total) * 100}%` }} />
-              </span>
-              {free} / {total}
-            </dd>
-          </div>
-          <div>
-            <dt>Privatkapital</dt>
-            <dd>{eur(state.cash)}</dd>
-          </div>
-          <div className="topbar__hide-sm">
-            <dt>Vermögen</dt>
-            <dd>{eur(netWorth(state))}</dd>
-          </div>
-          <div>
-            <dt>Ruf</dt>
-            <dd>{state.reputation}</dd>
-          </div>
-        </dl>
+        <NavLinks state={nav} />
+        <TopBarStats
+          data={{
+            monthLong: monthLabel(state.month),
+            monthShort: `${monthName(state.month).slice(0, 3)} · J${Math.floor((state.month + 8) / 12) + 1}`,
+            free,
+            total,
+            cash: eur(state.cash),
+            worth: eur(netWorth(state)),
+            reputation: state.reputation,
+          }}
+        />
         <Link href="/konto#spielstand" className="topbar__saved" title={`Gespeichert am ${saved}`} aria-label={`Spielstand gespeichert am ${saved}`}>
           <span className="saves__dot" aria-hidden="true" />
         </Link>

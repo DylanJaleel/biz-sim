@@ -2,39 +2,37 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { activeNavItem, primaryItems, type NavState } from "@/lib/navigation";
+import { MainMenu } from "./MainMenu";
 
-const LINKS = [
-  { href: "/", label: "Büro" },
-  { href: "/portfolio", label: "Portfolio" },
-  { href: "/post", label: "Post" },
-  { href: "/netzwerk", label: "Netzwerk", wide: true },
-  { href: "/boerse", label: "Börse", wide: true },
-  { href: "/holding", label: "Holding", wide: true, extra: true },
-  { href: "/kalender", label: "Kalender", wide: true, extra: true },
-  { href: "/notizbuch", label: "Notizbuch", wide: true, extra: true },
-];
-
-export function NavLinks({ unread }: { unread: number }) {
+/** Die wenigen Hauptziele direkt in der Kopfleiste; alles andere liegt im Menü. */
+export function NavLinks({ state }: { state: NavState }) {
   const path = usePathname();
+  const active = activeNavItem(path);
+  const items = primaryItems();
   return (
     <nav className="topbar__nav" aria-label="Hauptnavigation">
-      {LINKS.map((l) => {
-        const active = l.href === "/" ? path === "/" : path.startsWith(l.href) || (l.href === "/portfolio" && /^\/(firma|sitzung|gv|verkauf)/.test(path));
+      {items.map((item) => {
+        const here = active?.href === item.href;
+        const badge = item.badge?.(state) ?? 0;
         return (
           <Link
-            key={l.href}
-            href={l.href}
-            className={[active ? "is-active" : "", l.wide ? "topbar__wide" : "", "extra" in l ? "topbar__extra" : ""].join(" ").trim() || undefined}
-            aria-current={active ? "page" : undefined}
+            key={item.href}
+            href={item.href}
+            className={[here ? "is-active" : "", item.primary! >= 4 ? "topbar__opt" : ""].filter(Boolean).join(" ") || undefined}
+            aria-current={here ? "page" : undefined}
           >
-            {l.label}
-            {l.href === "/post" && unread > 0 && <span className="badge">{unread}</span>}
+            {item.label}
+            {badge > 0 && (
+              <span className={item.badgeTone === "alert" ? "badge" : "badge badge--accent"}>
+                {badge}
+                <span className="sr-only"> neu</span>
+              </span>
+            )}
           </Link>
         );
       })}
-      <Link href="/konto" className={path === "/konto" ? "is-active" : undefined} aria-current={path === "/konto" ? "page" : undefined}>
-        Konto
-      </Link>
+      <MainMenu state={state} activeHref={active && active.primary === undefined ? active.href : undefined} />
     </nav>
   );
 }
