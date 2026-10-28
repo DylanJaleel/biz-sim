@@ -5586,6 +5586,15 @@ a.desk__item:focus-visible {
   line-height: 1.4;
 }
 
+/* The value bridge reads top to bottom (EBITDA × Multiple = …), also on small screens. */
+.family .mna-table tbody {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.family .mna-table td {
+  white-space: nowrap;
+}
+
 @media (max-width: 760px) {
   .family__trend {
     grid-template-columns: repeat(3, minmax(0, 1fr));
