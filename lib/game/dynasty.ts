@@ -364,6 +364,7 @@ const HEIR_MOVES = new Set<GameAction["type"]>([
   "joinCorporate",
   "specialist",
   "contactHint",
+  "lever",
 ]);
 
 /** In generation 2 the heir runs the business: the reason a move is not the player's any more, or null. */

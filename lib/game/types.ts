@@ -70,6 +70,8 @@ export interface Metrics {
   valuedOn?: "ebitda";
   /** Acquisition debt at company level: bank loan, vendor loans, open earn-outs (see LboState). */
   acqDebt?: number;
+  /** Family businesses: EBITDA of about the last twelve months (smoothed), the basis of value and covenant. */
+  ebitdaLtm?: number;
 }
 
 export interface StartupHistoryPoint {
@@ -78,6 +80,10 @@ export interface StartupHistoryPoint {
   cash: number;
   valuation: number;
   stake: number;
+  /** Family businesses: annual EBITDA, effective multiple and debt at month end (for the value trend). */
+  ebitda?: number;
+  multiple?: number;
+  netDebt?: number;
 }
 
 export type StartupStatus = "offered" | "declined" | "active" | "dead" | "exited" | "sold";
@@ -570,6 +576,9 @@ export interface NetworkState {
   log: { given: number; declined: number; lapsed: number; events: number; talks: number; refusals: number; specialists: number; hints: number };
 }
 
+/** What the majority owner of a family business can do when things go badly (see family.ts). */
+export type LeverId = "interim" | "costs" | "pricing" | "workingCapital" | "refinance";
+
 export interface ReportLine {
   startupId: string;
   name: string;
@@ -584,6 +593,8 @@ export interface ReportLine {
   events: string[];
   /** Supervisory board seat: no stake. */
   corporate?: boolean;
+  /** Family businesses: why the value moved (EBITDA, multiple, debt, cash). */
+  valueWhy?: string;
 }
 
 export interface MonthReport {
@@ -745,6 +756,7 @@ export type GameAction =
   | { type: "examine"; targetId: string; modules: import("./mna-config").DdModule[] }
   | { type: "acquire"; targetId: string; bid: "ask" | "low"; bank: number; vendor: number; earnout: number; integration?: IntegrationKind }
   | { type: "platform"; startupId: string; move: "make" | "sell" | "cure" | "stopSale"; process?: ProcessKind; buyers?: "strategic" | "financial" }
+  | { type: "lever"; startupId: string; lever: LeverId }
   | import("./wealth-types").WealthAction;
 
 // ---------------------------------------------------------------------------
@@ -902,7 +914,8 @@ export interface LboState {
   /** Quarters in a row above the covenant. */
   breach: number;
   status: "ok" | "watch" | "cure";
-  cure?: { amount: number; due: number };
+  /** "cash": the company ran out of cash (lifted when the cash is back), otherwise the covenant. */
+  cure?: { amount: number; due: number; reason?: "cash" | "covenant" };
   /** The searcher who runs the company, if any. */
   searchId?: string;
   /** Handover risks already happened (once each). */
@@ -917,6 +930,10 @@ export interface LboState {
   headroom?: number;
   /** An interim manager from the network steadies handover and integrations until this month. */
   interim?: number;
+  /** Levers of the owner (family.ts): month each was last pulled, plus `wcUses`. */
+  levers?: Record<string, number>;
+  /** Valuation model of this company: 2 after the fix of the startup growth path (old games are corrected once). */
+  model?: number;
 }
 
 export interface PlatformState {

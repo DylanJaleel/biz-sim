@@ -176,6 +176,7 @@ export function ReportDialog({ report, onClose }: { report: MonthReport; onClose
               )}
             </span>
           </div>
+          {line.valueWhy && <p className="report__why">{line.valueWhy}</p>}
           {line.events.length > 0 && (
             <ul className="report__events">
               {line.events.map((e, i) => (

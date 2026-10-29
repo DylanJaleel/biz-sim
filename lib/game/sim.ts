@@ -18,7 +18,8 @@ import {
   CUSTOMER_LOSS_CHANCE,
   CUSTOMER_LOSS_THRESHOLD,
 } from "./config";
-import { ebitdaEquityValue } from "./ebitda";
+import { ebitdaEquityValue, familyGrowth, FAMILY_NOISE, FAMILY_OVERDRAFT_RATE } from "./ebitda";
+import { EBITDA_GROWTH_CAP, EBITDA_GROWTH_FLOOR } from "./mna-config";
 import type { Axes, Delta, Holder, HolderKind, Metrics, Startup, StartupPhase } from "./types";
 
 export const NEW_INVESTORS = { id: "investors", name: "Neue Investoren", kind: "investor" as HolderKind };
@@ -110,6 +111,7 @@ export function applyDelta(s: Startup, d: Delta, scale = 1): Startup {
     debt: Math.max(0, m.debt + (d.debt ?? 0) * scale),
     ...(m.valuedOn ? { valuedOn: m.valuedOn } : {}),
     ...(m.acqDebt ? { acqDebt: m.acqDebt } : {}),
+    ...(m.ebitdaLtm !== undefined ? { ebitdaLtm: m.ebitdaLtm } : {}),
   };
   const dil = clamp((d.dilution ?? 0) * scale, 0, 0.9);
   const stake = s.stake * (1 - dil);
@@ -165,10 +167,13 @@ export function stepMonth(s: Startup, random: () => number = () => 0.5): StepRes
   if (s.status !== "active") return { startup: s, events: [] };
   const events: string[] = [];
   const m = s.metrics;
-  const noise = (random() - 0.5) * 2 * REVENUE_NOISE;
+  // Family businesses (valued on EBITDA) are mature: no startup growth path, no scale drag, calmer revenue.
+  const family = m.valuedOn === "ebitda";
+  const noise = (random() - 0.5) * 2 * REVENUE_NOISE * (family ? FAMILY_NOISE : 1);
   // Big companies are tankers: pushes above their potential fade faster.
-  const pull = Math.min(0.6, GROWTH_PULL * (1 + (scaleDrag(m) / SCALE_DRAG) * SCALE_PULL));
-  const growth = m.growth + (potentialGrowth(m) - m.growth) * pull;
+  const pull = family ? GROWTH_PULL : Math.min(0.6, GROWTH_PULL * (1 + (scaleDrag(m) / SCALE_DRAG) * SCALE_PULL));
+  const drift = m.growth + ((family ? familyGrowth(m) : potentialGrowth(m)) - m.growth) * pull;
+  const growth = family ? Math.min(EBITDA_GROWTH_CAP, Math.max(EBITDA_GROWTH_FLOOR, drift)) : drift;
   const revenue = Math.max(0, m.revenue * (1 + growth + noise));
   const interest = monthlyInterest(m);
   const repayment = m.debt * DEBT_REPAYMENT_RATE;
@@ -184,9 +189,15 @@ export function stepMonth(s: Startup, random: () => number = () => 0.5): StepRes
   }
   let next: Startup = { ...s, metrics: { ...m, growth, revenue: shockedRevenue, cash, morale, topCustomer, debt: m.debt - repayment } };
   next = { ...next, phase: phaseOf(next.metrics) };
-  if (next.phase !== s.phase) events.push(phaseText(next.phase));
+  // Startup phases mean nothing to a family business.
+  if (next.phase !== s.phase && !family) events.push(phaseText(next.phase));
 
-  if (cash < 0) {
+  if (cash < 0 && family && revenue * m.grossMargin - m.opex > 0) {
+    // A family business that earns money bridges an empty till with its overdraft, at a price.
+    const overdraft = -cash * FAMILY_OVERDRAFT_RATE;
+    next = { ...next, metrics: { ...next.metrics, cash: cash - overdraft }, crisisMonths: 0 };
+    events.push(`Das Konto der Firma ist überzogen. Der Dispo kostet ${Math.round(overdraft).toLocaleString("de-DE")} € Zinsen im Monat.`);
+  } else if (cash < 0) {
     const crisisMonths = s.crisisMonths + 1;
     next = { ...next, crisisMonths };
     if (crisisMonths >= 2) {
