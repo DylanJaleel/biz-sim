@@ -262,6 +262,8 @@ function closeAddon(ctx: Ctx, platform: Startup, a: AddonTarget, p: NonNullable<
       growth: (m.growth * m.revenue + adj.growth * adj.revenue) / revenue,
       topCustomer: (m.topCustomer * m.revenue + a.topCustomer * adj.revenue) / revenue,
       cash: m.cash - p.fromPlatform + WORKING_CASH_MONTHS * adj.opex,
+      // Pro forma: the add-on's EBITDA counts in the group's twelve months from the day it belongs to it.
+      ...(m.ebitdaLtm !== undefined ? { ebitdaLtm: Math.round(m.ebitdaLtm + adj.ebitda) } : {}),
     },
   };
   s = applyDelta(s, { morale: -4, axes: { management: -2 } });
@@ -283,6 +285,7 @@ function closeAddon(ctx: Ctx, platform: Startup, a: AddonTarget, p: NonNullable<
         breach: 0,
         status: "ok" as const,
         handover: [],
+        model: 2,
       };
   const ebitda = annualEbitda(s.metrics);
   lbo.bank += p.bank;

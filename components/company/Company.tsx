@@ -4,6 +4,9 @@ import { currentGame } from "@/lib/current-game";
 import { ACTION_DAYS, monthLabel } from "@/lib/game/config";
 import { companyView } from "@/lib/game/views";
 import { companyRedirect } from "@/lib/game/mna-views";
+import { familyValueView } from "@/lib/game/family";
+import { COVENANT } from "@/lib/game/mna-config";
+import { FamilyValue } from "./FamilyValue";
 import { ActionButton } from "@/components/game/ActionButton";
 import { eur, pct, runwayText } from "@/components/game/format";
 import { INTEREST_LABEL, PERSONALITY_LABEL, peopleOf } from "@/components/boardroom/people";
@@ -44,6 +47,8 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
   const corporate = Boolean(s.corporate);
   const board = corporate ? "Aufsichtsrat" : "Beirat";
   const prepDays = (days: number) => (view.analyst ? 0 : days);
+  // Family businesses valued on EBITDA: value drivers, trend and the owner's levers.
+  const family = familyValueView(state, s, COVENANT);
   const canSit = view.agenda.length > 0 && (view.sitting || view.daysLeft >= ACTION_DAYS.meeting);
   const panes: CompanyPane[] = [
     ...(view.agenda.length > 0 || active ? [{ id: "agenda", label: "Tagesordnung" }] : []),
@@ -351,6 +356,8 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
                 )}
 
             <CovenantPrep view={view} revision={revision} hints={view.agenda.map((i) => hintsFor(state, i.id))} />
+
+            {family && <FamilyValue view={family} startupId={s.id} revision={revision} daysLeft={view.daysLeft} />}
 
             <section className="panel" data-pane="zahlen">
               <div className="panel__row">

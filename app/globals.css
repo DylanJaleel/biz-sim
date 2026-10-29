@@ -6516,3 +6516,62 @@ html:has(dialog.menu[open]) {
     max-height: 100dvh;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Mittelstand: Werttreiber, Verlauf, Eingreifen (Firmenseite) und die
+   Begründung einer Wertänderung im Monatsbericht
+   --------------------------------------------------------------------------- */
+
+.report__why {
+  margin: 8px 0 0;
+  padding: 8px 12px;
+  border-left: 3px solid var(--line-strong);
+  color: var(--muted);
+  font-size: 13.5px;
+}
+
+.family__trend {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 8px;
+  margin: 6px 0 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.family__trend li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.family__trend span,
+.family__trend small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.family .mna-card small {
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* The value bridge reads top to bottom (EBITDA × Multiple = …), also on small screens. */
+.family .mna-table tbody {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.family .mna-table td {
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .family__trend {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+}

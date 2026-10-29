@@ -23,8 +23,21 @@ export const LOSS_MAKER_REVENUE_MULTIPLE = 0.2;
 
 /** Share of running costs that moves with revenue (staff, rent, energy follow the business). */
 export const COST_FLEX = 0.7;
-/** Family businesses do not grow like startups: monthly growth is capped. */
+/** Family businesses do not grow like startups: monthly growth is capped both ways. */
 export const EBITDA_GROWTH_CAP = 0.005;
+export const EBITDA_GROWTH_FLOOR = -0.01;
+/**
+ * Growth a family business drifts towards: flat at an average strength (product,
+ * market, edge and management), a little more or less around it. No scale drag:
+ * a bakery with twelve shops does not shrink because it is big.
+ */
+export const FAMILY_GROWTH = { center: 0.4, slope: 0.015, morale: 0.001 } as const;
+/** Revenue noise of a mature business relative to a startup's. */
+export const FAMILY_NOISE = 0.6;
+/** Costs adapt to a lower margin: share of the gap below the purchase margin closed per month, by management quality. */
+export const MARGIN_RECOVERY = { base: 0.01, management: 0.04 } as const;
+/** An earn-out counts as debt in full when EBITDA is on target, and not at all below this share of it. */
+export const EARNOUT_FLOOR = 0.7;
 /** Margins revert: above this multiple of the margin at purchase, competition and wages eat a share of the excess each month. */
 export const MARGIN_CEILING = 1.25;
 export const MARGIN_REVERSION = 0.15;
