@@ -1,20 +1,15 @@
 import Link from "next/link";
 import { currentGame } from "@/lib/current-game";
-import { ACTION_DAYS, FUND_FEE, FUND_MATCH, monthLabel, SALARY, TEAM_MAX } from "@/lib/game/config";
+import { ACTION_DAYS, FUND_FEE, FUND_MATCH, monthLabel } from "@/lib/game/config";
 import { holdingView } from "@/lib/game/views";
 import { holdingMna } from "@/lib/game/mna-views";
 import { ActionButton } from "@/components/game/ActionButton";
 import { eur } from "@/components/game/format";
 import { Disclosure } from "@/components/ui/Disclosure";
-import { AssignSelect } from "./AssignSelect";
+import { HoldingTabs } from "./HoldingTabs";
 
 // Die Holding: Family Office, Team, eigener Fonds, Kaufkredite und Aktien in
 // der Sperrfrist. Hier wird aus dem Angel ein Investor mit Organisation.
-
-const ROLE_TEXT = {
-  associate: { title: "Associate", text: "Übernimmt ein Beiratsmandat und entscheidet dort, wenn du keine Zeit hast. Meist gut, selten brillant; den Ruf teilt ihr euch." },
-  partner: { title: "Partnerin", text: `Bringt jeden Monat einen zusätzlichen Deal und nimmt dir Arbeit ab: drei Arbeitstage mehr im Monat.` },
-} as const;
 
 export async function Holding() {
   const { state, revision } = await currentGame();
@@ -28,9 +23,10 @@ export async function Holding() {
         <p className="eyebrow">Holding</p>
         <h1 className="page__title">{view.founded ? "Dein Family Office" : "Vom Angel zum Family Office"}</h1>
         <p className="page__lead">
-          Ab einer gewissen Größe arbeitet niemand mehr allein. Ein Family Office bündelt dein Vermögen, ein Team übernimmt Mandate, und mit genug Erfolgen vertrauen dir andere ihr
-          Geld an.
+          Ab einer gewissen Größe arbeitet niemand mehr allein. Ein Family Office bündelt dein Vermögen, Operating Partner betreuen deine Firmen, und mit genug Erfolgen vertrauen
+          dir andere ihr Geld an.
         </p>
+        {view.founded && <HoldingTabs current="/holding" />}
         <div className="market__summary">
           <span>
             Vermögen <b>{eur(view.worth)}</b>
@@ -74,48 +70,41 @@ export async function Holding() {
           <section className="panel" aria-labelledby="team-title">
             <p className="eyebrow">Team</p>
             <h2 id="team-title" className="panel__title">
-              Wer für dich arbeitet
+              Operating Partner
             </h2>
-            {view.team.length === 0 && <p className="muted">Noch niemand. Jede Stelle kostet jeden Monat Gehalt.</p>}
-            <ul className="team">
-              {view.team.map((m) => (
-                <li key={m.id} className="team__row">
-                  <span className="gv__avatar" style={{ ["--member" as string]: m.role === "partner" ? "#7b4dff" : "#0e9f8e" }}>
-                    {m.name
-                      .split(" ")
-                      .map((p) => p[0])
-                      .join("")}
-                  </span>
-                  <span className="team__name">
-                    <b>{m.name}</b>
-                    <small>
-                      {ROLE_TEXT[m.role].title} · {eur(m.salary)} im Monat · seit {monthLabel(m.hired)}
-                    </small>
-                  </span>
-                  {m.role === "associate" ? (
-                    <AssignSelect memberId={m.id} current={m.mandate} mandates={view.mandates} revision={revision} />
-                  ) : (
-                    <span className="muted small">+3 Tage, +1 Deal im Monat</span>
-                  )}
-                  <ActionButton action={{ type: "fire", memberId: m.id }} revision={revision} size="sm" variant="ghost">
-                    Entlassen
-                  </ActionButton>
-                </li>
-              ))}
-            </ul>
-            <div className="hire">
-              {(["associate", "partner"] as const).map((role) => (
-                <div key={role} className="hire__card">
-                  <b>{ROLE_TEXT[role].title}</b>
-                  <span className="muted small">
-                    {eur(SALARY[role])} im Monat · höchstens {TEAM_MAX[role]}
-                  </span>
-                  <p>{ROLE_TEXT[role].text}</p>
-                  <ActionButton action={{ type: "hire", role }} revision={revision} days={ACTION_DAYS.hire} size="sm" disabled={!view.canHire[role]}>
-                    Einstellen
-                  </ActionButton>
-                </div>
-              ))}
+            <p className="muted">
+              Erfahrene Leute, die deine Firmen betreuen: Sie sparen dir Tage, entscheiden Routine und senken Risiken. Bezahlt mit Gehalt, einem kleinen Anteil am Wertzuwachs und
+              Carry beim Verkauf.
+            </p>
+            <div className="kpis kpis--compact">
+              <span>
+                <small>Team</small>
+                <b>
+                  {view.team.team.length} von {view.team.max}
+                </b>
+              </span>
+              <span>
+                <small>Gehälter im Monat</small>
+                <b>{eur(view.team.cost)}</b>
+              </span>
+              <span>
+                <small>Entlastung</small>
+                <b>+{view.team.days} Tage</b>
+              </span>
+              <span>
+                <small>Betreut</small>
+                <b>
+                  {view.team.companies.filter((c) => c.lead).length} von {view.team.companies.length} Firmen
+                </b>
+              </span>
+            </div>
+            <div className="panel__actions">
+              <Link href="/holding/team" className="btn btn--sm btn--primary">
+                Team und Mandate
+              </Link>
+              <Link href="/holding/struktur" className="btn btn--sm">
+                Gesellschaftsstruktur
+              </Link>
             </div>
           </section>
 

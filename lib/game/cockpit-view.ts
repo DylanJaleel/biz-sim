@@ -109,6 +109,8 @@ export interface CockpitRow {
   /** Punkte für die Sortierung „Handlungsbedarf“. */
   needs: number;
   fee?: number;
+  /** Zuständig: der Operating Partner, der die Firma betreut (team.ts). */
+  lead?: { name: string; initials: string; color: string; fit: "good" | "mid" | "weak" };
 }
 
 // ---------------------------------------------------------------------------

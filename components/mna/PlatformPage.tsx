@@ -165,13 +165,25 @@ export async function PlatformPage({ params }: { params: Promise<{ id: string }>
         </section>
       )}
 
+      {p && v.active && (
+        <p className={`notice ${v.holdco ? "notice--good" : ""}`}>
+          {v.lead ? `${v.lead} betreut die Plattform und bereitet Zukäufe vor. ` : "Kein Operating Partner auf der Plattform: Kandidaten kommen seltener, die Passung prüft erst die Due Diligence. "}
+          {v.holdco
+            ? `Die Gruppe hängt unter der ${v.holdco}: Haftung getrennt, Mitverkaufspflicht vereinbart.`
+            : `Ohne Zwischenholding haftest du mit einer Bürgschaft${v.holdout > 0 ? `, und Käufer ziehen ${Math.round(v.holdout * 100)} % ab` : ""}.`}{" "}
+          <Link href={v.lead ? "/holding/struktur" : "/holding/team"}>{v.lead ? "Zur Struktur" : "Operating Partner zuweisen"}</Link>
+        </p>
+      )}
+
       {p && (
         <>
           <section className="panel" aria-labelledby="targets-title">
             <p className="eyebrow">Zukäufe</p>
             <Disclosure as="h2" headingId="targets-title" headingClass="panel__title" title="Kandidaten" hint={`${v.targets.length}`} defaultOpen={v.targets.length > 0}>
               {v.targets.length === 0 ? (
-                <p className="muted">Gerade keine. Neue Kandidaten kommen alle paar Monate, öfter mit Partnerin und warmem Draht zum Deal-Flow.</p>
+                <p className="muted">
+                  Gerade keine. Neue Kandidaten kommen alle paar Monate, öfter mit einem Operating Partner auf der Plattform und warmem Draht zum Deal-Flow.
+                </p>
               ) : (
                 <ul className="list mna-rows">
                   {v.targets.map((t) => (
@@ -179,6 +191,9 @@ export async function PlatformPage({ params }: { params: Promise<{ id: string }>
                       {t.status === "review" ? <b>{t.name}</b> : <Link href={`/uebernahme/${t.id}`}>{t.name}</Link>}
                       <span className="muted small">
                         EBITDA {eur(t.ebitda)} · {eur(t.ev)} ({x(t.multiple)}) {t.status === "review" ? "· beim Kartellamt" : `· bis ${monthLabel(t.expires)}`}
+                      </span>
+                      <span className={`op-fit op-fit--${t.fit === "good" ? "good" : t.fit === "bad" ? "weak" : t.fit === "ok" ? "mid" : "unknown"}`}>
+                        {t.fit === "good" ? "passt gut" : t.fit === "bad" ? "passt schlecht" : t.fit === "ok" ? "passt ordentlich" : "Passung ungeprüft"}
                       </span>
                       {t.status === "open" && (
                         <Link className="btn btn--sm" href={`/uebernahme/${t.id}`}>
@@ -211,6 +226,7 @@ export async function PlatformPage({ params }: { params: Promise<{ id: string }>
                     <b>{i.name}</b>
                     <span className="muted small">
                       {i.kind === "fast" ? "schnell" : "behutsam"} · noch {i.left} Monat{i.left === 1 ? "" : "e"} · {eur(i.cost)} Kosten im Monat · EBITDA {eur(i.ebitda)}
+                      {i.fit === "good" ? " · passt gut" : i.fit === "bad" ? " · passt schlecht" : ""}
                     </span>
                   </li>
                 ))}

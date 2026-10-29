@@ -38,6 +38,8 @@ export function ExitMeeting({ view, revision }: { view: ExitView; revision: numb
         ...[...view.holders].sort((a, b) => b.pct - a.pct).map((h) => ({ id: h.id, name: h.name, kind: h.kind, pct: h.pct })),
       ];
   const mine = view.payouts.find((p) => p.id === "you")?.amount ?? 0;
+  const team = view.teamCarry.reduce((sum, t) => sum + t.amount, 0);
+  const net = mine + view.carry - team;
   const ratio = offer.price / Math.max(1, view.value);
   const tooBusy = open && view.daysLeft < ACTION_DAYS.exit;
   const payouts = [...view.payouts].sort((a, b) => b.amount - a.amount);
@@ -76,7 +78,7 @@ export function ExitMeeting({ view, revision }: { view: ExitView; revision: numb
           </span>
           <span>
             <small>Du bekämst</small>
-            <b>{eur(mine + view.carry)}</b>
+            <b>{eur(net)}</b>
           </span>
           {!open && <span className={`tag ${offer.status === "accepted" ? "tag--go" : "tag--no"}`}>{STATUS_TEXT[offer.status]}</span>}
         </div>
@@ -122,6 +124,19 @@ export function ExitMeeting({ view, revision }: { view: ExitView; revision: numb
               ))}
             </ul>
             {view.carry > 0 && <p className="notice">Dazu kommt dein Carry aus dem Syndikat: {eur(view.carry)}.</p>}
+            {team > 0 && (
+              <p className="notice">
+                Carry für dein Team, aus deinem Erlös: {view.teamCarry.map((t) => `${t.name} ${eur(t.amount)}`).join(", ")}. Operating Partner verdienen am Wertzuwachs der Firmen mit, die
+                sie betreut haben.
+              </p>
+            )}
+            {view.dragAlong && <p className="notice notice--good">Mitverkaufspflicht (Drag-along): Alle Mitgesellschafter verkaufen mit, der Käufer bekommt 100 %.</p>}
+            {view.holdout > 0 && (
+              <p className="notice notice--warn">
+                Ohne Mitverkaufspflicht hat der Käufer {Math.round(view.holdout * 100)} % abgezogen: Die Mitgesellschafter könnten ihre Anteile behalten. Eine Zwischenholding mit
+                Gesellschaftervereinbarung hätte das verhindert.
+              </p>
+            )}
           </section>
         </div>
 
@@ -135,7 +150,7 @@ export function ExitMeeting({ view, revision }: { view: ExitView; revision: numb
                 Verkaufen?
               </h2>
               <p>
-                Bei diesem Preis bekommst du {eur(mine + view.carry)} für deinen Anteil von {fmtPct(view.stake)}. Danach ist die Firma nicht mehr in deinem Portfolio, das Geld aber
+                Bei diesem Preis bekommst du {eur(net)} für deinen Anteil von {fmtPct(view.stake)}. Danach ist die Firma nicht mehr in deinem Portfolio, das Geld aber
                 auf deinem Konto.
               </p>
               {tooBusy ? (
@@ -178,7 +193,7 @@ export function ExitMeeting({ view, revision }: { view: ExitView; revision: numb
               </h2>
               <p>
                 {offer.status === "accepted"
-                  ? `${eur(mine + view.carry)} gehen auf dein Konto. ${view.carry > 0 ? `Davon ${eur(view.carry)} Carry aus dem Syndikat.` : ""}`
+                  ? `${eur(net)} gehen auf dein Konto. ${view.carry > 0 ? `Davon ${eur(view.carry)} Carry aus dem Syndikat.` : ""}${team > 0 ? ` Abzüglich ${eur(team)} Carry für dein Team.` : ""}`
                   : "Die Mehrheit der Anteile hat gegen den Verkauf gestimmt. Der Käufer zieht weiter."}
               </p>
               <div className="verdict__actions">

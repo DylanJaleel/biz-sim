@@ -85,6 +85,8 @@ export const NAV_ITEMS: NavItem[] = [
     description: "Family Office, Team, Fonds und Kaufkredite.",
     locked: (s) => (!s.familyOffice && s.reputation < FAMILY_OFFICE_REPUTATION ? `ab Ruf ${FAMILY_OFFICE_REPUTATION}` : null),
   },
+  { href: "/holding/team", label: "Operating Partner", group: "company", icon: "people", description: "Team einstellen, Firmen zuweisen, Vergütung und Carry.", visible: (s) => s.familyOffice },
+  { href: "/holding/struktur", label: "Gesellschaftsstruktur", group: "company", icon: "layers", description: "Wem was gehört, Zwischenholding, Mitgesellschafter und Banken.", visible: (s) => s.familyOffice },
   {
     href: "/nachfolge",
     label: "Nachfolge & Übernahmen",

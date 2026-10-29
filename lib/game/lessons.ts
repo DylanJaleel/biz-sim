@@ -466,7 +466,7 @@ export const LESSONS: Lesson[] = [
     rule: "Schnell integrieren: früher fertig, mehr Unruhe. Behutsam: teurer und länger, aber weniger Verluste.",
     example: "Zwei Speditionen legen ihre Disposition zusammen und sparen 120.000 € im Jahr. Drei Fahrer und ein Großkunde gehen zur Konkurrenz.",
     inGame:
-      "Jeder Zukauf deiner Plattform wird integriert. Dein Team schafft eine Integration gleichzeitig, mit Partnerin oder Associate mehr. Zu viele auf einmal kosten Einsparungen und Kunden.",
+      "Jeder Zukauf deiner Plattform wird integriert. Allein schaffst du eine Integration gleichzeitig, mit Team und einem Operating Partner auf der Plattform mehr. Zu viele auf einmal kosten Einsparungen und Kunden.",
   },
   {
     id: "bieterverfahren",
@@ -485,6 +485,52 @@ export const LESSONS: Lesson[] = [
     rule: "Jeder Befund vor der Unterschrift senkt den Preis; jeder übersehene Befund trifft nach dem Kauf den neuen Eigentümer.",
     example: "Die Financial DD zeigt, dass das EBITDA 15 % niedriger ist. Bei 5× sind das 450.000 € weniger Kaufpreis für eine Firma mit 600.000 € EBITDA.",
     inGame: "Beim Kauf von Firmen und in Mandaten wählst du die Bausteine. Jeder kostet einen Tag und Beraterhonorar.",
+  },
+  {
+    id: "operating_partner",
+    title: "Operating Partner",
+    summary:
+      "Operating Partner sind erfahrene Manager in einer Beteiligungsgesellschaft. Sie sitzen nicht nur im Beirat, sondern arbeiten in den Firmen mit: Vertrieb aufbauen, Kosten senken, Zukäufe integrieren. Bezahlt werden sie mit Gehalt und einer Beteiligung am Erfolg, meist als Carry beim Verkauf.",
+    rule: "Vergütung = Grundgehalt + kleiner laufender Anteil am Wertzuwachs + Carry auf den Gewinn beim Exit",
+    example: "Eine Sanierungsexpertin betreut zwei Familienbetriebe. Sie bekommt 9.500 € im Monat und 6 % deines Gewinns, wenn die Firmen verkauft werden: bei 2 Mio. € Gewinn 120.000 €.",
+    inGame:
+      "Unter Holding › Operating Partner stellst du sie ein und gibst ihnen Firmen. Passt die Stärke zum Firmentyp, sparen sie mehr Tage, entscheiden besser und bereiten auf der Plattform Zukäufe vor.",
+  },
+  {
+    id: "zwischenholding",
+    title: "Zwischenholding und Haftungstrennung",
+    summary:
+      "Eine Zwischenholding ist eine eigene Gesellschaft zwischen dem Eigentümer und seinen Firmen. Geht eine Tochter pleite, haftet die Holding mit ihrem Anteil, nicht der Eigentümer privat. Banken verlangen ohne diese Trennung oft eine persönliche Bürgschaft.",
+    rule: "Privatvermögen → Family Office → Zwischenholding → Töchter; jede GmbH haftet nur mit ihrem eigenen Vermögen",
+    example: "Ohne Holding bürgt der Käufer für ein Viertel des Bankkredits von 4 Mio. €. Fällt die Firma aus, zahlt er bis zu 1 Mio. € privat. Mit Holding verliert er nur, was er in die Firma gesteckt hat.",
+    inGame: "Unter Holding › Struktur gründest du sie für 12.000 € Notar und Steuerberatung. Ohne sie greift bei Insolvenz oder Zwangsverkauf einer gekauften Firma deine Bürgschaft.",
+  },
+  {
+    id: "vetorecht",
+    title: "Vetorecht der Mitgesellschafter",
+    summary:
+      "Minderheitsgesellschafter lassen sich im Gesellschaftervertrag Zustimmungsrechte geben: Bei wichtigen Entscheidungen, etwa großen Zukäufen, brauchen sie ihr Ja. So schützen sie sich davor, dass die Mehrheit Geld in schlechte Deals steckt.",
+    rule: "Vetorecht = Zustimmungsvorbehalt für festgelegte Entscheidungen, unabhängig von der Mehrheit",
+    example: "Der alte Inhaber hält noch 10 %. Er blockiert einen Zukauf, der die Gruppe halb so groß macht, bis eine Prüfung zeigt, dass beide Firmen zusammenpassen.",
+    inGame: "Mitgesellschafter deiner Plattform mit mindestens 5 % stimmen großen Zukäufen nur mit geprüfter Passung zu und legen bei schlecht passenden ein Veto ein.",
+  },
+  {
+    id: "mitverkaufspflicht",
+    title: "Mitverkaufspflicht (Drag-along)",
+    summary:
+      "Käufer wollen meist 100 % einer Firma. Die Mitverkaufspflicht zwingt Minderheitsgesellschafter, zu denselben Bedingungen mitzuverkaufen, wenn die Mehrheit verkauft. Im Gegenzug schützt ein Mitverkaufsrecht (Tag-along) die Minderheit davor, zurückzubleiben.",
+    rule: "Drag-along: Mehrheit verkauft, alle verkaufen mit. Ohne sie zahlt der Käufer weniger oder springt ab.",
+    example: "Ein Investor bietet 30 Mio. € für 100 %. Ohne Drag-along könnte die Suchende mit 8 % ihre Anteile behalten; der Käufer zieht deshalb 5 % vom Preis ab.",
+    inGame: "Die Gesellschaftervereinbarung deiner Zwischenholding enthält sie. Ohne Zwischenholding ziehen Käufer deiner Plattform 5 % ab.",
+  },
+  {
+    id: "passung",
+    title: "Passung von Zukäufen",
+    summary:
+      "Ob ein Zukauf Wert schafft, hängt an der Passung: gleiches Geschäft, ähnliche Kultur, nahe Standorte und Kunden, die auch beim anderen kaufen. Passt es, kommen Synergien. Passt es nicht, entstehen Dis-Synergien: Integrationskosten, Kündigungen, Kundenverluste.",
+    rule: "Wert des Zukaufs = Kaufpreis-Vorteil (Multiple) + Synergien − Integrationskosten − Dis-Synergien",
+    example: "Zwei Bäckereien in derselben Stadt bündeln Einkauf und Auslieferung. Ein Großhändler am anderen Ende des Landes bringt nur doppelte Verwaltung.",
+    inGame: "Die Passung siehst du nach einer Commercial Due Diligence oder wenn ein Operating Partner den Zukauf vorbereitet. Gute Passung bringt extra Einsparungen, schlechte kostet Leute und Marge.",
   },
 ];
 
@@ -543,6 +589,11 @@ export const CURRICULUM = [
   "pmi",
   "berater_mna",
   "netzwerk_events",
+  "operating_partner",
+  "zwischenholding",
+  "passung",
+  "vetorecht",
+  "mitverkaufspflicht",
 ];
 
 export function lessonOf(id: string): Lesson {

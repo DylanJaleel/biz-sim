@@ -46,6 +46,8 @@ import { between, ddCost, eur, generateFindings, mio, mnaOf, pickOf, priceAfterF
 import { applyDelta, valuation } from "./sim";
 import { BUYOUT_REPUTATION } from "./config";
 import { INTERIM } from "./network-config";
+import { guaranteeClaim, guaranteeText } from "./holdco";
+import { handoverFactor } from "./team";
 import type { AddonTarget, Delta, Finding, GameState, IncomeLines, LboState, Metrics, Regime, Searcher, SearchFund, Startup } from "./types";
 
 // Kaufen mit fremdem Geld: Übernahme eines Familienbetriebs mit Bankkredit,
@@ -665,6 +667,9 @@ export function forcedSale(ctx: Ctx, s: Startup, notes: string[]): void {
   const lbo = s.lbo!;
   const ev = enterpriseValue(s.metrics) * FORCED_SALE;
   let rest = ev + Math.max(0, s.metrics.cash) - s.metrics.debt;
+  // Without a holding the bank calls in the owner's personal guarantee for what it does not get back (holdco.ts).
+  const claim = guaranteeClaim(state, lbo.bank, lbo.bank - Math.max(0, rest));
+  state.cash -= claim;
   rest -= Math.min(Math.max(0, rest), lbo.bank);
   const vendors = lbo.vendors.reduce((sum, v) => sum + v.amount, 0);
   rest -= Math.min(Math.max(0, rest), vendors);
@@ -690,7 +695,7 @@ export function forcedSale(ctx: Ctx, s: Startup, notes: string[]): void {
   ctx.replace({ ...s, status: "sold", stake: 0, exitValue: Math.round(equity), metrics: { ...s.metrics, acqDebt: 0 }, lbo: { ...lbo, bank: 0, vendors: [], earnouts: [] } });
   state.items = state.items.filter((i) => !(i.startupId === s.id && i.status === "open"));
   for (const a of mnaOf(state).addons.filter((x) => x.platformId === s.id && x.status === "open")) a.status = "expired";
-  const text = `Zwangsverkauf: Die Bank hat ${s.name} für ${mio(ev)} verwertet. Nach Bank und Verkäuferdarlehen bleiben dir ${eur(mine)} von ${eur(lbo.equity)} Eigenkapital.`;
+  const text = `Zwangsverkauf: Die Bank hat ${s.name} für ${mio(ev)} verwertet. Nach Bank und Verkäuferdarlehen bleiben dir ${eur(mine)} von ${eur(lbo.equity)} Eigenkapital.${guaranteeText(state, claim)}`;
   notes.push(text);
   ctx.mail({
     kind: "exit",
@@ -713,7 +718,8 @@ function handover(ctx: Ctx, s: Startup, month: number, texts: string[]): Startup
   const seller = (lbo.earnouts.length > 0 ? 0.6 : 1) * (lbo.vendors.length > 0 ? 0.85 : 1);
   const rollover = s.capTable.some((h) => h.id === "ceo" && h.kind === "founder");
   // An interim manager from the network on site: the handover goes smoother.
-  const steady = (lbo.interim ?? 0) >= month ? INTERIM.handoverRisk : 1;
+  // An operating partner looking after the company helps too (team.ts).
+  const steady = ((lbo.interim ?? 0) >= month ? INTERIM.handoverRisk : 1) * handoverFactor(ctx.state, s);
   let next = s;
   const once = (id: string) => !next.lbo!.handover.includes(id);
   const mark = (id: string) => (next = { ...next, lbo: { ...next.lbo!, handover: [...next.lbo!.handover, id] } });

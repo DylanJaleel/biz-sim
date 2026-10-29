@@ -13,6 +13,12 @@ import { rivalFor, specialistsFor } from "@/lib/game/network-views";
 // Suchenden, oder ein Zukauf für die Plattform.
 
 const SOURCE = { search: "Von deiner Suchenden", market: "Über einen M&A-Berater", referral: "Empfehlung" } as const;
+const FIT_TITLE = { good: "gut", ok: "ordentlich", bad: "schlecht" } as const;
+const FIT_TEXT = {
+  good: "Gute Passung: Die Einsparungen kommen öfter, dazu Cross-Selling und gemeinsamer Einkauf, etwa 10 % des EBITDA im Jahr extra.",
+  ok: "Durchschnitt: Synergien und Risiken wie bei jedem Zukauf.",
+  bad: "Schlechte Passung: Die Integration kostet die Hälfte mehr, Schlüsselleute kündigen, Kunden gehen, und doppelte Strukturen fressen etwa 10 % des EBITDA im Jahr.",
+} as const;
 const x = (n: number) => `${n.toLocaleString("de-DE", { maximumFractionDigits: 1 })}×`;
 
 export async function Acquisition({ params }: { params: Promise<{ id: string }> }) {
@@ -74,6 +80,35 @@ export async function Acquisition({ params }: { params: Promise<{ id: string }> 
           nur, wenn die Integration gelingt. Laufende Integrationen: {v.platform.integrations}, dein Team schafft {v.platform.capacity} gleichzeitig.
         </p>
       )}
+      {addon && v.fit && (
+        <section className="panel" aria-labelledby="fit-title">
+          <p className="eyebrow">Passung</p>
+          <h2 id="fit-title" className="panel__title">
+            {v.fit.known ? `Passt ${FIT_TITLE[v.fit.level!]} zu ${v.platform!.name}` : "Passung noch unbekannt"}
+          </h2>
+          {v.fit.known ? (
+            <>
+              <ul className="fit-list">
+                {v.fit.criteria.map((c) => (
+                  <li key={c.label} className={`fit-list__i fit-list__i--${c.value > 0 ? "good" : c.value < 0 ? "bad" : "ok"}`}>
+                    <b>{c.label}</b> <span>{c.text}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="muted small">
+                {FIT_TEXT[v.fit.level!]}
+                {v.fit.by ? ` Geprüft von ${v.fit.by}, deinem Operating Partner auf der Plattform.` : ""}
+              </p>
+            </>
+          ) : (
+            <p className="muted">
+              Ob Branche, Kultur, Standort und Kunden zusammenpassen, zeigt erst die Commercial Due Diligence oder ein Operating Partner auf der Plattform. Gute Passung bringt
+              zusätzliche Synergien, schlechte kostet Integration, Leute und Wert.
+            </p>
+          )}
+        </section>
+      )}
+      {addon && v.veto && <p className="notice notice--bad">{v.veto}</p>}
       {v.searcher && (
         <p className="notice">
           {v.searcher.name} wird nach dem Kauf Geschäftsführerin und bekommt 8 % der Firma, mit guten Zahlen bis zu 25 %. Ihre Führungserfahrung ({v.searcher.operator} von 100)

@@ -1,0 +1,449 @@
+/* ---------------------------------------------------------------------------
+   Holding: Reiter, Operating Partner, Gesellschaftsstruktur, Passung von Zukäufen.
+   --------------------------------------------------------------------------- */
+
+.holding-tabs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-top: 14px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--surface-2);
+}
+
+.holding-tabs a {
+  padding: 6px 14px;
+  border-radius: 999px;
+  color: var(--ink-2);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.holding-tabs a[aria-current="page"] {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+
+/* Operating Partner */
+
+.op-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 14px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.op-card {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+}
+
+.op-card--candidate {
+  border-style: dashed;
+  background: transparent;
+}
+
+.op-card__head {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.op-card__head > span:last-child {
+  display: grid;
+  min-width: 0;
+}
+
+.op-card__head small {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.op-avatar {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--member, var(--accent));
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.op-card__vita {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 13.5px;
+}
+
+.op-card__style {
+  margin: 0;
+  color: var(--ink-2);
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-style: italic;
+}
+
+.op-bars {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+}
+
+.op-bars > div {
+  display: grid;
+  grid-template-columns: minmax(110px, 0.9fr) minmax(0, 1.4fr);
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.op-bars dt {
+  color: var(--ink-2);
+}
+
+.op-bars .is-top dt {
+  color: var(--ink);
+  font-weight: 650;
+}
+
+.op-bars dd {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 26px;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.op-bar {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: var(--surface-3);
+}
+
+.op-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--muted);
+}
+
+.op-bar--good i {
+  background: var(--accent);
+}
+
+.op-bar--mid i {
+  background: color-mix(in srgb, var(--accent) 55%, var(--muted));
+}
+
+.op-mandates h3 {
+  margin: 0 0 4px;
+  font-size: 14px;
+}
+
+.op-mandates ul {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.op-mandates li {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.op-mandate__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+
+.op-mandate__top a {
+  font-weight: 650;
+}
+
+.op-mandate__top .action {
+  margin-left: auto;
+}
+
+.op-fit {
+  display: inline-block;
+  padding: 1px 9px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.op-fit--good {
+  background: var(--agree-soft);
+  color: var(--agree);
+}
+
+.op-fit--mid {
+  background: var(--maybe-soft);
+  color: var(--maybe);
+}
+
+.op-fit--weak {
+  background: var(--disagree-soft);
+  color: var(--disagree);
+}
+
+.op-fit--unknown {
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+.op-terms {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  font-size: 13.5px;
+}
+
+.op-terms > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.op-terms dt {
+  color: var(--muted);
+}
+
+.op-terms dd {
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.op-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.op-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 16px;
+}
+
+.op-rules {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0;
+  padding-left: 18px;
+  font-size: 14px;
+}
+
+/* Gesellschaftsstruktur: verschachtelte Liste mit Linien */
+
+.org,
+.org ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.org ul {
+  display: grid;
+  gap: 10px;
+  margin: 10px 0 0 18px;
+  padding-left: 16px;
+  border-left: 2px solid var(--line-strong);
+}
+
+.org ul > li {
+  position: relative;
+}
+
+.org ul > li::before {
+  position: absolute;
+  top: 22px;
+  left: -16px;
+  width: 14px;
+  border-top: 2px solid var(--line-strong);
+  content: "";
+}
+
+.org-node__card {
+  display: grid;
+  gap: 3px;
+  max-width: 560px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-2);
+}
+
+.org-node__card small {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.org-node--root > .org-node__card {
+  background: var(--ink);
+  color: var(--bg);
+}
+
+.org-node--root > .org-node__card small {
+  color: color-mix(in srgb, var(--bg) 72%, transparent);
+}
+
+.org-node--holdco > .org-node__card {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.org-node--ghost > .org-node__card {
+  border-style: dashed;
+  border-color: var(--maybe);
+  background: transparent;
+}
+
+.org-node__top {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-weight: 650;
+}
+
+.org-quota {
+  font-variant-numeric: tabular-nums;
+}
+
+.org-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.org-chip {
+  padding: 1px 8px;
+  border-radius: 99px;
+  background: var(--surface-3);
+  font-size: 12px;
+}
+
+.org-chip--veto {
+  background: var(--maybe-soft);
+  color: var(--maybe);
+  font-weight: 600;
+}
+
+.org-rights {
+  margin: 2px 0 0;
+  padding-left: 16px;
+  color: var(--ink-2);
+  font-size: 12.5px;
+}
+
+/* Passung eines Zukaufs */
+
+.fit-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 8px;
+  margin: 8px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fit-list__i {
+  display: grid;
+  gap: 2px;
+  padding: 8px 12px;
+  border-left: 4px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--surface-2);
+  font-size: 13.5px;
+}
+
+.fit-list__i--good {
+  border-left-color: var(--agree);
+}
+
+.fit-list__i--bad {
+  border-left-color: var(--disagree);
+}
+
+/* Portfolio-Cockpit: Zuständig */
+
+.cockpit-lead {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 1px 8px 1px 2px;
+  border-radius: 99px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.cockpit-lead i {
+  display: grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--member, var(--accent));
+  color: #fff;
+  font-size: 9px;
+  font-style: normal;
+}
+
+.cockpit-lead--weak {
+  color: var(--disagree);
+}
+
+@media (max-width: 760px), (max-height: 500px) {
+  .op-grid {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 10px;
+  }
+
+  .op-card {
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .org ul {
+    margin-left: 8px;
+    padding-left: 12px;
+  }
+
+  .org ul > li::before {
+    left: -12px;
+    width: 10px;
+  }
+}

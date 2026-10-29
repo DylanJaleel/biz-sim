@@ -8,7 +8,7 @@ const SEATS: readonly SeatId[] = ["ceo", "cto", "vc", "indep", "angel"];
 const VOTES: readonly Vote[] = ["go", "conditions", "no"];
 const TAKES: readonly RoundTake[] = ["none", "half", "prorata", "lead", "syndicate"];
 const EXIT_CHOICES: readonly ExitChoice[] = ["accept", "negotiate", "reject"];
-const ROLES: readonly TeamRole[] = ["associate", "partner"];
+const ROLES: readonly TeamRole[] = ["operating"];
 const GV_VOTES: readonly GvVote[] = ["go", "no"];
 const ASSET_IDS: readonly AssetId[] = ["tagesgeld", "anleihen", "dividenden", "tech"];
 const COVENANT_IDS: readonly CovenantId[] = ["budget", "stagegate", "pilot", "second", "kpi", "veto"];
@@ -79,14 +79,18 @@ export function parseAction(input: unknown): GameAction | null {
     case "buyout":
       return id(a.startupId) && typeof a.leverage === "boolean" ? { type: "buyout", startupId: a.startupId, leverage: a.leverage } : null;
     case "hire":
-      return ROLES.includes(a.role as TeamRole) ? { type: "hire", role: a.role as TeamRole } : null;
+      return ROLES.includes(a.role as TeamRole) && id(a.profile) ? { type: "hire", role: a.role as TeamRole, profile: a.profile } : null;
     case "fire":
       return id(a.memberId) ? { type: "fire", memberId: a.memberId } : null;
     case "assign":
       if (!id(a.memberId)) return null;
-      if (a.startupId === null) return { type: "assign", memberId: a.memberId, startupId: null };
+      if (a.startupId === null) {
+        if (a.from !== undefined && !id(a.from)) return null;
+        return { type: "assign", memberId: a.memberId, startupId: null, ...(a.from !== undefined ? { from: a.from as string } : {}) };
+      }
       return id(a.startupId) ? { type: "assign", memberId: a.memberId, startupId: a.startupId } : null;
     case "foundFamilyOffice":
+    case "holdco":
     case "raiseFund":
     case "seenTrophies":
       return { type: a.type };
