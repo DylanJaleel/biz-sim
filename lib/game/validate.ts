@@ -1,5 +1,5 @@
 import { DD_MODULES, type DdModule } from "./mna-config";
-import type { AssetId, BuyerFocus, CovenantId, ExitChoice, GameAction, GigApproach, GvVote, MandateMove, ProcessKind, RoundTake, SeatId, TeamRole, Vote } from "./types";
+import type { AssetId, BuyerFocus, CovenantId, ExitChoice, FundMove, GameAction, GigApproach, GvVote, MandateMove, ProcessKind, RoundTake, SeatId, StudioMove, TeamRole, Vote } from "./types";
 
 // Server actions receive whatever the browser sends. This turns it into a
 // GameAction or nothing; the engine then checks the game rules.
@@ -181,6 +181,31 @@ export function parseAction(input: unknown): GameAction | null {
         move: a.move as "make" | "sell" | "cure" | "stopSale",
         ...(a.process !== undefined ? { process: a.process as ProcessKind } : {}),
         ...(a.buyers !== undefined ? { buyers: a.buyers as "strategic" | "financial" } : {}),
+      };
+    }
+    case "fund":
+      if (!["launch", "pitch", "concede", "refuse", "close"].includes(a.move as string)) return null;
+      if (a.lpId !== undefined && !id(a.lpId)) return null;
+      return { type: "fund", move: a.move as FundMove, ...(a.lpId !== undefined ? { lpId: a.lpId as string } : {}) };
+    case "lpac":
+      return id(a.voteId) && id(a.choice) ? { type: "lpac", voteId: a.voteId, choice: a.choice } : null;
+    case "studio": {
+      if (!["found", "tranche", "fundAsk"].includes(a.move as string)) return null;
+      if (a.ideaId !== undefined && !id(a.ideaId)) return null;
+      if (a.startupId !== undefined && !id(a.startupId)) return null;
+      if (a.size !== undefined && !["lean", "plan", "big"].includes(a.size as string)) return null;
+      const ceo = a.ceo === undefined ? undefined : Number(a.ceo);
+      const keep = a.keep === undefined ? undefined : Number(a.keep);
+      if (ceo !== undefined && !(Number.isInteger(ceo) && ceo >= 0 && ceo <= 3)) return null;
+      if (keep !== undefined && ![60, 70, 80].includes(keep)) return null;
+      return {
+        type: "studio",
+        move: a.move as StudioMove,
+        ...(a.ideaId !== undefined ? { ideaId: a.ideaId as string } : {}),
+        ...(a.startupId !== undefined ? { startupId: a.startupId as string } : {}),
+        ...(a.size !== undefined ? { size: a.size as "lean" | "plan" | "big" } : {}),
+        ...(ceo !== undefined ? { ceo } : {}),
+        ...(keep !== undefined ? { keep } : {}),
       };
     }
     case "learn":

@@ -160,6 +160,10 @@ export interface Startup {
   lbo?: LboState;
   /** The company is the platform of a buy-and-build. */
   platform?: PlatformState;
+  /** Venture growth path towards a unicorn: stage, paper value, rounds (see venture.ts). */
+  venture?: VenturePath;
+  /** Founded by the player's venture studio: tranches and milestones (see studio.ts). */
+  studio?: StudioCompany;
 }
 
 export interface StartupNames {
@@ -326,6 +330,8 @@ export interface Round {
   ballots?: GvBallot[];
   stakeBefore?: number;
   stakeAfter?: number;
+  /** A round of the venture growth path: index of the stage it leads to (see venture.ts). */
+  venture?: number;
 }
 
 /** Someone wants to sell shares to the player. */
@@ -473,6 +479,180 @@ export interface FundState {
   invested: number;
   returned: number;
   raised: number;
+  /** Id in the cap tables: "fonds" (Fund I), "fonds2", "fonds3". Missing = Fund I. */
+  id?: string;
+  /** Number in the fund family; missing = 1. */
+  no?: number;
+  /** Management fees charged so far: they count as paid-in capital in the waterfall. */
+  fees?: number;
+  /** Hurdle accrued so far (8 % a year on the capital not yet paid back). */
+  pref?: number;
+  /** Carry paid to the player through the fund waterfall. */
+  carryPaid?: number;
+  /** Set once the fund runs on the whole-fund (European) waterfall. */
+  wf?: boolean;
+  /** Terms agreed with the investors (missing = standard terms). */
+  terms?: FundTerms;
+  /** Month the fund term ends (missing = raised + 120); the LPAC can extend it. */
+  ends?: number;
+  /** Month the fund sold what was left and was wound up. */
+  closed?: number;
+}
+
+export type LpConcession = "esg" | "fee" | "lpacSeat" | "keyPerson";
+
+export interface FundTerms {
+  /** Management fee per year on commitments. */
+  fee: number;
+  hurdle: number;
+  carry: number;
+  /** Concessions granted to investors; they apply to everyone. */
+  esg?: boolean;
+  lpacSeat?: boolean;
+  keyPerson?: boolean;
+  /** After the investment period the fee is charged on invested capital only. */
+  stepDown?: boolean;
+  /** No fee while the term is extended (granted to the LPAC). */
+  waived?: boolean;
+}
+
+export type LpKind = "pension" | "insurer" | "familyoffice" | "fof" | "foundation" | "bank" | "private";
+
+/** A possible investor (Limited Partner) on the roadshow. */
+export interface LpProspect {
+  id: string;
+  name: string;
+  kind: LpKind;
+  amount: number;
+  /** What the investor wants to see in the track record. */
+  minTvpi?: number;
+  minDpi?: number;
+  wish?: LpConcession;
+  status: "open" | "wants" | "committed" | "declined";
+  note?: string;
+}
+
+export interface FundRaising {
+  no: number;
+  started: number;
+  expires: number;
+  target: number;
+  lps: LpProspect[];
+  terms: FundTerms;
+}
+
+export type LpacKind = "studio" | "crossfund" | "extension" | "fee";
+
+/** A question for the investors' advisory committee (LPAC). */
+export interface LpacVote {
+  id: string;
+  kind: LpacKind;
+  month: number;
+  /** Unanswered votes fall back to the default at the end of this month. */
+  due: number;
+  fundId: string;
+  /** For conflicts: the company and the second fund involved. */
+  startupId?: string;
+  otherFundId?: string;
+  amount?: number;
+  status: "open" | "approved" | "rejected" | "done";
+  choice?: string;
+  result?: string;
+}
+
+/** Fund II and III, the roadshow and the LPAC (missing in older games). */
+export interface FundFamily {
+  later: FundState[];
+  raising?: FundRaising;
+  votes: LpacVote[];
+  /** 0..100: how much the investors trust the player as fund manager. */
+  trust: number;
+  /** One-time triggers already used (e.g. "fee|fonds", "cross|fonds"). */
+  done: string[];
+}
+
+export interface VentureRoundRecord {
+  stage: number;
+  month: number;
+  lead: string;
+  amount: number;
+  post: number;
+  down?: boolean;
+}
+
+export interface VenturePath {
+  /** Index into VENTURE_STAGES of the stage reached (0 = Seed). */
+  stage: number;
+  /** Valuation of the last venture round: the paper value of the whole company. */
+  paper: number;
+  since: number;
+  /** Month of the next try for a round. */
+  next: number;
+  /** No growth investor followed: the path is over, the paper value fades. */
+  ended?: number;
+  /** Month the company became a unicorn. */
+  unicorn?: number;
+  /** The player still held shares when it became one. */
+  unicornStake?: number;
+  log: VentureRoundRecord[];
+}
+
+export type CeoFit = "sales" | "product" | "lead";
+
+export interface StudioCeo {
+  name: string;
+  short: string;
+  fit: CeoFit;
+  /** 0..100 */
+  strength: number;
+  /** Share the candidate asks for, in percent. */
+  ask: number;
+  /** Network contact who introduced them. */
+  via?: string;
+}
+
+export interface StudioIdea {
+  id: string;
+  name: string;
+  tagline: string;
+  pitch: string;
+  sector: string;
+  /** 0..100: size and pull of the market. */
+  market: number;
+  risk: "low" | "mid" | "high";
+  /** Capital the idea needs in total (founding capital plus all tranches). */
+  need: number;
+  /** A company of the portfolio would be the first customer. */
+  pilot?: string;
+  ceos: StudioCeo[];
+}
+
+export interface StudioTranche {
+  label: string;
+  share: number;
+  /** Month it was released, with the money that went in. */
+  released?: number;
+  amount?: number;
+  size?: "lean" | "plan" | "big";
+}
+
+export interface StudioCompany {
+  idea: string;
+  founded: number;
+  /** Total planned capital. */
+  need: number;
+  tranches: StudioTranche[];
+  /** Building ends with the last tranche or after two years: no more studio days. */
+  built?: number;
+  /** The own fund was asked for money (LPAC vote id). */
+  fundVote?: string;
+}
+
+export interface StudioState {
+  pool: StudioIdea[];
+  /** Pool period the ideas were drawn for (month ÷ 6). */
+  period: number;
+  founded: number;
 }
 
 /** Shares from an IPO that may only be sold after the lockup. */
@@ -649,7 +829,14 @@ export interface GameState {
   gigLog?: { done: number; cities: string[] };
   /** Favours, invitations and counters of the network (missing in older games). */
   network?: NetworkState;
+  /** Fund II and III, roadshow and LPAC (missing in older games). */
+  funds?: FundFamily;
+  /** The venture studio (missing in older games). */
+  studio?: StudioState;
 }
+
+export type FundMove = "launch" | "pitch" | "concede" | "refuse" | "close";
+export type StudioMove = "found" | "tranche" | "fundAsk";
 
 export type ActionKind =
   | "dd"
@@ -685,7 +872,10 @@ export type ActionKind =
   | "platform"
   | "favor"
   | "event"
-  | "specialist";
+  | "specialist"
+  | "fund"
+  | "lpac"
+  | "studio";
 
 export type GameAction =
   | { type: "dd"; startupId: string }
@@ -723,6 +913,9 @@ export type GameAction =
   | { type: "assign"; memberId: string; startupId: string | null }
   | { type: "buyout"; startupId: string; leverage: boolean }
   | { type: "raiseFund" }
+  | { type: "fund"; move: FundMove; lpId?: string }
+  | { type: "lpac"; voteId: string; choice: string }
+  | { type: "studio"; move: StudioMove; ideaId?: string; ceo?: number; keep?: number; startupId?: string; size?: "lean" | "plan" | "big" }
   | {
       type: "mandate";
       mandateId: string;

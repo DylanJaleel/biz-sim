@@ -1,6 +1,5 @@
 import {
   ACTION_DAYS,
-  CARRY,
   REPUTATION_SOFT_CAP,
   FIRE_SALE,
   LIVING_COSTS,
@@ -59,7 +58,6 @@ import {
   FAMILY_OFFICE_WORTH,
   FUND_BASE,
   FUND_EXITS,
-  FUND_FEE,
   FUND_MATCH,
   FUND_MAX,
   FUND_MAX_DEAL,
@@ -141,6 +139,10 @@ import type { Ctx } from "./mna-core";
 import { mandatesMonth, planMandates, playMandate } from "./mna";
 import { acquireDeal, cure, examine, lboAllowsDividends, lboMonth, planSearchTargets, searchMonth, startSearch, stopSearch, targetDeal, targetEv } from "./lbo";
 import { acquire, makePlatform, planAddons, platformMonth, recordSale, startSale, stopSale } from "./platform";
+import { fundId, fundProceeds, fundsFees, fundsMonth, fundsOf, fundDistribute, investingFund, playFund, playLpac } from "./funds";
+import { fixedDays, playStudio, studioMonth } from "./studio";
+import { companyValue, creditedValue, ventureMonth, ventureRoundClosed, ventureRoundFailed } from "./venture";
+import { VENTURE_IPO_STAGE } from "./venture-config";
 
 export class GameRuleError extends Error {
   constructor(message: string) {
@@ -332,7 +334,8 @@ export function netWorth(state: GameState): number {
 }
 
 export function portfolioValue(state: GameState): number {
-  return state.startups.filter((s) => s.status === "active").reduce((sum, s) => sum + (s.stake / 100) * valuation(s.metrics), 0);
+  // Paper value of venture rounds counts only in part until the exit (see venture.ts).
+  return state.startups.filter((s) => s.status === "active").reduce((sum, s) => sum + creditedValue(s), 0);
 }
 
 export function meetingRandom(state: GameState, item: BoardItem): () => number {
@@ -458,6 +461,18 @@ function playAction(current: GameState, action: GameAction): { state: GameState;
       else if (action.move === "sell") startSale(ctx, s, action.process ?? "auction", action.buyers ?? "strategic");
       else if (action.move === "cure") cure(ctx, s);
       else stopSale(ctx, s);
+      return { state, result: { kind: "none" } };
+    }
+    case "fund": {
+      playFund(ctxOf(state), action.move, action.lpId);
+      return { state, result: { kind: "none" } };
+    }
+    case "lpac": {
+      playLpac(ctxOf(state), action.voteId, action.choice);
+      return { state, result: { kind: "none" } };
+    }
+    case "studio": {
+      playStudio(ctxOf(state), action);
       return { state, result: { kind: "none" } };
     }
     case "dd": {
@@ -1003,8 +1018,9 @@ export function fundBlocker(state: GameState): string | null {
  * price. In a buyout it buys from the seller, otherwise new shares.
  */
 function fundCoInvest(state: GameState, s: Startup, ticket: number, pct: number, secondary: boolean): Startup {
-  const f = state.fund;
+  const f = state.fund ? investingFund(state) : undefined;
   if (!f || pct <= 0) return s;
+  const fid = fundId(f);
   const amount = Math.min(f.cash, f.size * FUND_MAX_DEAL, Math.round((ticket * FUND_MATCH) / 1000) * 1000);
   if (amount < 10_000) return s;
   let fundPct = (amount / ticket) * pct;
@@ -1015,14 +1031,14 @@ function fundCoInvest(state: GameState, s: Startup, ticket: number, pct: number,
     fundPct = Math.min(fundPct, seller.pct - 2);
     if (fundPct <= 0.5) return s;
     const capTable = s.capTable.map((h) => (h.id === seller.id ? { ...h, pct: h.pct - fundPct } : h));
-    capTable.push({ id: "fonds", name: f.name, kind: "fund", pct: fundPct, pref: 0, cost: 0 });
+    capTable.push({ id: fid, name: f.name, kind: "fund", pct: fundPct, pref: 0, cost: 0 });
     next = { ...s, capTable };
   } else {
     const d = fundPct / (100 + fundPct);
-    next = applyDelta(s, { cash: amount, dilution: d, dilutionTo: { id: "fonds", name: f.name, kind: "fund" } });
+    next = applyDelta(s, { cash: amount, dilution: d, dilutionTo: { id: fid, name: f.name, kind: "fund" } });
   }
   const used = Math.round((fundPct / pct) * ticket);
-  const holder = next.capTable.find((h) => h.id === "fonds")!;
+  const holder = next.capTable.find((h) => h.id === fid)!;
   holder.pref = (holder.pref ?? 0) + (secondary ? 0 : used);
   holder.cost = (holder.cost ?? 0) + used;
   f.cash -= used;
@@ -1031,7 +1047,7 @@ function fundCoInvest(state: GameState, s: Startup, ticket: number, pct: number,
     kind: "system",
     from: f.name,
     subject: `${f.name} steigt bei ${s.name} mit ein`,
-    body: `Der Fonds investiert ${used.toLocaleString("de-DE")} € und hält ${fundPct.toLocaleString("de-DE", { maximumFractionDigits: 1 })} %. Er stimmt wie du; am Gewinn bist du mit 20 % Carry beteiligt.`,
+    body: `Der Fonds investiert ${used.toLocaleString("de-DE")} € und hält ${fundPct.toLocaleString("de-DE", { maximumFractionDigits: 1 })} %. Er stimmt wie du. Carry bekommst du über den Wasserfall des ganzen Fonds: erst wenn die Investoren Kapital und Hurdle zurückhaben.`,
     startupId: s.id,
   });
   return next;
@@ -1093,13 +1109,9 @@ function settleExit(state: GameState, offer: ExitOffer, vote: GvVote | "abstain"
   const own = result.payouts.find((p) => p.id === "you")?.amount ?? 0;
   const mine = own + result.carry;
   recordSale(state, offer, s, mine);
-  // The fund keeps its proceeds minus the player's carry on its gain.
-  const fundCost = (id: string) => s.capTable.find((h) => h.id === id)?.cost ?? 0;
-  const fundMoney = result.payouts.filter((p) => p.kind === "fund").reduce((sum, p) => sum + p.amount - Math.max(0, p.amount - fundCost(p.id)) * CARRY, 0);
-  if (state.fund && fundMoney > 0) {
-    state.fund.cash += fundMoney;
-    state.fund.returned += fundMoney;
-  }
+  // Fund proceeds go to the investors through the whole-fund waterfall; carry follows from it.
+  const fundCarry = state.fund || state.funds ? fundProceeds(ctxOf(state), result.payouts, s.name, notes) : 0;
+  if (fundCarry > 0) offer.carry = (offer.carry ?? 0) + fundCarry;
   if (offer.ipo) {
     // Listed shares: half now, the rest after the lockup at the market's price.
     const later = own * (1 - IPO_CASH_SHARE);
@@ -1114,7 +1126,7 @@ function settleExit(state: GameState, offer: ExitOffer, vote: GvVote | "abstain"
   state.items = state.items.filter((i) => !(i.startupId === s.id && i.status === "open"));
   const text = offer.ipo
     ? `${s.name} geht an die Börse, bewertet mit ${offer.price.toLocaleString("de-DE")} €. Du erhältst ${Math.round(mine).toLocaleString("de-DE")} €; die Hälfte deiner Aktien ist ${IPO_LOCKUP} Monate gesperrt und folgt bis dahin dem Markt.`
-    : `${s.name} ist an ${offer.buyer} verkauft, für ${offer.price.toLocaleString("de-DE")} €. Du erhältst ${Math.round(mine).toLocaleString("de-DE")} €${result.carry > 0 ? `, davon ${Math.round(result.carry).toLocaleString("de-DE")} € Carry` : ""}.`;
+    : `${s.name} ist an ${offer.buyer} verkauft, für ${offer.price.toLocaleString("de-DE")} €. Du erhältst ${Math.round(mine).toLocaleString("de-DE")} €${result.carry > 0 ? `, davon ${Math.round(result.carry).toLocaleString("de-DE")} € Carry` : ""}${fundCarry > 0 ? `, dazu ${Math.round(fundCarry).toLocaleString("de-DE")} € Carry aus deinem Fonds` : ""}.`;
   notes.push(text);
   mail(state, { kind: "exit", from: s.name, subject: offer.ipo ? "Börsengang geglückt" : `Verkauft an ${offer.buyer}`, body: text, startupId: s.id, exitId: offer.id });
 }
@@ -1206,6 +1218,8 @@ const FUNDING_TEMPLATES = ["bridge", "seed_round"];
 /** Closes a round: the shareholders vote, money and shares move if it passes. */
 function settleRound(state: GameState, round: Round, take: RoundTake, vote: GvVote | "abstain", notes: string[]): void {
   let s = startupOf(state, round.startupId);
+  // Growth rounds are led by the growth investor: the player can only follow pro rata.
+  if (round.venture !== undefined && (take === "lead" || take === "syndicate")) throw new GameRuleError("Eine Wachstumsrunde führt der Wachstumsinvestor. Du kannst anteilig mitziehen.");
   const { ballots, approved } = shareholderVote(round, s, vote);
   round.ballots = ballots;
   round.take = take;
@@ -1223,6 +1237,7 @@ function settleRound(state: GameState, round: Round, take: RoundTake, vote: GvVo
     const text = `${s.name}: Die Gesellschafterversammlung lehnt die ${round.label} ab. Kein neues Geld.`;
     notes.push(text);
     mail(state, { kind: "round", from: s.name, subject: `${round.label} abgelehnt`, body: text, startupId: s.id, roundId: round.id });
+    if (round.venture !== undefined) ventureRoundFailed(ctxOf(state), round);
     return;
   }
   const invested = playerAmount(round, s.stake, take);
@@ -1253,7 +1268,8 @@ function settleRound(state: GameState, round: Round, take: RoundTake, vote: GvVo
   const text = `${s.name}: ${round.label} über ${round.amount.toLocaleString("de-DE")} € abgeschlossen. Dein Anteil: ${before.toLocaleString("de-DE", { maximumFractionDigits: 1 })} % → ${s.stake.toLocaleString("de-DE", { maximumFractionDigits: 1 })} %.`;
   notes.push(text);
   mail(state, { kind: "round", from: s.name, subject: `${round.label} abgeschlossen`, body: text, startupId: s.id, roundId: round.id });
-  checkMajority(state, s, before);
+  if (round.venture !== undefined) ventureRoundClosed(ctxOf(state), round, notes);
+  checkMajority(state, startupOf(state, s.id), before);
 }
 
 function replaceStartup(state: GameState, next: Startup): void {
@@ -1742,6 +1758,10 @@ export function closeMonth(state: GameState): MonthReport {
       if (pick) createShareOffer(state, s, pick.id, pick.pct / 2, SECONDARY_DISCOUNT);
     }
   }
+  // Venture path, fund family and studio: after the month turned, before the regular rounds.
+  ventureMonth(mna, notes);
+  fundsMonth(mna, notes);
+  studioMonth(mna, notes);
   planRounds(state);
   planExits(state);
   // Fame fades a little at the very top: a big name needs to keep delivering.
@@ -1763,6 +1783,8 @@ export function closeMonth(state: GameState): MonthReport {
   state.calendar = [];
   // Favours asked, invitations sent, events accepted earlier now in the calendar.
   planNetwork(mna);
+  // Studio work and LPAC meetings take their days first.
+  fixedDays(state);
   planAgenda(state);
 
   const report: MonthReport = {
@@ -1906,7 +1928,8 @@ function planExits(state: GameState): void {
   const mood = sentimentOf(state.market.regime);
   for (const s of state.startups.filter((x) => x.status === "active" && !x.corporate)) {
     if (state.month - s.joined < EXIT_MIN_AGE || s.flags.includes("round_open") || s.platform?.sale) continue;
-    const value = valuation(s.metrics);
+    // Companies on the venture path are priced at their last round.
+    const value = companyValue(s);
     if (value < EXIT_MIN_VALUE) continue;
     if (state.exits.some((e) => e.startupId === s.id && (e.status === "open" || state.month - e.month < 6))) continue;
     if (openItems(state).some((i) => i.startupId === s.id && i.templateId === "acquisition")) continue;
@@ -1936,6 +1959,8 @@ function planExits(state: GameState): void {
 /** Big, growing companies can list on the stock exchange instead of being sold. */
 function planIpo(state: GameState, s: Startup, value: number, mood: number): boolean {
   if (value < IPO_MIN_VALUE || state.month - s.joined < 12 || s.metrics.growth < 0.012) return false;
+  // On the venture path the company lists only from Serie D on (or once the path is over).
+  if (s.venture && s.venture.ended === undefined && s.venture.stage < VENTURE_IPO_STAGE) return false;
   const random = randomFor(state.seed, `ipo|${s.id}|${state.month}`);
   if (random() > IPO_CHANCE * (1 + mood)) return false;
   const price = Math.round((value * (1 + random() * 0.35 + mood * 0.15)) / 100_000) * 100_000;
@@ -1985,11 +2010,8 @@ function holdingMonth(state: GameState, month: number, income: IncomeLines, note
   const salaries = state.team.reduce((sum, m) => sum + m.salary, 0);
   state.cash -= salaries;
   income.salaries = -salaries;
-  if (state.fund) {
-    const fee = Math.round((state.fund.size * FUND_FEE) / 12);
-    state.cash += fee;
-    income.fundFee = fee;
-  }
+  // Fees of all funds, minus their running costs; the hurdle accrues (see funds.ts).
+  fundsFees(state, income);
   for (const loan of state.loans) {
     const interest = (loan.balance * loan.rate) / 12;
     const pay = Math.min(loan.payment, loan.balance + interest);
@@ -2020,12 +2042,18 @@ function payDividends(state: GameState, income: IncomeLines, notes: string[]): v
     if (excess < 5_000) continue;
     const total = excess * DIVIDEND_SHARE;
     const mine = (total * s.stake) / 100;
-    const fund = (total * fundPct) / 100;
     state.cash += mine;
     income.dividends = (income.dividends ?? 0) + mine;
     if (state.fund) {
-      state.fund.cash += fund;
-      state.fund.returned += fund;
+      // Each fund passes its dividend to its investors through the waterfall; carry comes on top.
+      const funds = fundsOf(state);
+      for (const h of s.capTable.filter((x) => x.kind === "fund")) {
+        const f = funds.find((x) => fundId(x) === h.id) ?? funds[0];
+        if (f) {
+          const carry = fundDistribute(state, f, (total * h.pct) / 100);
+          if (carry > 0) income.dividends = (income.dividends ?? 0) + carry;
+        }
+      }
     }
     replaceStartup(state, applyDelta(s, { cash: -total }));
     notes.push(`${s.name} schüttet ${Math.round(total).toLocaleString("de-DE")} € aus. Dein Anteil: ${Math.round(mine).toLocaleString("de-DE")} €.`);

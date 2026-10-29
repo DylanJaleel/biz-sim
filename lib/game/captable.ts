@@ -237,12 +237,15 @@ export function waterfall(s: Startup, price: number): { payouts: Payout[]; carry
   return withCarry(payouts, parties);
 }
 
-/** The player earns a share of the gain of the syndicate and the fund (carry). */
+/**
+ * The player earns a share of the syndicate's gain on each deal (carry). The
+ * own funds pay carry over their whole-fund waterfall instead (see funds.ts).
+ */
 function withCarry(payouts: Payout[], parties: { id: string; cost: number }[]): { payouts: Payout[]; carry: number } {
   let carry = 0;
   for (const p of payouts) {
     const cost = parties.find((x) => x.id === p.id)?.cost ?? 0;
-    if ((p.kind === "syndicate" || p.kind === "fund") && p.amount > cost) carry += (p.amount - cost) * CARRY;
+    if (p.kind === "syndicate" && p.amount > cost) carry += (p.amount - cost) * CARRY;
   }
   return { payouts, carry };
 }

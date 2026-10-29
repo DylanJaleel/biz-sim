@@ -340,8 +340,8 @@ export const LESSONS: Lesson[] = [
     title: "Fonds: LPs, Gebühr, Carry",
     summary:
       "Ein Fonds sammelt Geld von Investoren (Limited Partners) ein und legt es in Firmen an. Der Manager bekommt eine jährliche Verwaltungsgebühr und einen Anteil am Gewinn, den Carry. Die Investoren bekommen ihr Geld zurück, wenn Beteiligungen verkauft werden.",
-    rule: "Üblich: 2 % Gebühr pro Jahr, 20 % Carry auf den Gewinn.",
-    example: "Ein Fonds über 5 Mio. € bringt 100.000 € Gebühr im Jahr. Verkauft er eine Beteiligung für 3 Mio. €, die 1 Mio. € gekostet hat, gehen 400.000 € Carry an den Manager.",
+    rule: "Üblich: 2 % Gebühr pro Jahr, 20 % Carry auf den Gewinn des ganzen Fonds, erst nach Kapital und Hurdle.",
+    example: "Ein Fonds über 5 Mio. € bringt 100.000 € Gebühr im Jahr. Zahlt er am Ende 9 Mio. € an die Investoren aus, die 5 Mio. € eingezahlt haben, gehen rund 800.000 € Carry an den Manager.",
     inGame:
       "Mit 85 Ruf, zwei erfolgreichen Verkäufen und einem Family Office, das seit einem Jahr läuft, kannst du einen Fonds auflegen. Er investiert bei jedem neuen Einstieg das Doppelte deines Tickets.",
   },
@@ -486,6 +486,69 @@ export const LESSONS: Lesson[] = [
     example: "Die Financial DD zeigt, dass das EBITDA 15 % niedriger ist. Bei 5× sind das 450.000 € weniger Kaufpreis für eine Firma mit 600.000 € EBITDA.",
     inGame: "Beim Kauf von Firmen und in Mandaten wählst du die Bausteine. Jeder kostet einen Tag und Beraterhonorar.",
   },
+  {
+    id: "dpi_tvpi",
+    title: "DPI und TVPI",
+    summary:
+      "Zwei Kennzahlen zeigen, wie gut ein Fonds läuft. DPI (Distributions to Paid-In) zählt nur, was die Investoren schon zurückbekommen haben. TVPI (Total Value to Paid-In) zählt auch den heutigen Wert der Beteiligungen, die noch im Fonds stecken, also Papierwerte.",
+    rule: "DPI = Ausschüttungen ÷ eingezahltes Kapital; TVPI = (Ausschüttungen + heutiger Wert) ÷ eingezahltes Kapital",
+    example: "Investoren haben 10 Mio. € eingezahlt, 4 Mio. € sind zurückgeflossen, die übrigen Beteiligungen sind 11 Mio. € wert: DPI 0,4x, TVPI 1,5x.",
+    inGame: "Auf der Fonds-Seite. Für Fonds II und III schauen Investoren auf DPI und TVPI deiner Fonds; manche wollen echtes Geld zurück sehen, nicht nur Papierwerte.",
+  },
+  {
+    id: "hurdle",
+    title: "Hurdle (Vorzugsrendite)",
+    summary:
+      "Bevor der Manager Carry bekommt, sollen die Investoren nicht nur ihr Geld zurückhaben, sondern auch eine Mindestrendite: die Hurdle. Üblich sind 8 % im Jahr auf das eingezahlte Kapital.",
+    rule: "Hurdle = eingezahltes, noch nicht zurückgezahltes Kapital × 8 % pro Jahr",
+    example: "5 Mio. € stecken drei Jahre im Fonds: Die Investoren bekommen zuerst 5 Mio. € zurück und dann rund 1,2 Mio. € Hurdle, bevor Carry fließt.",
+    inGame: "Der Wasserfall auf der Fonds-Seite zeigt, wo die Hurdle heute liegt und ab welchem Ergebnis du Carry bekommst.",
+  },
+  {
+    id: "catch_up",
+    title: "Catch-up und europäischer Wasserfall",
+    summary:
+      "Im europäischen Wasserfall zählt der ganze Fonds: erst Kapital zurück, dann Hurdle, dann holt der Manager auf (Catch-up), bis er 20 % des gesamten Gewinns hat. Danach wird jeder weitere Euro 80 zu 20 geteilt. Im amerikanischen Modell gäbe es Carry schon Deal für Deal.",
+    rule: "Reihenfolge: Kapital → Hurdle → Catch-up (alles an den Manager) → 80/20",
+    example:
+      "Eingezahlt 10 Mio. €, Hurdle 2 Mio. €, Ausschüttungen 20 Mio. €: Investoren bekommen 10 + 2 Mio. €, der Catch-up 0,5 Mio. €, vom Rest (7,5 Mio. €) gehen 6 Mio. € an die Investoren und 1,5 Mio. € an dich. Zusammen 2 Mio. € Carry = 20 % des Gewinns.",
+    inGame: "Alle deine Fonds rechnen so. Ein früher guter Verkauf bringt deshalb oft noch keinen Carry: Erst müssen die Investoren alles zurückhaben.",
+  },
+  {
+    id: "lpac",
+    title: "LPAC (Investorenbeirat)",
+    summary:
+      "Im LPAC (Limited Partner Advisory Committee) sitzen Vertreter der größten Investoren eines Fonds. Er entscheidet nicht über einzelne Deals, sondern dann, wenn der Manager auf beiden Seiten des Tisches sitzt (Interessenkonflikt), über Verlängerungen der Laufzeit und über Gebühren.",
+    rule: "Wer einen Konflikt offenlegt und den Preis unabhängig prüfen lässt, bekommt meist ein Ja.",
+    example: "Fonds I will einen Anteil an Fonds II verkaufen. Ohne Gutachten fragen die Investoren von Fonds II zu Recht: Wer hat den Preis gemacht?",
+    inGame: "Fragen an den LPAC stehen auf der Fonds-Seite. Faires Vorgehen stärkt das Vertrauen der Investoren, und das hilft beim nächsten Fonds.",
+  },
+  {
+    id: "venture_studio",
+    title: "Venture Studio",
+    summary:
+      "Ein Venture Studio gründet Firmen selbst: Es wählt die Idee, holt eine Geschäftsführung und stellt Geld und Leute. Dafür hält es anfangs die Mehrheit. Das Geld kommt in Tranchen, jeweils wenn ein Meilenstein erreicht ist.",
+    rule: "Tranchen begrenzen das Risiko. Der CEO braucht genug Anteil, um dranzubleiben.",
+    example: "Ein Studio gibt 105.000 € zur Gründung, 140.000 € nach dem Prototyp und 210.000 € bei 100 Kunden. Scheitert die Idee früh, ist nur die erste Tranche weg.",
+    inGame: "Ab Ruf 75 und zwei Verkäufen. Bis zu zwei Studio-Firmen gleichzeitig im Aufbau, jede kostet zwei Tage im Monat. Fragst du deinen eigenen Fonds um Geld, muss der LPAC zustimmen.",
+  },
+  {
+    id: "venture_path",
+    title: "Wachstumsrunden und Papierwert",
+    summary:
+      "Wächst eine junge Firma schnell, steigen Wachstumsinvestoren ein: Serie A, B, C, D. Jede Runde setzt einen neuen Preis für die ganze Firma, den Papierwert. Er ist kein Geld auf dem Konto: Erst ein Verkauf oder Börsengang macht daraus Erlös.",
+    rule: "Papierwert deines Anteils = dein Anteil × Bewertung der letzten Runde",
+    example: "Du hältst nach drei Runden 7,6 % an einer Firma mit 70 Mio. € Bewertung: auf dem Papier 5,3 Mio. €. Im Spiel zählt bis zum Exit nur ein Teil davon zu deinem Vermögen.",
+    inGame: "Firmenseite, Bereich „Wachstum“: Stufen, Voraussetzungen, Chance auf die nächste Runde und angerechneter Wert.",
+  },
+  {
+    id: "unicorn",
+    title: "Unicorn",
+    summary: "Ein Unicorn ist eine junge, nicht börsennotierte Firma mit mehr als einer Milliarde Bewertung. Das ist sehr selten: Von hundert Firmen mit Serie A schaffen es nur wenige.",
+    rule: "Unicorn = Bewertung ab 1 Mrd. € vor dem Börsengang",
+    example: "Nach Seed, Serie A bis D und einer Pre-IPO-Runde ist die Firma 1,05 Mrd. € wert. Wer am Anfang 20 % hatte, hält jetzt vielleicht 5 %: gut 50 Mio. € auf dem Papier.",
+    inGame: "Etwa eine von 25 Partien erlebt einen Unicorn. Es gibt einen goldenen Tombstone; das Geld kommt erst mit Verkauf oder Börsengang.",
+  },
 ];
 
 /** Order in which "Weiterbildung" unlocks cards. */
@@ -543,6 +606,13 @@ export const CURRICULUM = [
   "pmi",
   "berater_mna",
   "netzwerk_events",
+  "dpi_tvpi",
+  "hurdle",
+  "catch_up",
+  "lpac",
+  "venture_studio",
+  "venture_path",
+  "unicorn",
 ];
 
 export function lessonOf(id: string): Lesson {
