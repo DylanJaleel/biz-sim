@@ -240,9 +240,9 @@ export const REPUTATION_SOFT_CAP = 80;
 export const REPUTATION_GAIN_STEPS = [
   { from: 0, factor: 0.7, cap: 5 },
   { from: 50, factor: 0.5, cap: 3 },
-  { from: 60, factor: 0.35, cap: 3 },
-  { from: 75, factor: 0.25, cap: 2 },
-  { from: 85, factor: 0.15, cap: 1 },
+  { from: 60, factor: 0.4, cap: 3 },
+  { from: 75, factor: 0.3, cap: 2 },
+  { from: 85, factor: 0.2, cap: 2 },
 ] as const;
 /** At the very top fame fades: above this, a month without any gain costs one point. */
 export const REPUTATION_FADE_FROM = 90;

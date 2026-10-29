@@ -123,7 +123,14 @@ export const NAV_ITEMS: NavItem[] = [
   // { href: "/stiftung", label: "Stiftung & Dynastie", group: "life", icon: "heart", description: "Stiftung gründen, Nachfolge in der Familie." },
 
   { href: "/notizbuch", label: "Notizbuch", group: "knowledge", icon: "book", description: "Lernkarten zu Fachbegriffen und deine Notizen." },
-  // { href: "/rangliste", label: "Rangliste", group: "knowledge", icon: "podium", description: "Du und die anderen Berater im Vergleich." },
+  {
+    href: "/rangliste",
+    label: "Rangliste",
+    group: "knowledge",
+    icon: "podium",
+    description: "League Table: du, die anderen M&A-Berater und deine Rivalen im Vergleich.",
+    locked: (s) => (s.reputation < MANDATE_REPUTATION ? `ab Ruf ${MANDATE_REPUTATION}` : null),
+  },
 
   { href: "/konto", label: "Konto", group: "account", icon: "user", description: "Spielstände, Anmeldung und Einstellungen." },
 ];

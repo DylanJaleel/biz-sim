@@ -147,7 +147,12 @@ export const RIVAL_POOL: RivalDef[] = [
   },
 ];
 
-export const RIVAL_KIND_LABEL: Record<RivalKind, string> = { pe: "Private-Equity-Fonds", konzern: "Konzern", family: "Familienholding", boutique: "Beratungshaus mit Beteiligungen" };
+export const RIVAL_KIND_LABEL: Record<RivalKind, string> = {
+  pe: "Private-Equity-Fonds",
+  konzern: "Konzern",
+  family: "Familienholding",
+  boutique: "Beratungshaus mit Beteiligungen",
+};
 
 /** From this reputation the rivals take notice of you. */
 export const RIVAL_REPUTATION = 50;

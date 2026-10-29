@@ -2,7 +2,10 @@ import { LAST, SECTORS } from "./dealgen";
 import { sizeMultiple } from "./ebitda";
 import { mnaRandom, solveEbitda } from "./lbo";
 import { between, eur, generateFindings, mio, pickOf, roundTo, type Ctx } from "./mna-core";
+import { teaserBidders, teaserEffect, teaserLeak } from "./teaser";
 import type { BigMandate, Mandate, MandateBid, MandateLever, TeaserFact } from "./types";
+
+export { teaserBidders, teaserEffect, teaserLeak };
 
 // Große Mandate: Ein Konzern verkauft eine Sparte (Carve-out). Anders als bei
 // den kleinen Mandaten gibt es einen Teaser, ein anonymes Kurzprofil für die
@@ -12,18 +15,16 @@ import type { BigMandate, Mandate, MandateBid, MandateLever, TeaserFact } from "
 /** From this reputation, with a family office, groups ask you to sell a division. */
 export const BIG_MANDATE_REPUTATION = 80;
 /** Share of mandate requests that are large ones, once you qualify (more from the top five of the league table). */
-export const BIG_MANDATE_SHARE = 0.3;
-export const BIG_MANDATE_TOP_SHARE = 0.45;
+export const BIG_MANDATE_SHARE = 0.2;
+export const BIG_MANDATE_TOP_SHARE = 0.3;
 export const BIG_MANDATE_EV: [number, number] = [40_000_000, 200_000_000];
 /** Retainer and success fee: bigger deal, smaller rate, much larger cheque. */
 export const BIG_RETAINER = { base: 25_000, share: 0.0002 } as const;
-export const BIG_SUCCESS_FEE = 0.005;
+export const BIG_SUCCESS_FEE = 0.0035;
 /** An earn-out counts half for the fee and the client: it may never be paid. */
 export const EARNOUT_WEIGHT = 0.5;
 export const BIG_DAYS = { accept: 2, teaser: 2, round: 1 } as const;
 export const BIG_ROUNDS = 3;
-/** Teaser meters start here (0..100). */
-const TEASER_BASE = { interest: 40, price: 40, conf: 90, cred: 40 };
 
 const GROUPS = ["Weidmann AG", "Kühlmann Group", "Hartwig Industrie AG", "Lindner Technologie SE", "Rauscher Holding AG", "Bergmann Werke AG", "Stellmacher Gruppe"];
 const BIG_STRATEGICS = ["Kühnert Industries", "Valtra Group", "Seeberg Technologie", "Arnhold Konzern", "Ostwind Industrie", "Bauer & Lindqvist"];
@@ -77,7 +78,15 @@ export function drawBigMandate(ctx: Ctx, r: () => number): Mandate {
 function teaserFacts(group: string, revenue: number, margin: number, wish: number, findings: Mandate["findings"]): TeaserFact[] {
   const lo = Math.floor(revenue / 10_000_000) * 10;
   const facts: TeaserFact[] = [
-    { id: "revenue", title: `Umsatz ${lo} bis ${lo + 10} Mio. € (als Spanne)`, text: "Zeigt die Größe, ohne die genaue Zahl zu nennen.", interest: 12, price: 6, conf: -2, cred: 8 },
+    {
+      id: "revenue",
+      title: `Umsatz ${lo} bis ${lo + 10} Mio. € (als Spanne)`,
+      text: "Zeigt die Größe, ohne die genaue Zahl zu nennen.",
+      interest: 12,
+      price: 6,
+      conf: -2,
+      cred: 8,
+    },
     {
       id: "ebitda",
       title: `EBITDA-Marge ${Math.round(margin * 100)} %, Einmaleffekte erklärt`,
@@ -112,29 +121,6 @@ function teaserFacts(group: string, revenue: number, margin: number, wish: numbe
       finding: f.kind,
     });
   return facts;
-}
-
-/** What a teaser with these facts does at the market (0..100 each). */
-export function teaserEffect(facts: TeaserFact[], ids: string[]): { interest: number; price: number; conf: number; cred: number } {
-  const e = { ...TEASER_BASE };
-  for (const f of facts.filter((x) => ids.includes(x.id))) {
-    e.interest += f.interest;
-    e.price += f.price;
-    e.conf += f.conf;
-    e.cred += f.cred;
-  }
-  const c = (v: number) => Math.max(0, Math.min(100, v));
-  return { interest: c(e.interest), price: c(e.price), conf: c(e.conf), cred: c(e.cred) };
-}
-
-/** Bidders the teaser attracts (before the price filter). */
-export function teaserBidders(interest: number): number {
-  return Math.max(2, Math.min(5, Math.round(2 + interest / 25)));
-}
-
-/** Leak risk of a teaser. */
-export function teaserLeak(conf: number): number {
-  return Math.round((100 - conf) * 0.6) / 100;
 }
 
 /** The teaser goes out: the client's known problems are in it or not. */
@@ -231,7 +217,10 @@ export function playRound(ctx: Ctx, md: Mandate, bidder: string | undefined, lev
     const gain = others > 0 ? Math.max(0, max - bid.ev) * 0.35 * (power / 100) * 1.4 : Math.max(0, max - bid.ev) * 0.05;
     bid.ev = roundTo(Math.min(max, bid.ev + gain), 100_000);
     bid.mood = (bid.mood ?? 60) - 5;
-    text = others > 0 ? `Du nennst die Konkurrenzgebote. ${bid.buyer} legt nach: ${mio(bid.ev + (bid.earnout ?? 0))}.` : `Ohne zweiten Bieter wirkt der Hinweis kaum. ${bid.buyer} bleibt bei ${mio(bid.ev)}.`;
+    text =
+      others > 0
+        ? `Du nennst die Konkurrenzgebote. ${bid.buyer} legt nach: ${mio(bid.ev + (bid.earnout ?? 0))}.`
+        : `Ohne zweiten Bieter wirkt der Hinweis kaum. ${bid.buyer} bleibt bei ${mio(bid.ev)}.`;
   }
   big.rounds += 1;
   big.log.push(`Runde ${big.rounds}: ${text}`);
@@ -249,4 +238,3 @@ export function playRound(ctx: Ctx, md: Mandate, bidder: string | undefined, lev
 export function bestBig(md: Mandate): MandateBid {
   return [...(md.bids ?? [])].filter((b) => !b.out).sort((a, b) => bidValue(b) - bidValue(a))[0] ?? md.bids![0]!;
 }
-

@@ -23,7 +23,19 @@ import {
 import { between, eur, generateFindings, mio, mnaOf, pickOf, roundTo, times, type Ctx } from "./mna-core";
 import { BOUTIQUE_MANDATE_BONUS } from "./network-config";
 import { leagueBonus, LEAGUE_TOP, leagueRank, recordLeague, yearOf } from "./league";
-import { bestBig, BIG_DAYS, BIG_MANDATE_REPUTATION, BIG_MANDATE_SHARE, BIG_MANDATE_TOP_SHARE, bidValue, bigBids, bigFee, drawBigMandate, playRound, sendTeaser } from "./mandate-big";
+import {
+  bestBig,
+  BIG_DAYS,
+  BIG_MANDATE_REPUTATION,
+  BIG_MANDATE_SHARE,
+  BIG_MANDATE_TOP_SHARE,
+  bidValue,
+  bigBids,
+  bigFee,
+  drawBigMandate,
+  playRound,
+  sendTeaser,
+} from "./mandate-big";
 import type { BuyerFocus, GameAction, GameState, IncomeLines, Mandate, MandateBid, ProcessKind } from "./types";
 
 // M&A-Mandate: Du berätst einen Familienunternehmer beim Verkauf oder einen
