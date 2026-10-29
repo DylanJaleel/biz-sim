@@ -58,7 +58,7 @@ export async function MandatePage({ params }: { params: Promise<{ id: string }> 
           <span>Gewinn vor Zinsen, Steuern, Abschreibungen</span>
         </div>
         <div>
-          <small>{sell ? "Wunschpreis der Familie" : "Obergrenze des Käufers"}</small>
+          <small>{big ? "Erwartung des Konzerns" : sell ? "Wunschpreis der Familie" : "Obergrenze des Käufers"}</small>
           <b>{eur(view.wish)}</b>
           <span>{x(view.wish / view.ebitda)} EBITDA</span>
         </div>

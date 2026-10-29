@@ -5,6 +5,7 @@ import { leagueView } from "@/lib/game/rivals-views";
 // Die League Table: wer im Mittelstand die meisten und größten Deals berät.
 // Darunter die drei Rivalen dieses Spiels, sobald sie dich bemerkt haben.
 
+const deals = (n: number) => (n === 1 ? "1 Deal" : `${n} Deals`);
 const mio = (v: number) => `${v.toLocaleString("de-DE", { maximumFractionDigits: v >= 100 ? 0 : 1 })} Mio. €`;
 
 export async function League({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
@@ -37,11 +38,11 @@ export async function League({ searchParams }: { searchParams: Promise<Record<st
         <div>
           <small>Dein Volumen</small>
           <b>{mio(v.me.volume)}</b>
-          <span>{v.me.count === 1 ? "1 Deal" : `${v.me.count} Deals`}</span>
+          <span>{deals(v.me.count)}</span>
         </div>
         <div>
           <small>Bis zum nächsten Platz</small>
-          <b>{v.above ? (by === "volume" ? mio(v.above.gap) : `${v.above.gap} Deals`) : "–"}</b>
+          <b>{v.above ? (by === "volume" ? mio(v.above.gap) : deals(v.above.gap)) : "–"}</b>
           <span>{v.above ? `hinter ${v.above.name}` : "Du führst die Liste an."}</span>
         </div>
         <div>
@@ -85,8 +86,8 @@ export async function League({ searchParams }: { searchParams: Promise<Record<st
                 <small>{r.city}</small>
               </span>
               <span className="league__value">
-                {by === "volume" ? mio(r.volume) : `${r.count} Deals`}
-                <small>{by === "volume" ? `${r.count} Deals` : mio(r.volume)}</small>
+                {by === "volume" ? mio(r.volume) : deals(r.count)}
+                <small>{by === "volume" ? deals(r.count) : mio(r.volume)}</small>
               </span>
               <span className={`league__move ${r.move === null || r.move === 0 ? "" : r.move > 0 ? "is-up" : "is-down"}`}>
                 {r.move === null || r.move === 0 ? "–" : r.move > 0 ? `▲ ${r.move}` : `▼ ${-r.move}`}

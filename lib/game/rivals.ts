@@ -1,5 +1,8 @@
 import { mnaRandom } from "./lbo";
-import { between, eur, mio, roundTo, type Ctx } from "./mna-core";
+import { between, eur, roundTo, type Ctx } from "./mna-core";
+
+/** Bids differ by a few ten thousand euros: two decimals. */
+const mio = (n: number) => `${(n / 1_000_000).toLocaleString("de-DE", { maximumFractionDigits: 2 })} Mio. €`;
 import type { Duel, GameState, RivalState, Startup } from "./types";
 
 // Rivalen: drei Häuser, die mit dir um dieselben Firmen bieten. Sie kommen ab

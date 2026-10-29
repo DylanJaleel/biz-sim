@@ -53,7 +53,7 @@ export function drawBigMandate(ctx: Ctx, r: () => number): Mandate {
   const wish = roundTo(ev * between(r, 1.02, 1.12), 100_000);
   const revenue = ebitda / 12 / between(r, 0.09, 0.15);
   const findings = generateFindings(r, { ev, ebitda: ebitda / 12, topCustomer: between(r, 0.1, 0.35), revenue, grossMargin: 0.35 });
-  const unit = `${company} (${idea.tagline})`;
+  const unit = `${company} (${sec.sector})`;
   const big: BigMandate = { unit, facts: teaserFacts(client, revenue * 12, ebitda / (revenue * 12), wish, findings), rounds: 0, log: [] };
   return {
     id: ctx.id("n"),
@@ -63,7 +63,7 @@ export function drawBigMandate(ctx: Ctx, r: () => number): Mandate {
     company,
     sector: sec.sector,
     city,
-    text: `Großmandat: ${client} verkauft die Tochter ${company} in ${city} (${idea.tagline}), einen Carve-out aus dem Konzern. EBITDA ${eur(ebitda)} im Jahr. Der Vorstand hofft auf ${mio(wish)}. Du schreibst den Teaser, führst das Bieterverfahren und verhandelst in drei Runden.`,
+    text: `Großmandat: ${client} verkauft seine Tochter ${company} in ${city} (${sec.sector}, rund ${Math.round((revenue * 12) / 1_000_000)} Mio. € Umsatz): ein Carve-out, also die Abspaltung einer Sparte aus dem Konzern. EBITDA ${eur(ebitda)} im Jahr. Der Vorstand hofft auf ${mio(wish)}. Du schreibst den Teaser, führst das Bieterverfahren und verhandelst in drei Runden.`,
     ebitda,
     fair,
     wish,

@@ -468,9 +468,17 @@ function close(ctx: Ctx, md: Mandate, notes: string[], income: IncomeLines): voi
     bank.warmth = Math.min(100, bank.warmth + 10);
   }
   const moodText = {
-    happy: md.side === "sell" ? "Die Familie ist begeistert und empfiehlt dich weiter." : `${md.client} ist sehr zufrieden mit dem Preis.`,
+    happy: md.big
+      ? "Der Vorstand ist begeistert und erzählt es weiter."
+      : md.side === "sell"
+        ? "Die Familie ist begeistert und empfiehlt dich weiter."
+        : `${md.client} ist sehr zufrieden mit dem Preis.`,
     ok: "Der Mandant ist zufrieden.",
-    unhappy: md.side === "sell" ? `Die Familie hatte auf ${mio(md.wish)} gehofft und ist enttäuscht.` : `${md.client} hat zu viel bezahlt und weiß es.`,
+    unhappy: md.big
+      ? `Der Vorstand hatte auf ${mio(md.wish)} gehofft und ist enttäuscht.`
+      : md.side === "sell"
+        ? `Die Familie hatte auf ${mio(md.wish)} gehofft und ist enttäuscht.`
+        : `${md.client} hat zu viel bezahlt und weiß es.`,
   }[mood];
   const text = `Mandat ${md.company} abgeschlossen: ${mio(ev)} (${times(ev / md.ebitda)} EBITDA). Erfolgshonorar ${eur(fee)}. ${moodText}`;
   md.outcome = { ev, fee, reputation: rep, mood, text: [...texts, text].join(" ") };
