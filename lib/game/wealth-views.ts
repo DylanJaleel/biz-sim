@@ -40,7 +40,20 @@ import {
   type HeirDef,
   type StrategyDef,
 } from "./dynasty";
-import { allowanceLeft, FOUNDATION, FOUNDATION_AMOUNTS, foundationBlocker, FUND_FAMILY_AUM, legacyOf, managedAssets, PURPOSES, taxRefund, type Legacy, type ManagedAssets, type PurposeDef } from "./legacy";
+import {
+  allowanceLeft,
+  FOUNDATION,
+  FOUNDATION_AMOUNTS,
+  foundationBlocker,
+  FUND_FAMILY_AUM,
+  legacyOf,
+  managedAssets,
+  PURPOSES,
+  taxRefund,
+  type Legacy,
+  type ManagedAssets,
+  type PurposeDef,
+} from "./legacy";
 import { officeOf } from "./office";
 import type { GameState } from "./types";
 import type { NextStepView, Requirement } from "./views";
@@ -260,7 +273,15 @@ export interface LegacyPageView {
   dynasty: {
     state: DynastyState;
     heirs: (HeirDef & { lost: boolean })[];
-    heir: (HeirDef & { maturity: number; since: string; stalledUntil: string | null; daysThisMonth: number; readyIn: { one: number | null; two: number | null; three: number | null } }) | null;
+    heir:
+      | (HeirDef & {
+          maturity: number;
+          since: string;
+          stalledUntil: string | null;
+          daysThisMonth: number;
+          readyIn: { one: number | null; two: number | null; three: number | null };
+        })
+      | null;
     charter: (CharterDef & { signed: boolean })[];
     council: CouncilQuestion | null;
     councilDays: number;
@@ -297,7 +318,10 @@ export function legacyPage(state: GameState): LegacyPageView {
     yearChange: yearStart ? legacy.total - yearStart.value : null,
     history: points.map((p) => ({ ...p, label: monthLabel(p.month) })),
     aum: { ...aum, target: FUND_FAMILY_AUM, peak: state.wealth?.aumPeak ?? 0 },
-    ladder: career.steps.slice(Math.max(0, lastMain - 2)).filter((s) => !s.side).map((s) => ({ title: s.title, requirement: s.requirement, done: s.done, next: s === next, tier: s.tier })),
+    ladder: career.steps
+      .slice(Math.max(0, lastMain - 2))
+      .filter((s) => !s.side)
+      .map((s) => ({ title: s.title, requirement: s.requirement, done: s.done, next: s === next, tier: s.tier })),
     career: career.title,
     foundation: {
       state: f,

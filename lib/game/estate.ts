@@ -188,10 +188,34 @@ export interface EstateCity {
 }
 
 export const ESTATE_CITIES: EstateCity[] = [
-  { id: "berlin", name: "Berlin", image: "stadt-berlin", costs: 0.09, price: 1, yield: 1, districts: ["Prenzlauer Berg", "Friedrichshain", "Charlottenburg", "Schöneberg", "Mitte"] },
+  {
+    id: "berlin",
+    name: "Berlin",
+    image: "stadt-berlin",
+    costs: 0.09,
+    price: 1,
+    yield: 1,
+    districts: ["Prenzlauer Berg", "Friedrichshain", "Charlottenburg", "Schöneberg", "Mitte"],
+  },
   { id: "hamburg", name: "Hamburg", image: "stadt-hamburg", costs: 0.085, price: 1.1, yield: 0.95, districts: ["HafenCity", "Eimsbüttel", "Ottensen", "Winterhude", "Altona"] },
-  { id: "muenchen", name: "München", image: "stadt-muenchen", costs: 0.07, price: 1.3, yield: 0.85, districts: ["Glockenbach", "Schwabing", "Haidhausen", "Bogenhausen", "Maxvorstadt"] },
-  { id: "frankfurt", name: "Frankfurt", image: "stadt-frankfurt", costs: 0.095, price: 1.05, yield: 1.05, districts: ["Westend", "Sachsenhausen", "Nordend", "Bockenheim", "Niederrad"] },
+  {
+    id: "muenchen",
+    name: "München",
+    image: "stadt-muenchen",
+    costs: 0.07,
+    price: 1.3,
+    yield: 0.85,
+    districts: ["Glockenbach", "Schwabing", "Haidhausen", "Bogenhausen", "Maxvorstadt"],
+  },
+  {
+    id: "frankfurt",
+    name: "Frankfurt",
+    image: "stadt-frankfurt",
+    costs: 0.095,
+    price: 1.05,
+    yield: 1.05,
+    districts: ["Westend", "Sachsenhausen", "Nordend", "Bockenheim", "Niederrad"],
+  },
   { id: "wien", name: "Wien", image: "stadt-wien", costs: 0.08, price: 0.95, yield: 0.95, districts: ["Josefstadt", "Neubau", "Wieden", "Leopoldstadt", "Döbling"] },
   { id: "luzern", name: "Luzern", image: "stadt-luzern", costs: 0.045, price: 1.25, yield: 0.9, districts: ["Altstadt", "Tribschen", "Würzenbach", "Seeburg", "Hirschmatt"] },
 ];
@@ -500,7 +524,8 @@ export function sellProperty(ctx: Ctx, propertyId: string): void {
   const estate = estateOf(state);
   const p = estate.owned.find((x) => x.id === propertyId);
   if (!p) ctx.fail("Dieses Objekt gehört dir nicht.");
-  if (p.renovating !== undefined && p.renovating >= state.month) ctx.fail("Während der Sanierung findest du keinen Käufer zum vollen Preis. Warte, bis die Bauarbeiten fertig sind.");
+  if (p.renovating !== undefined && p.renovating >= state.month)
+    ctx.fail("Während der Sanierung findest du keinen Käufer zum vollen Preis. Warte, bis die Bauarbeiten fertig sind.");
   ctx.spend("estate", `Verkauf ${p.name}`, ESTATE_DAYS.sell);
   const sale = saleOf(p, state.month);
   state.cash += sale.proceeds;
@@ -670,7 +695,9 @@ function hostEvening(ctx: Ctx, month: number, notes: string[]): void {
     .slice(0, 3);
   for (const c of guests) c.warmth = Math.min(100, c.warmth + 5);
   ctx.reputation(1);
-  notes.push(`Neujahrsempfang in deinem Penthouse: ${guests.length > 0 ? `${guests.map((c) => personOf(state, c).name).join(", ")} und andere kommen.` : "Gäste aus der Stadt kommen."} Etwas mehr Ruf.`);
+  notes.push(
+    `Neujahrsempfang in deinem Penthouse: ${guests.length > 0 ? `${guests.map((c) => personOf(state, c).name).join(", ")} und andere kommen.` : "Gäste aus der Stadt kommen."} Etwas mehr Ruf.`,
+  );
 }
 
 // ---------------------------------------------------------------------------

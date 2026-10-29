@@ -172,9 +172,24 @@ export interface StrategyDef {
 }
 
 export const STRATEGIES: Record<WealthStrategy, StrategyDef> = {
-  bewahren: { id: "bewahren", label: "Bewahren", text: "Vor allem Tagesgeld und Anleihen. Wenig Schwankung, wenig Ertrag.", weights: { tagesgeld: 0.5, anleihen: 0.4, dividenden: 0.1, tech: 0 } },
-  ausgewogen: { id: "ausgewogen", label: "Ausgewogen", text: "Je ein Teil sicher, ein Teil Aktien. Der Klassiker für Familienvermögen.", weights: { tagesgeld: 0.2, anleihen: 0.35, dividenden: 0.3, tech: 0.15 } },
-  wachstum: { id: "wachstum", label: "Wachstum", text: "Überwiegend Aktien. Mehr Chancen, starke Ausschläge.", weights: { tagesgeld: 0.05, anleihen: 0.15, dividenden: 0.4, tech: 0.4 } },
+  bewahren: {
+    id: "bewahren",
+    label: "Bewahren",
+    text: "Vor allem Tagesgeld und Anleihen. Wenig Schwankung, wenig Ertrag.",
+    weights: { tagesgeld: 0.5, anleihen: 0.4, dividenden: 0.1, tech: 0 },
+  },
+  ausgewogen: {
+    id: "ausgewogen",
+    label: "Ausgewogen",
+    text: "Je ein Teil sicher, ein Teil Aktien. Der Klassiker für Familienvermögen.",
+    weights: { tagesgeld: 0.2, anleihen: 0.35, dividenden: 0.3, tech: 0.15 },
+  },
+  wachstum: {
+    id: "wachstum",
+    label: "Wachstum",
+    text: "Überwiegend Aktien. Mehr Chancen, starke Ausschläge.",
+    weights: { tagesgeld: 0.05, anleihen: 0.15, dividenden: 0.4, tech: 0.4 },
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -372,7 +387,9 @@ export function heirBlocks(state: GameState, action: GameAction): string | null 
   const heir = heirInCharge(state);
   if (!heir) return null;
   const blocked = HEIR_MOVES.has(action.type) || (action.type === "platform" && action.move !== "cure");
-  return blocked ? `Das Tagesgeschäft führt jetzt ${heir.name}. Du beobachtest und kümmerst dich um das Familienvermögen: Anlagestrategie, Immobilien, Stiftung und Familienrat.` : null;
+  return blocked
+    ? `Das Tagesgeschäft führt jetzt ${heir.name}. Du beobachtest und kümmerst dich um das Familienvermögen: Anlagestrategie, Immobilien, Stiftung und Familienrat.`
+    : null;
 }
 
 // ---------------------------------------------------------------------------
@@ -447,7 +464,12 @@ function council(ctx: Ctx, d: DynastyState, month: number, notes: string[]): voi
   if ((month + 1) % 12 === 7) {
     const q = COUNCIL[d.councils % COUNCIL.length]!;
     d.council = { month: month + 1, question: q.id };
-    ctx.mail({ kind: "system", from: "Familienrat", subject: `Familienrat: ${q.title}`, body: `${q.text} Der Rat tagt diesen Monat. Antworte in „Stiftung & Dynastie“, sonst entscheidet die Familie ohne dich.` });
+    ctx.mail({
+      kind: "system",
+      from: "Familienrat",
+      subject: `Familienrat: ${q.title}`,
+      body: `${q.text} Der Rat tagt diesen Monat. Antworte in „Stiftung & Dynastie“, sonst entscheidet die Familie ohne dich.`,
+    });
   }
 }
 

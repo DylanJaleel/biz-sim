@@ -77,7 +77,10 @@ export function legacyOf(state: GameState, worth: number): Legacy {
     {
       id: "foundation",
       label: "Stiftung und Wirkung",
-      detail: capital > 0 ? `${mio(capital)} gestiftet, ${people.toLocaleString("de-DE")} Menschen gefördert` : `noch keine · ${P.perFoundationMio} je gestifteter Mio. €, ${P.perPerson} je geförderter Person`,
+      detail:
+        capital > 0
+          ? `${mio(capital)} gestiftet, ${people.toLocaleString("de-DE")} Menschen gefördert`
+          : `noch keine · ${P.perFoundationMio} je gestifteter Mio. €, ${P.perPerson} je geförderter Person`,
       points: (capital / 1_000_000) * P.perFoundationMio + people * P.perPerson,
     },
     { id: "reputation", label: "Ruf", detail: `${state.reputation} von 100 · ${P.perReputation} Punkte je Rufpunkt`, points: state.reputation * P.perReputation },
@@ -138,7 +141,13 @@ export interface PurposeDef {
 export const PURPOSES: Record<FoundationPurpose, PurposeDef> = {
   bildung: { id: "bildung", label: "Bildung", text: "Stipendien und Wirtschaftskurse an Schulen.", perPerson: 2_000, people: "Schülerinnen und Schüler" },
   gruenderinnen: { id: "gruenderinnen", label: "Gründerinnen", text: "Stipendien und Mentoring für Gründerinnen im ersten Jahr.", perPerson: 20_000, people: "Gründerinnen" },
-  nachfolge: { id: "nachfolge", label: "Nachfolge-Werkstatt", text: "Kurse für Menschen, die einen Familienbetrieb übernehmen wollen.", perPerson: 10_000, people: "Nachfolgerinnen und Nachfolger" },
+  nachfolge: {
+    id: "nachfolge",
+    label: "Nachfolge-Werkstatt",
+    text: "Kurse für Menschen, die einen Familienbetrieb übernehmen wollen.",
+    perPerson: 10_000,
+    people: "Nachfolgerinnen und Nachfolger",
+  },
 };
 
 export function foundationRead(state: GameState): FoundationState | undefined {

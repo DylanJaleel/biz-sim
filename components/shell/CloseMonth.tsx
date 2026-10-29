@@ -129,6 +129,8 @@ export function ReportDialog({ report, onClose }: { report: MonthReport; onClose
             ["Lebenshaltung", report.income.living],
             ["Büromiete", report.income.rent ?? 0],
             ["Fuhrpark", report.income.vehicles ?? 0],
+            ["Immobilien", report.income.estate ?? 0],
+            ["Stiftung und Familie", report.income.foundation ?? 0],
             ["Gehälter", report.income.salaries ?? 0],
             ["Fondsgebühr", report.income.fundFee ?? 0],
             ["Ausschüttungen", report.income.dividends ?? 0],

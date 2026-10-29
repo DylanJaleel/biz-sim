@@ -47,7 +47,10 @@ export function wealthActions(s: GameState, style: WealthStyle): GameAction[] {
   const afford = (need: number): boolean => {
     if (s.cash > need) return true;
     if (s.cash + holdingsValue(s.market) * 0.9 < need) return false;
-    out.push({ type: "trade", assetId: "tagesgeld", amount: -s.market.holdings.tagesgeld * s.market.prices.tagesgeld }, { type: "trade", assetId: "tech", amount: -(need - s.cash) * 1.01 });
+    out.push(
+      { type: "trade", assetId: "tagesgeld", amount: -s.market.holdings.tagesgeld * s.market.prices.tagesgeld },
+      { type: "trade", assetId: "tech", amount: -(need - s.cash) * 1.01 },
+    );
     return true;
   };
   if (st.penthouse && s.office >= 3 && !estateRead(s).owned.some((p) => p.kind === "penthouse")) {
