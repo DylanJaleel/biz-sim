@@ -492,7 +492,8 @@ export const LESSONS: Lesson[] = [
     summary:
       "Operating Partner sind erfahrene Manager in einer Beteiligungsgesellschaft. Sie sitzen nicht nur im Beirat, sondern arbeiten in den Firmen mit: Vertrieb aufbauen, Kosten senken, Zukäufe integrieren. Bezahlt werden sie mit Gehalt und einer Beteiligung am Erfolg, meist als Carry beim Verkauf.",
     rule: "Vergütung = Grundgehalt + kleiner laufender Anteil am Wertzuwachs + Carry auf den Gewinn beim Exit",
-    example: "Eine Sanierungsexpertin betreut zwei Familienbetriebe. Sie bekommt 9.500 € im Monat und 6 % deines Gewinns, wenn die Firmen verkauft werden: bei 2 Mio. € Gewinn 120.000 €.",
+    example:
+      "Eine Sanierungsexpertin betreut zwei Familienbetriebe. Sie bekommt 9.500 € im Monat und 6 % deines Gewinns, wenn die Firmen verkauft werden: bei 2 Mio. € Gewinn 120.000 €.",
     inGame:
       "Unter Holding › Operating Partner stellst du sie ein und gibst ihnen Firmen. Passt die Stärke zum Firmentyp, sparen sie mehr Tage, entscheiden besser und bereiten auf der Plattform Zukäufe vor.",
   },
@@ -502,8 +503,10 @@ export const LESSONS: Lesson[] = [
     summary:
       "Eine Zwischenholding ist eine eigene Gesellschaft zwischen dem Eigentümer und seinen Firmen. Geht eine Tochter pleite, haftet die Holding mit ihrem Anteil, nicht der Eigentümer privat. Banken verlangen ohne diese Trennung oft eine persönliche Bürgschaft.",
     rule: "Privatvermögen → Family Office → Zwischenholding → Töchter; jede GmbH haftet nur mit ihrem eigenen Vermögen",
-    example: "Ohne Holding bürgt der Käufer für ein Viertel des Bankkredits von 4 Mio. €. Fällt die Firma aus, zahlt er bis zu 1 Mio. € privat. Mit Holding verliert er nur, was er in die Firma gesteckt hat.",
-    inGame: "Unter Holding › Struktur gründest du sie für 12.000 € Notar und Steuerberatung. Ohne sie greift bei Insolvenz oder Zwangsverkauf einer gekauften Firma deine Bürgschaft.",
+    example:
+      "Ohne Holding bürgt der Käufer für ein Viertel des Bankkredits von 4 Mio. €. Fällt die Firma aus, zahlt er bis zu 1 Mio. € privat. Mit Holding verliert er nur, was er in die Firma gesteckt hat.",
+    inGame:
+      "Unter Holding › Struktur gründest du sie für 12.000 € Notar und Steuerberatung. Ohne sie greift bei Insolvenz oder Zwangsverkauf einer gekauften Firma deine Bürgschaft.",
   },
   {
     id: "vetorecht",
@@ -530,7 +533,8 @@ export const LESSONS: Lesson[] = [
       "Ob ein Zukauf Wert schafft, hängt an der Passung: gleiches Geschäft, ähnliche Kultur, nahe Standorte und Kunden, die auch beim anderen kaufen. Passt es, kommen Synergien. Passt es nicht, entstehen Dis-Synergien: Integrationskosten, Kündigungen, Kundenverluste.",
     rule: "Wert des Zukaufs = Kaufpreis-Vorteil (Multiple) + Synergien − Integrationskosten − Dis-Synergien",
     example: "Zwei Bäckereien in derselben Stadt bündeln Einkauf und Auslieferung. Ein Großhändler am anderen Ende des Landes bringt nur doppelte Verwaltung.",
-    inGame: "Die Passung siehst du nach einer Commercial Due Diligence oder wenn ein Operating Partner den Zukauf vorbereitet. Gute Passung bringt extra Einsparungen, schlechte kostet Leute und Marge.",
+    inGame:
+      "Die Passung siehst du nach einer Commercial Due Diligence oder wenn ein Operating Partner den Zukauf vorbereitet. Gute Passung bringt extra Einsparungen, schlechte kostet Leute und Marge.",
   },
   {
     id: "werttreiber",

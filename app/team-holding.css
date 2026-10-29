@@ -40,6 +40,8 @@
 
 .op-card {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
   gap: 10px;
   align-content: start;
   padding: 16px;
@@ -151,6 +153,22 @@
   background: color-mix(in srgb, var(--accent) 55%, var(--muted));
 }
 
+.op-mandates .action,
+.op-mandates .select {
+  max-width: 100%;
+}
+
+.op-mandates > .action {
+  display: flex;
+  width: 100%;
+  align-items: stretch;
+}
+
+.op-mandates > .action .select {
+  width: 100%;
+  min-width: 0;
+}
+
 .op-mandates h3 {
   margin: 0 0 4px;
   font-size: 14px;
@@ -232,6 +250,7 @@
 }
 
 .op-terms dt {
+  flex: none;
   color: var(--muted);
 }
 
@@ -361,10 +380,19 @@
 }
 
 .org-rights {
-  margin: 2px 0 0;
-  padding-left: 16px;
+  display: grid;
+  gap: 2px;
+  margin-top: 2px;
   color: var(--ink-2);
   font-size: 12.5px;
+}
+
+.org-rights p {
+  margin: 0;
+}
+
+.org-rights p::before {
+  content: "· ";
 }
 
 /* Passung eines Zukaufs */

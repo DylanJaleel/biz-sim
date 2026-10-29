@@ -465,7 +465,12 @@ export function acquisitionView(state: GameState, id: string): AcquisitionView |
       const f = addonFit(state, a);
       const by = !a.dd.includes("commercial") && known ? platformPrep(state, p).name : undefined;
       return known
-        ? { known, level: f.level, by, criteria: FIT_CRITERIA.map((c) => ({ label: c.label, value: f.criteria[c.id], text: f.criteria[c.id] > 0 ? c.good : f.criteria[c.id] < 0 ? c.bad : "unauffällig" })) }
+        ? {
+            known,
+            level: f.level,
+            by,
+            criteria: FIT_CRITERIA.map((c) => ({ label: c.label, value: f.criteria[c.id], text: f.criteria[c.id] > 0 ? c.good : f.criteria[c.id] < 0 ? c.bad : "unauffällig" })),
+          }
         : { known, criteria: [] };
     })(),
     veto: addonVeto(state, p, a) ?? undefined,

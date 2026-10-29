@@ -31,12 +31,13 @@ function Company({ c }: { c: StructureCompany }) {
         {c.lead && <small>Zuständig: {c.lead}</small>}
         {c.coOwners.length > 0 && (
           <span className="org-chips" aria-label="Mitgesellschafter">
-            {c.coOwners.map((o) => (
+            {c.coOwners.slice(0, 4).map((o) => (
               <span key={o.name} className={o.veto ? "org-chip org-chip--veto" : "org-chip"} title={o.veto ? "Vetorecht" : undefined}>
                 {o.name} {q(o.pct)}
                 {o.veto ? " · Veto" : ""}
               </span>
             ))}
+            {c.coOwners.length > 4 && <span className="org-chip">+{c.coOwners.length - 4} weitere</span>}
           </span>
         )}
         {c.bank && (
@@ -45,11 +46,11 @@ function Company({ c }: { c: StructureCompany }) {
           </small>
         )}
         {c.rights.length > 0 && (
-          <ul className="org-rights">
+          <div className="org-rights">
             {c.rights.map((r) => (
-              <li key={r}>{r}</li>
+              <p key={r}>{r}</p>
             ))}
-          </ul>
+          </div>
         )}
       </div>
     </li>
@@ -153,8 +154,8 @@ export async function StructurePage() {
             </p>
             <ul className="op-rules">
               <li>
-                <b>Haftungstrennung:</b> Ohne Holding verlangt die Bank deine persönliche Bürgschaft über {Math.round(v.guaranteeShare * 100)} % ihres Kredits. Geht eine Firma
-                in die Insolvenz oder wird zwangsverkauft, zahlst du privat. Heute stehen {eur(v.guarantee)} im Risiko.
+                <b>Haftungstrennung:</b> Ohne Holding verlangt die Bank deine persönliche Bürgschaft über {Math.round(v.guaranteeShare * 100)} % ihres Kredits. Geht eine Firma in
+                die Insolvenz oder wird zwangsverkauft, zahlst du privat. Heute stehen {eur(v.guarantee)} im Risiko.
               </li>
               <li>
                 <b>Mitverkaufspflicht (Drag-along):</b> Mit der Holding wird eine Gesellschaftervereinbarung beurkundet. Ohne sie ziehen Käufer einer Plattform{" "}
@@ -173,8 +174,9 @@ export async function StructurePage() {
         <Disclosure as="h2" headingId="rights-title" headingClass="panel__title" title="Rechte der Mitgesellschafter">
           <ul className="op-rules">
             <li>
-              <b>Vetorecht:</b> Wer mindestens {v.vetoMin} % hält (der Verkäufer mit Rückbeteiligung, die Suchende), muss großen Zukäufen zustimmen. Ab {Math.round(v.vetoSize * 100)}{" "}
-              % des Firmenwerts verlangt er eine Commercial Due Diligence, die die Passung zeigt. Zeigt sie, dass ein Zukauf nicht passt, legt er sein Veto ein.
+              <b>Vetorecht:</b> Wer mindestens {v.vetoMin} % hält (der Verkäufer mit Rückbeteiligung, die Suchende), muss großen Zukäufen zustimmen. Ab{" "}
+              {Math.round(v.vetoSize * 100)} % des Firmenwerts verlangt er eine Commercial Due Diligence, die die Passung zeigt. Zeigt sie, dass ein Zukauf nicht passt, legt er
+              sein Veto ein.
             </li>
             <li>
               <b>Mitverkaufspflicht:</b> Verkaufst du die Mehrheit, müssen die anderen zu denselben Bedingungen mitverkaufen. Käufer wollen 100 % und zahlen dafür den vollen Preis.

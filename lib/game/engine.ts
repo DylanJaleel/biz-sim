@@ -1086,8 +1086,7 @@ function settleExit(state: GameState, offer: ExitOffer, vote: GvVote | "abstain"
   }
   offer.status = "accepted";
   // Drag-along under the holding: every co-owner sells along.
-  if (dragAlong(state, s))
-    for (const b of offer.ballots) if (b.kind !== "you" && b.kind !== "fund") Object.assign(b, { vote: "go", reason: "Mitverkaufspflicht: verkauft mit." });
+  if (dragAlong(state, s)) for (const b of offer.ballots) if (b.kind !== "you" && b.kind !== "fund") Object.assign(b, { vote: "go", reason: "Mitverkaufspflicht: verkauft mit." });
   const own = result.payouts.find((p) => p.id === "you")?.amount ?? 0;
   const gross = own + result.carry;
   recordSale(state, offer, s, gross);

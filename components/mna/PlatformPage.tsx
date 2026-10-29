@@ -167,7 +167,9 @@ export async function PlatformPage({ params }: { params: Promise<{ id: string }>
 
       {p && v.active && (
         <p className={`notice ${v.holdco ? "notice--good" : ""}`}>
-          {v.lead ? `${v.lead} betreut die Plattform und bereitet Zukäufe vor. ` : "Kein Operating Partner auf der Plattform: Kandidaten kommen seltener, die Passung prüft erst die Due Diligence. "}
+          {v.lead
+            ? `${v.lead} betreut die Plattform und bereitet Zukäufe vor. `
+            : "Kein Operating Partner auf der Plattform: Kandidaten kommen seltener, die Passung prüft erst die Due Diligence. "}
           {v.holdco
             ? `Die Gruppe hängt unter der ${v.holdco}: Haftung getrennt, Mitverkaufspflicht vereinbart.`
             : `Ohne Zwischenholding haftest du mit einer Bürgschaft${v.holdout > 0 ? `, und Käufer ziehen ${Math.round(v.holdout * 100)} % ab` : ""}.`}{" "}
@@ -181,9 +183,7 @@ export async function PlatformPage({ params }: { params: Promise<{ id: string }>
             <p className="eyebrow">Zukäufe</p>
             <Disclosure as="h2" headingId="targets-title" headingClass="panel__title" title="Kandidaten" hint={`${v.targets.length}`} defaultOpen={v.targets.length > 0}>
               {v.targets.length === 0 ? (
-                <p className="muted">
-                  Gerade keine. Neue Kandidaten kommen alle paar Monate, öfter mit einem Operating Partner auf der Plattform und warmem Draht zum Deal-Flow.
-                </p>
+                <p className="muted">Gerade keine. Neue Kandidaten kommen alle paar Monate, öfter mit einem Operating Partner auf der Plattform und warmem Draht zum Deal-Flow.</p>
               ) : (
                 <ul className="list mna-rows">
                   {v.targets.map((t) => (

@@ -173,7 +173,9 @@ export async function TeamPage() {
                         ))}
                       </ul>
                       {c.claims.length > 0 && (
-                        <p className="muted small">Carry-Anspruch bleibt (unverfallbar nach {v.vestMonths} Monaten): {c.claims.map((x) => x.name).join(", ")}.</p>
+                        <p className="muted small">
+                          Carry-Anspruch bleibt (unverfallbar nach {v.vestMonths} Monaten): {c.claims.map((x) => x.name).join(", ")}.
+                        </p>
                       )}
                       <OpAssign memberId={c.id!} options={options} full={c.mandates.length >= c.capacity} revision={revision} />
                     </div>
@@ -234,8 +236,8 @@ export async function TeamPage() {
                   {OP.days.mid.toLocaleString("de-DE")} / {OP.days.weak.toLocaleString("de-DE")} Tage im Monat, zusammen höchstens {OP.daysMax}.
                 </li>
                 <li>
-                  <b>Beirat:</b> Vorlagen, die du bis Monatsende nicht selbst entscheidest, entscheidet der Partner. Er findet die beste Option in{" "}
-                  {Math.round(OP.skill.good * 100)} / {Math.round(OP.skill.mid * 100)} / {Math.round(OP.skill.weak * 100)} % der Fälle.
+                  <b>Beirat:</b> Vorlagen, die du bis Monatsende nicht selbst entscheidest, entscheidet der Partner. Er findet die beste Option in {Math.round(OP.skill.good * 100)}{" "}
+                  / {Math.round(OP.skill.mid * 100)} / {Math.round(OP.skill.weak * 100)} % der Fälle.
                 </li>
                 <li>
                   <b>Mittelstand:</b> Übergaberisiken nach dem Kauf sinken um {Math.round((1 - OP.handover.good) * 100)} / {Math.round((1 - OP.handover.mid) * 100)} %.

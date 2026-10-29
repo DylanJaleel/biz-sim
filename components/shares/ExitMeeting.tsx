@@ -54,9 +54,7 @@ export function ExitMeeting({ view, revision }: { view: ExitView; revision: numb
           <span aria-hidden="true">/</span>
           <span>Verkauf</span>
         </nav>
-        <h1 className="room__title">
-          {offer.ipo ? `${view.startupName} kann an die Börse` : `${offer.buyer} will ${view.startupName} kaufen`}
-        </h1>
+        <h1 className="room__title">{offer.ipo ? `${view.startupName} kann an die Börse` : `${offer.buyer} will ${view.startupName} kaufen`}</h1>
         <p className="room__motion">
           {offer.ipo
             ? `Die Banken trauen sich eine Bewertung von ${eur(offer.price)} zu. Die Hälfte deines Erlöses bekommst du sofort, die andere Hälfte deiner Aktien ist ${IPO_LOCKUP} Monate gesperrt und folgt bis dahin dem Markt.`
@@ -126,8 +124,8 @@ export function ExitMeeting({ view, revision }: { view: ExitView; revision: numb
             {view.carry > 0 && <p className="notice">Dazu kommt dein Carry aus dem Syndikat: {eur(view.carry)}.</p>}
             {team > 0 && (
               <p className="notice">
-                Carry für dein Team, aus deinem Erlös: {view.teamCarry.map((t) => `${t.name} ${eur(t.amount)}`).join(", ")}. Operating Partner verdienen am Wertzuwachs der Firmen mit, die
-                sie betreut haben.
+                Carry für dein Team, aus deinem Erlös: {view.teamCarry.map((t) => `${t.name} ${eur(t.amount)}`).join(", ")}. Operating Partner verdienen am Wertzuwachs der Firmen
+                mit, die sie betreut haben.
               </p>
             )}
             {view.dragAlong && <p className="notice notice--good">Mitverkaufspflicht (Drag-along): Alle Mitgesellschafter verkaufen mit, der Käufer bekommt 100 %.</p>}
@@ -150,8 +148,8 @@ export function ExitMeeting({ view, revision }: { view: ExitView; revision: numb
                 Verkaufen?
               </h2>
               <p>
-                Bei diesem Preis bekommst du {eur(net)} für deinen Anteil von {fmtPct(view.stake)}. Danach ist die Firma nicht mehr in deinem Portfolio, das Geld aber
-                auf deinem Konto.
+                Bei diesem Preis bekommst du {eur(net)} für deinen Anteil von {fmtPct(view.stake)}. Danach ist die Firma nicht mehr in deinem Portfolio, das Geld aber auf deinem
+                Konto.
               </p>
               {tooBusy ? (
                 <p className="notice notice--warn">Die Versammlung kostet {ACTION_DAYS.exit} Tage. Ohne dich stimmen die anderen am Monatsende ab.</p>

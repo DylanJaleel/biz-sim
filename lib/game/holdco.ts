@@ -221,12 +221,15 @@ export function structureView(state: GameState, worth: number): StructureView {
   const active = state.startups.filter((s) => s.status === "active");
   const node = (s: Startup): StructureCompany => {
     const fundPct = s.capTable.filter((h) => h.kind === "fund").reduce((sum, h) => sum + h.pct, 0);
-    const vetoes = new Set(vetoHolders(s).map((h) => h.id));
+    // Veto and drag-along are rules of the bought companies; startups have their own board (see the company page).
+    const vetoes = new Set(s.lbo ? vetoHolders(s).map((h) => h.id) : []);
     const rights: string[] = [];
     if (s.lbo) {
       if (vetoes.size > 0) rights.push(`Vetorecht bei großen Zukäufen (ab ${Math.round(HOLDCO.vetoSize * 100)} % des Firmenwerts) und bei Zukäufen, die nicht passen`);
       if (coOwners(s).length > 0)
-        rights.push(dragAlong(state, s) ? "Mitverkaufspflicht: Beim Verkauf verkaufen alle mit" : `Keine Mitverkaufspflicht: Käufer ziehen ${Math.round(HOLDCO.holdout * 100)} % ab`);
+        rights.push(
+          dragAlong(state, s) ? "Mitverkaufspflicht: Beim Verkauf verkaufen alle mit" : `Keine Mitverkaufspflicht: Käufer ziehen ${Math.round(HOLDCO.holdout * 100)} % ab`,
+        );
     }
     return {
       id: s.id,
@@ -237,7 +240,9 @@ export function structureView(state: GameState, worth: number): StructureView {
       fundPct,
       value: (valuation(s.metrics) * s.stake) / 100,
       lead: leadOf(state, s)?.member.name,
-      coOwners: coOwners(s).map((h) => ({ name: h.name, pct: h.pct, veto: vetoes.has(h.id) })),
+      coOwners: coOwners(s)
+        .sort((a, b) => Number(vetoes.has(b.id)) - Number(vetoes.has(a.id)) || b.pct - a.pct)
+        .map((h) => ({ name: h.name, pct: h.pct, veto: vetoes.has(h.id) })),
       bank: s.lbo && s.lbo.bank > 0 ? { amount: s.lbo.bank, leverage: s.lbo.bank / Math.max(1, annualEbitda(s.metrics)), limit: COVENANT + (s.lbo.headroom ?? 0) } : undefined,
       addons: s.platform?.addons.length ?? 0,
       rights,
@@ -266,4 +271,3 @@ export function structureView(state: GameState, worth: number): StructureView {
     vetoSize: HOLDCO.vetoSize,
   };
 }
-

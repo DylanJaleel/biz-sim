@@ -326,8 +326,7 @@ export function assignOp(ctx: Ctx, memberId: string, startupId: string | null, f
   if (!s || s.status !== "active") ctx.fail("Das ist keine aktive Beteiligung.");
   if (s!.corporate) ctx.fail("Im Konzern sitzt du selbst im Aufsichtsrat.");
   if (currentMandates(member!).some((x) => x.id === s!.id)) return;
-  if (currentMandates(member!).length >= profileOf(member!).capacity)
-    ctx.fail(`${member!.name} betreut schon ${profileOf(member!).capacity} Firmen. Nimm erst eine ab.`);
+  if (currentMandates(member!).length >= profileOf(member!).capacity) ctx.fail(`${member!.name} betreut schon ${profileOf(member!).capacity} Firmen. Nimm erst eine ab.`);
   for (const other of state.team) {
     normalize(state, other);
     for (const x of currentMandates(other)) if (x.id === s!.id) end(state, other, x);
