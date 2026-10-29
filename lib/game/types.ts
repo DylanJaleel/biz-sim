@@ -604,6 +604,8 @@ export interface MonthReport {
   portfolioValueBefore: number;
   /** Net worth at month end (from Phase 5). */
   worth?: number;
+  /** Net worth before the month closed (for the change in the overview). */
+  worthBefore?: number;
   notes: string[];
   income?: IncomeLines;
 }

@@ -1631,6 +1631,7 @@ export function closeMonth(state: GameState): MonthReport {
   const notes: string[] = [];
   const cashBefore = state.cash;
   const reputationBefore = state.reputation;
+  const worthBefore = netWorth(state);
   const valueBefore = portfolioValue(state);
   const before = new Map(state.startups.map((s) => [s.id, { revenue: s.metrics.revenue, cash: s.metrics.cash, valuation: valuation(s.metrics), metrics: s.metrics }]));
   const payouts = new Map<string, number>();
@@ -1791,6 +1792,7 @@ export function closeMonth(state: GameState): MonthReport {
   const report: MonthReport = {
     month,
     worth: netWorth(state),
+    worthBefore,
     lines: state.startups
       .filter((s) => s.joined > 0 && (s.status === "active" || lines.has(s.id)))
       .map((s) => {
