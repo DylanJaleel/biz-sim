@@ -420,6 +420,10 @@ export interface IncomeLines {
   mandates?: number;
   /** Search capital paid to searchers of the succession programme. */
   search?: number;
+  /** Property: rent after vacancy minus maintenance and mortgage payments. */
+  estate?: number;
+  /** Foundation: tax refund on endowment gifts; family council payouts. */
+  foundation?: number;
 }
 
 export type ExitChoice = "accept" | "negotiate" | "reject";
@@ -649,6 +653,8 @@ export interface GameState {
   gigLog?: { done: number; cities: string[] };
   /** Favours, invitations and counters of the network (missing in older games). */
   network?: NetworkState;
+  /** Property, foundation, dynasty and the legacy score (missing in older games). */
+  wealth?: import("./wealth-types").WealthState;
 }
 
 export type ActionKind =
@@ -685,7 +691,10 @@ export type ActionKind =
   | "platform"
   | "favor"
   | "event"
-  | "specialist";
+  | "specialist"
+  | "estate"
+  | "foundation"
+  | "dynasty";
 
 export type GameAction =
   | { type: "dd"; startupId: string }
@@ -735,7 +744,8 @@ export type GameAction =
   | { type: "search"; move: "start" | "stop"; candidate?: number }
   | { type: "examine"; targetId: string; modules: import("./mna-config").DdModule[] }
   | { type: "acquire"; targetId: string; bid: "ask" | "low"; bank: number; vendor: number; earnout: number; integration?: IntegrationKind }
-  | { type: "platform"; startupId: string; move: "make" | "sell" | "cure" | "stopSale"; process?: ProcessKind; buyers?: "strategic" | "financial" };
+  | { type: "platform"; startupId: string; move: "make" | "sell" | "cure" | "stopSale"; process?: ProcessKind; buyers?: "strategic" | "financial" }
+  | import("./wealth-types").WealthAction;
 
 // ---------------------------------------------------------------------------
 // M&A-Mandate, Nachfolge-Programm (Search Fund) und Buy-and-Build

@@ -1,0 +1,634 @@
+/* Immobilien und Stiftung & Dynastie: Raster, Karten, Diagramme. Farben aus den Tokens in globals.css (hell und dunkel). */
+
+.tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 0 0 16px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-2);
+  width: fit-content;
+  max-width: 100%;
+}
+
+.tab,
+.tabOn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 6px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tabOn {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+
+.tabCount {
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12px;
+  text-align: center;
+}
+
+.strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 16px;
+}
+
+.note,
+.noteWarn,
+.noteGood {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  font-size: 13.5px;
+}
+
+.noteWarn {
+  border-color: color-mix(in srgb, var(--maybe) 40%, transparent);
+  background: var(--maybe-soft);
+}
+
+.noteGood {
+  border-color: color-mix(in srgb, var(--agree) 35%, transparent);
+  background: var(--agree-soft);
+}
+
+.market {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(300px, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 14px;
+}
+
+.card,
+.cardOn {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cardOn {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.card[data-blocked="true"] {
+  opacity: 0.72;
+}
+
+.cardImg {
+  position: relative;
+  aspect-ratio: 16 / 7;
+  background: var(--surface-3) center / cover no-repeat;
+}
+
+.cardImg span {
+  position: absolute;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.cardImg .kind {
+  top: 8px;
+  right: 8px;
+}
+
+.cardImg .city {
+  bottom: 8px;
+  left: 8px;
+}
+
+.cardBody {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px 14px;
+}
+
+.cardBody b {
+  font-size: 15px;
+  line-height: 1.3;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px 10px;
+  margin: 0;
+}
+
+.facts dt {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.facts dd {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.panelSticky {
+  position: sticky;
+  top: calc(var(--topbar) + 12px);
+}
+
+.lines {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0;
+  font-size: 14px;
+}
+
+.lines > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.lines > div > span:last-child {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  text-align: right;
+}
+
+.lines .sum {
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+}
+
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0 10px;
+}
+
+.choice,
+.choiceOn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 64px;
+  min-height: 40px;
+  padding: 6px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.choice small,
+.choiceOn small {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.choiceOn {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.stress {
+  margin: 10px 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--disagree-soft);
+  font-size: 13.5px;
+}
+
+.stressOk {
+  margin: 10px 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--agree-soft);
+  font-size: 13.5px;
+}
+
+.table {
+  display: grid;
+  gap: 12px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1.4fr) repeat(4, minmax(0, 1fr)) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.rowImg {
+  width: 96px;
+  height: 64px;
+  border-radius: 12px;
+  background: var(--surface-3) center / cover no-repeat;
+}
+
+.cell {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: 13.5px;
+}
+
+.cell small {
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+.cell b {
+  font-variant-numeric: tabular-nums;
+}
+
+.rowActions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: stretch;
+}
+
+.chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.chart text {
+  fill: var(--muted);
+  font-size: 11px;
+}
+
+.chartLine {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2.5;
+}
+
+.chartFuture {
+  fill: none;
+  stroke: var(--maybe);
+  stroke-width: 2.5;
+  stroke-dasharray: 6 5;
+}
+
+.chartArea {
+  fill: var(--accent-soft);
+}
+
+.chartGrid {
+  stroke: var(--line);
+}
+
+.chartNow {
+  stroke: var(--ink-2);
+  stroke-dasharray: 2 4;
+}
+
+.two {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.score {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(64px, 9vw, 112px);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.parts {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.parts li {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+}
+
+.parts i {
+  width: 10px;
+  height: 10px;
+  margin-top: 6px;
+  border-radius: 3px;
+}
+
+.parts small {
+  display: block;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.parts b {
+  font-variant-numeric: tabular-nums;
+}
+
+.stack {
+  display: flex;
+  height: 10px;
+  overflow: hidden;
+  margin-top: 12px;
+  border-radius: 99px;
+  background: var(--surface-3);
+}
+
+.ladder {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ladder li {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.ladder li[data-state="done"] {
+  border-color: color-mix(in srgb, var(--agree) 35%, transparent);
+}
+
+.ladder li[data-state="next"] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.ladder small {
+  display: block;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.mark {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--surface-3);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ladder li[data-state="done"] .mark {
+  background: var(--agree);
+  color: #fff;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.heir {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.heirHead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0e9f8e, #2342f5);
+  color: #fff;
+  font-weight: 700;
+}
+
+.avatarWarm {
+  background: linear-gradient(135deg, #e2832b, #c6462f);
+}
+
+.traits {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  font-size: 12.5px;
+}
+
+.traits > div {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr) 28px;
+  gap: 8px;
+  align-items: center;
+}
+
+.bar {
+  display: block;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: var(--surface-3);
+}
+
+.bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+}
+
+.barWarn i {
+  background: var(--maybe);
+}
+
+.barGood i {
+  background: var(--agree);
+}
+
+.list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13.5px;
+}
+
+.charter {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.charter li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.charter li > div {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.charter small {
+  display: block;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.form select {
+  min-height: 40px;
+  padding: 6px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+}
+
+/* iPad hochkant und kleiner: Kaufpanel unter die Karten, Bestand als Karten. */
+@media (max-width: 1024px) {
+  .market,
+  .two {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .panelSticky {
+    position: static;
+  }
+
+  .row {
+    grid-template-columns: 72px minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .rowImg {
+    width: 72px;
+    height: 56px;
+  }
+
+  .rowActions {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+}
+
+/* Handy quer (844 × 390) und schmaler: kompakt, aber alles erreichbar. */
+@media (max-width: 900px) and (max-height: 500px), (max-width: 560px) {
+  .cards {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+  }
+
+  .cardImg {
+    aspect-ratio: 16 / 5;
+  }
+
+  .score {
+    font-size: 56px;
+  }
+
+  .tab,
+  .tabOn {
+    min-height: 34px;
+    padding: 4px 11px;
+    font-size: 13px;
+  }
+}
