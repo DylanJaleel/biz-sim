@@ -1,5 +1,6 @@
 import { BUYOUT_REPUTATION, BUYOUT_WORTH, INTRO_COOLDOWN } from "./config";
 import { generateDeal } from "./dealgen";
+import { annualEbitda } from "./ebitda";
 import { dayRate } from "./gigs";
 import { activeSearch, annuityOf, targetDeal, targetEv } from "./lbo";
 import { BANK_YEARS, HANDOVER_MONTHS, MANDATE_REPUTATION } from "./mna-config";
@@ -627,7 +628,9 @@ export function specialistBlocker(state: GameState, contactId: string, targetId?
       if ((t.s.lbo.interim ?? 0) >= m) return "Die Interim-Managerin ist schon vor Ort.";
       const handover = m - t.s.lbo.acquired < HANDOVER_MONTHS;
       const integrating = (t.s.platform?.integrations.length ?? 0) > 0;
-      if (!handover && !integrating) return "Die Übergabe ist vorbei und es läuft keine Integration.";
+      // A running company that has lost its way: weak management or an EBITDA well below the one at purchase.
+      const troubled = t.s.metrics.axes.management < 55 || annualEbitda(t.s.metrics) < t.s.lbo.entryEbitda * 0.9;
+      if (!handover && !integrating && !troubled) return "Die Firma läuft rund: Übergabe vorbei, keine Integration, Ergebnis und Führung stimmen.";
       return null;
     }
     case "kartell": {

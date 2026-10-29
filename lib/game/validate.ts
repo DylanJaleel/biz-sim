@@ -1,5 +1,5 @@
 import { DD_MODULES, type DdModule } from "./mna-config";
-import type { AssetId, BuyerFocus, CovenantId, ExitChoice, GameAction, GigApproach, GvVote, MandateLever, MandateMove, ProcessKind, RoundTake, SeatId, TeamRole, Vote } from "./types";
+import type { AssetId, BuyerFocus, CovenantId, ExitChoice, GameAction, GigApproach, GvVote, LeverId, MandateLever, MandateMove, ProcessKind, RoundTake, SeatId, TeamRole, Vote } from "./types";
 
 // Server actions receive whatever the browser sends. This turns it into a
 // GameAction or nothing; the engine then checks the game rules.
@@ -17,6 +17,7 @@ const MANDATE_MOVES: readonly MandateMove[] = ["accept", "decline", "comps", "la
 const MANDATE_LEVERS: readonly MandateLever[] = ["bnf", "exclusive", "earnout", "batna"];
 const BUYER_FOCUS: readonly BuyerFocus[] = ["strategic", "financial", "mixed"];
 const PROCESSES: readonly ProcessKind[] = ["exclusive", "auction"];
+const LEVER_IDS: readonly LeverId[] = ["interim", "costs", "pricing", "workingCapital", "refinance"];
 
 /** A share between 0 and max, or null. */
 function share(value: unknown, max: number): number | null {
@@ -184,6 +185,8 @@ export function parseAction(input: unknown): GameAction | null {
         ...(a.integration !== undefined ? { integration: a.integration as "fast" | "careful" } : {}),
       };
     }
+    case "lever":
+      return id(a.startupId) && LEVER_IDS.includes(a.lever as LeverId) ? { type: "lever", startupId: a.startupId, lever: a.lever as LeverId } : null;
     case "platform": {
       if (!id(a.startupId) || !["make", "sell", "cure", "stopSale"].includes(a.move as string)) return null;
       if (a.process !== undefined && !PROCESSES.includes(a.process as ProcessKind)) return null;
