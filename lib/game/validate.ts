@@ -1,5 +1,5 @@
 import { DD_MODULES, type DdModule } from "./mna-config";
-import type { AssetId, BuyerFocus, CovenantId, ExitChoice, GameAction, GigApproach, GvVote, MandateMove, ProcessKind, RoundTake, SeatId, TeamRole, Vote } from "./types";
+import type { AssetId, BuyerFocus, CovenantId, ExitChoice, GameAction, GigApproach, GvVote, MandateLever, MandateMove, ProcessKind, RoundTake, SeatId, TeamRole, Vote } from "./types";
 
 // Server actions receive whatever the browser sends. This turns it into a
 // GameAction or nothing; the engine then checks the game rules.
@@ -13,7 +13,8 @@ const GV_VOTES: readonly GvVote[] = ["go", "no"];
 const ASSET_IDS: readonly AssetId[] = ["tagesgeld", "anleihen", "dividenden", "tech"];
 const COVENANT_IDS: readonly CovenantId[] = ["budget", "stagegate", "pilot", "second", "kpi", "veto"];
 
-const MANDATE_MOVES: readonly MandateMove[] = ["accept", "decline", "comps", "launch", "accept_bid", "final", "negotiate"];
+const MANDATE_MOVES: readonly MandateMove[] = ["accept", "decline", "comps", "launch", "accept_bid", "final", "negotiate", "teaser", "round"];
+const MANDATE_LEVERS: readonly MandateLever[] = ["bnf", "exclusive", "earnout", "batna"];
 const BUYER_FOCUS: readonly BuyerFocus[] = ["strategic", "financial", "mixed"];
 const PROCESSES: readonly ProcessKind[] = ["exclusive", "auction"];
 
@@ -136,6 +137,10 @@ export function parseAction(input: unknown): GameAction | null {
       if (a.process !== undefined && !PROCESSES.includes(a.process as ProcessKind)) return null;
       const multiple = a.multiple === undefined ? undefined : share(a.multiple, 15);
       if (multiple === null) return null;
+      const facts = a.facts === undefined ? undefined : Array.isArray(a.facts) && a.facts.length <= 12 && a.facts.every((f) => id(f)) ? (a.facts as string[]) : null;
+      if (facts === null) return null;
+      if (a.lever !== undefined && !MANDATE_LEVERS.includes(a.lever as MandateLever)) return null;
+      if (a.bidder !== undefined && (typeof a.bidder !== "string" || a.bidder.length === 0 || a.bidder.length > 80)) return null;
       return {
         type: "mandate",
         mandateId: a.mandateId,
@@ -144,6 +149,9 @@ export function parseAction(input: unknown): GameAction | null {
         ...(a.buyers !== undefined ? { buyers: a.buyers as BuyerFocus } : {}),
         ...(a.process !== undefined ? { process: a.process as ProcessKind } : {}),
         ...(dd.length > 0 ? { dd } : {}),
+        ...(facts !== undefined ? { facts } : {}),
+        ...(a.bidder !== undefined ? { bidder: a.bidder as string } : {}),
+        ...(a.lever !== undefined ? { lever: a.lever as MandateLever } : {}),
       };
     }
     case "search": {
@@ -154,6 +162,11 @@ export function parseAction(input: unknown): GameAction | null {
     case "examine": {
       const dd = modules(a.modules);
       return id(a.targetId) && dd && dd.length > 0 ? { type: "examine", targetId: a.targetId, modules: dd } : null;
+    }
+    case "duel": {
+      if (!id(a.targetId) || !["raise", "concept", "leave"].includes(a.move as string)) return null;
+      if (a.size !== undefined && a.size !== "small" && a.size !== "big") return null;
+      return { type: "duel", targetId: a.targetId, move: a.move as "raise" | "concept" | "leave", ...(a.size !== undefined ? { size: a.size as "small" | "big" } : {}) };
     }
     case "acquire": {
       const bank = share(a.bank, 0.6);

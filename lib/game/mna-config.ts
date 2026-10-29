@@ -57,8 +57,8 @@ export const FINDING_COUNT_CHANCE = [0.35, 0.45, 0.2] as const;
 // ---------------------------------------------------------------------------
 
 export const MANDATE_REPUTATION = 35;
-/** Chance of a new mandate offer per month, more with a warm bank contact. */
-export const MANDATE_CHANCE = 0.15;
+/** Chance of a new mandate offer per month, more with a warm bank contact (and from the top five of the league table). */
+export const MANDATE_CHANCE = 0.12;
 export const MANDATE_WARM_BONUS = 0.1;
 export const MANDATE_FROM_MONTH = 4;
 /** Mandates running at the same time: alone one, with family office and an associate two. */
