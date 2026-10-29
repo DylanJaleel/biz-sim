@@ -143,6 +143,7 @@ import { fundId, fundProceeds, fundsFees, fundsMonth, fundsOf, fundDistribute, i
 import { fixedDays, playStudio, studioMonth } from "./studio";
 import { companyValue, creditedValue, ventureMonth, ventureRoundClosed, ventureRoundFailed } from "./venture";
 import { VENTURE_IPO_STAGE } from "./venture-config";
+import { explainValueChange, familyDelta, familyIntroDelta, LBO_EXCLUDED_TEMPLATES, playLever, STARTUP_ONLY_TEMPLATES } from "./family";
 
 export class GameRuleError extends Error {
   constructor(message: string) {
@@ -452,6 +453,10 @@ function playAction(current: GameState, action: GameAction): { state: GameState;
     }
     case "contactHint": {
       playHint(ctxOf(state), action.contactId, action.itemId);
+      return { state, result: { kind: "none" } };
+    }
+    case "lever": {
+      playLever(ctxOf(state), startupOf(state, action.startupId), action.lever);
       return { state, result: { kind: "none" } };
     }
     case "platform": {
@@ -1143,7 +1148,9 @@ function introduce(state: GameState, s: Startup, contactId: string, strength = 1
       const factor = (def.kind === "delta" ? Math.pow(INTRO_REPEAT, times) : 1) * strength;
       const extra = def.kind === "loan" ? ` Betrag: ${Math.round(((def.delta?.cash ?? 0) * strength) / 1000).toLocaleString("de-DE")}.000 €.` : "";
       const text = times > 0 && def.kind === "delta" ? `${result} Beim ${times + 1}. Mal für dieselbe Firma wirkt es schwächer.` : `${result}${extra}`;
-      state.effects.push({ delay: 1, text, delta: scaleDelta(def.delta ?? {}, factor), startupId: s.id, due: state.month + 1, itemId: `intro-${contactId}-${state.month}` });
+      // In a family business the same help works on its scale (EBITDA, not a startup's few thousand euros).
+      const base = (s.metrics.valuedOn === "ebitda" ? familyIntroDelta(contactId, s) : null) ?? def.delta ?? {};
+      state.effects.push({ delay: 1, text, delta: scaleDelta(base, factor), startupId: s.id, due: state.month + 1, itemId: `intro-${contactId}-${state.month}` });
       replaceStartup(state, { ...s, helped: { ...s.helped, [contactId]: times + 1 } });
       break;
     }
@@ -1496,8 +1503,12 @@ function resolveEffects(state: GameState, month: number, lines: Map<string, stri
 function candidatesFor(state: GameState, s: Startup) {
   const age = state.month - s.joined;
   const used = state.items.filter((i) => i.startupId === s.id);
+  const family = s.metrics.valuedOn === "ebitda";
   return TEMPLATES.filter((t) => {
     if (!!t.corporate !== !!s.corporate) return false;
+    // A family business gets the generic and the Mittelstand topics, not rounds, options or pivots.
+    if (family && STARTUP_ONLY_TEMPLATES.has(t.id)) return false;
+    if (s.lbo && LBO_EXCLUDED_TEMPLATES.has(t.id)) return false;
     if (!t.when(s, age)) return false;
     const last = used.filter((i) => i.templateId === t.id).sort((a, b) => b.month - a.month)[0];
     if (!last) return true;
@@ -1637,7 +1648,8 @@ export function closeMonth(state: GameState): MonthReport {
   const cashBefore = state.cash;
   const reputationBefore = state.reputation;
   const valueBefore = portfolioValue(state);
-  const before = new Map(state.startups.map((s) => [s.id, { revenue: s.metrics.revenue, cash: s.metrics.cash, valuation: valuation(s.metrics) }]));
+  const before = new Map(state.startups.map((s) => [s.id, { revenue: s.metrics.revenue, cash: s.metrics.cash, valuation: valuation(s.metrics), metrics: s.metrics }]));
+  const payouts = new Map<string, number>();
 
   // Rounds the player let run: the meeting votes without them.
   for (const round of state.rounds.filter((r) => r.status === "open")) {
@@ -1717,7 +1729,7 @@ export function closeMonth(state: GameState): MonthReport {
   const upkeep = garageUpkeep(state);
   state.cash -= upkeep;
   income.vehicles = -upkeep;
-  holdingMonth(state, month, income, notes);
+  holdingMonth(state, month, income, notes, payouts);
   const regimeBefore = state.market.regime;
   const market = stepMarket(state.market, month, randomFor(state.seed, `market|${month}`));
   state.market = market.market;
@@ -1787,6 +1799,17 @@ export function closeMonth(state: GameState): MonthReport {
   fixedDays(state);
   planAgenda(state);
 
+  // Family businesses: one line on why the value moved, so a drop is never a riddle.
+  const whyOf = new Map<string, string>();
+  for (const s of state.startups) {
+    const b = before.get(s.id);
+    if (s.status === "active" && s.metrics.valuedOn === "ebitda" && !s.corporate && b) whyOf.set(s.id, explainValueChange(b.metrics, s.metrics, { payout: payouts.get(s.id) }));
+  }
+  const why = (s: Startup) => whyOf.get(s.id) ?? null;
+  if (whyOf.size > 0) {
+    unlockLesson(state, "werttreiber");
+    unlockLesson(state, "ltm_ebitda");
+  }
   const report: MonthReport = {
     month,
     worth: netWorth(state),
@@ -1807,6 +1830,7 @@ export function closeMonth(state: GameState): MonthReport {
           status: s.status,
           events: lines.get(s.id) ?? [],
           corporate: s.corporate,
+          ...(why(s) ? { valueWhy: why(s)! } : {}),
         };
       }),
     playerCash: state.cash,
@@ -2006,7 +2030,7 @@ function delegateItems(state: GameState, notes: string[]): void {
  * The private holding's month: team salaries, fund fee, loan instalments,
  * shares coming out of lockup, quarterly dividends, the yearly balance.
  */
-function holdingMonth(state: GameState, month: number, income: IncomeLines, notes: string[]): void {
+function holdingMonth(state: GameState, month: number, income: IncomeLines, notes: string[], payouts?: Map<string, number>): void {
   const salaries = state.team.reduce((sum, m) => sum + m.salary, 0);
   state.cash -= salaries;
   income.salaries = -salaries;
@@ -2027,12 +2051,12 @@ function holdingMonth(state: GameState, month: number, income: IncomeLines, note
     notes.push(`${lock.name}: Die Sperrfrist ist vorbei. Deine restlichen Aktien bringen ${Math.round(amount).toLocaleString("de-DE")} €.`);
   }
   state.lockups = state.lockups.filter((l) => l.due > month + 1);
-  if (month % 3 === 0) payDividends(state, income, notes);
+  if (month % 3 === 0) payDividends(state, income, notes, payouts);
   if (month % 12 === 0) yearBalance(state, month);
 }
 
 /** Majority-owned companies that earn money pay out what they do not need. */
-function payDividends(state: GameState, income: IncomeLines, notes: string[]): void {
+function payDividends(state: GameState, income: IncomeLines, notes: string[], payouts?: Map<string, number>): void {
   for (const s of state.startups.filter((x) => x.status === "active" && !x.corporate)) {
     const fundPct = s.capTable.filter((h) => h.kind === "fund").reduce((sum, h) => sum + h.pct, 0);
     if (s.stake + fundPct <= 50 || monthlyCashFlow(s.metrics) <= 0) continue;
@@ -2056,6 +2080,7 @@ function payDividends(state: GameState, income: IncomeLines, notes: string[]): v
       }
     }
     replaceStartup(state, applyDelta(s, { cash: -total }));
+    payouts?.set(s.id, total);
     notes.push(`${s.name} schüttet ${Math.round(total).toLocaleString("de-DE")} € aus. Dein Anteil: ${Math.round(mine).toLocaleString("de-DE")} €.`);
     unlockLesson(state, "ausschuettung");
   }
@@ -2144,7 +2169,9 @@ function publishNews(state: GameState, month: number, lines: Map<string, string[
     recent.add(pick.title);
     const targets = targetsOf(pick, pool, random);
     for (const t of targets) {
-      replaceStartup(state, applyDelta(startupOf(state, t.id), pick.delta));
+      const hit = startupOf(state, t.id);
+      // News move a family business less than a startup, like board decisions do.
+      replaceStartup(state, applyDelta(hit, hit.metrics.valuedOn === "ebitda" ? familyDelta(pick.delta) : pick.delta));
       const texts = lines.get(t.id) ?? [];
       texts.push(pick.effect);
       lines.set(t.id, texts);

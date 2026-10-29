@@ -1,3 +1,4 @@
+import { familyIntroDelta, familyNeed } from "./family";
 import { sellers } from "./captable";
 import { monthLabel, monthName, MONTH_NAMES, RING_REPUTATION, WARMTH_INTRO_MIN, WARMTH_MEET, WARMTH_MEET_FIRST } from "./config";
 import { COVENANTS } from "./covenants";
@@ -250,8 +251,8 @@ function usefulFor(state: GameState, def: ContactDef): UsefulView[] {
   const out: UsefulView[] = [];
   const active = state.startups.filter((s) => s.status === "active" && !s.corporate);
   if (def.kind !== "specialist") {
-    for (const s of active.filter((x) => x.metrics.valuedOn !== "ebitda")) {
-      const why = startupNeed(state, def.id, s);
+    for (const s of active) {
+      const why = s.metrics.valuedOn === "ebitda" ? (familyIntroDelta(def.id, s) ? familyNeed(def.id, s) : null) : startupNeed(state, def.id, s);
       if (why) out.push({ label: s.name, href: `/firma/${s.id}`, why });
     }
     if (def.id === "dealflow") out.push({ label: "Neue Deals", href: "/post", why: "Empfiehlt dir ein Startup. Ist die Beziehung warm, kommen auch so öfter Angebote." });
@@ -278,7 +279,7 @@ function specialistWhy(def: ContactDef, kind: string): string {
     case "levfin":
       return "Mehr Spielraum beim Covenant, weniger Zins.";
     case "interim":
-      return "Übergabe oder Integration läuft: Sie hält den Betrieb zusammen.";
+      return "Übergabe, Integration oder eine Firma in Schieflage: Sie hält den Betrieb zusammen.";
     case "kartell":
       return "Senkt das Risiko, dass das Kartellamt untersagt.";
     default:
@@ -417,7 +418,7 @@ export function networkPage(state: GameState): NetworkPage {
       next: nextMonthOf(state, e),
     })).sort((a, b) => a.next - b.next),
     log: net.log,
-    companies: state.startups.filter((s) => s.status === "active" && !s.corporate && s.metrics.valuedOn !== "ebitda").map((s) => ({ id: s.id, name: s.name })),
+    companies: state.startups.filter((s) => s.status === "active" && !s.corporate).map((s) => ({ id: s.id, name: s.name })),
     targets: specialistTargets(state).map((t) => ({ id: t.id, label: t.label, kind: t.kind })),
     reputation: state.reputation,
     daysLeft: daysLeft(state),
@@ -450,10 +451,11 @@ export interface HelperView {
 export function helpersForCompany(state: GameState, startupId: string): HelperView[] {
   const s = state.startups.find((x) => x.id === startupId);
   if (!s || s.status !== "active" || s.corporate) return [];
-  if (s.metrics.valuedOn === "ebitda") return specialistsFor(state, startupId);
-  return CONTACTS.filter((d) => d.kind !== "specialist" && ringOpen(state, d.ring))
+  // Family businesses: the specialists, plus the classic contacts whose help fits a business valued on EBITDA.
+  const family = s.metrics.valuedOn === "ebitda";
+  const classic = CONTACTS.filter((d) => d.kind !== "specialist" && ringOpen(state, d.ring) && (!family || familyIntroDelta(d.id, s) !== null))
     .flatMap((d) => {
-      const why = startupNeed(state, d.id, s);
+      const why = family ? familyNeed(d.id, s) : startupNeed(state, d.id, s);
       if (!why) return [];
       const card = contactCard(state, d);
       return [
@@ -473,6 +475,7 @@ export function helpersForCompany(state: GameState, startupId: string): HelperVi
     })
     .sort((a, b) => Number(a.blocker !== null) - Number(b.blocker !== null) || b.warmth - a.warmth)
     .slice(0, 4);
+  return family ? [...specialistsFor(state, startupId), ...classic].slice(0, 5) : classic;
 }
 
 /** Specialists for a deal, add-on, mandate or own company. */
