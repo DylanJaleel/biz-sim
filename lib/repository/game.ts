@@ -4,6 +4,7 @@ import { getDb } from "../db";
 import { applyAction, GameRuleError, newGame, planAgenda, upgradeState, type ActionResult } from "../game/engine";
 import { monthLabel } from "../game/config";
 import type { GameAction, GameState } from "../game/types";
+import { applyNewsSeen, LATEST_RELEASE_ID } from "../changelog";
 import { applyOnboardingPatch, type OnboardingPatch } from "../game/onboarding";
 import { budgetReached, flushIfDue } from "../usage";
 import { packState, unpackState } from "./codec";
@@ -106,6 +107,20 @@ export async function saveOnboarding(userId: string, patch: OnboardingPatch): Pr
     if (!row) return;
     const state = upgradeState(unpackState(row.state));
     state.onboarding = applyOnboardingPatch(state.onboarding, patch);
+    // A new game that finishes or skips the introduction has seen the news too: the same write marks the newest release.
+    if (patch.done && state.month <= 1) state.whatsNew = applyNewsSeen(state.whatsNew, LATEST_RELEASE_ID);
+    await tx.game.update({ where: { id: row.id }, data: { state: packState(state) } });
+  });
+}
+
+/** Remembers the newest release the player has seen ("what's new" popup). Quiet like saveOnboarding: one write, no revision bump. */
+export async function saveNewsSeen(userId: string, releaseId: string): Promise<void> {
+  await getDb().$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT "id" FROM "Game" WHERE "userId" = ${userId} FOR UPDATE`;
+    const row = await tx.game.findUnique({ where: { userId } });
+    if (!row) return;
+    const state = upgradeState(unpackState(row.state));
+    state.whatsNew = applyNewsSeen(state.whatsNew, releaseId);
     await tx.game.update({ where: { id: row.id }, data: { state: packState(state) } });
   });
 }

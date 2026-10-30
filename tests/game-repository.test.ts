@@ -13,7 +13,7 @@ afterAll(async () => {
 });
 
 const { getDb } = await import("../lib/db");
-const { loadGame, performAction, resetGame, saveOnboarding, GameRuleError } = await import("../lib/repository/game");
+const { loadGame, performAction, resetGame, saveNewsSeen, saveOnboarding, GameRuleError } = await import("../lib/repository/game");
 
 let counter = 0;
 async function newUser() {
@@ -41,6 +41,36 @@ describe("game repository", () => {
     expect(after.revision).toBe(game.revision);
     expect(after.state.onboarding).toEqual({ done: true, step: 4, seen: ["mandate"] });
     expect(after.state.daysUsed).toBe(game.state.daysUsed);
+  });
+
+  it("marks the newest release as seen when a new game finishes the introduction, but not when an older game replays it", async () => {
+    const { LATEST_RELEASE_ID } = await import("../lib/changelog");
+    const fresh = await newUser();
+    await loadGame(fresh.id);
+    await saveOnboarding(fresh.id, { seen: ["mandate"] });
+    expect((await loadGame(fresh.id)).state.whatsNew).toBeUndefined();
+    await saveOnboarding(fresh.id, { done: true, step: 7 });
+    expect((await loadGame(fresh.id)).state.whatsNew).toEqual({ seen: LATEST_RELEASE_ID });
+
+    const old = await newUser();
+    const game = await loadGame(old.id);
+    await performAction(old.id, { type: "closeMonth" }, game.revision);
+    await saveOnboarding(old.id, { done: true, step: 7 });
+    expect((await loadGame(old.id)).state.whatsNew).toBeUndefined();
+  });
+
+  it("saves the seen release with one quiet write: no revision bump, never backwards", async () => {
+    const { LATEST_RELEASE_ID } = await import("../lib/changelog");
+    const user = await newUser();
+    const game = await loadGame(user.id);
+    expect(game.state.whatsNew).toBeUndefined();
+    await saveNewsSeen(user.id, LATEST_RELEASE_ID);
+    const after = await loadGame(user.id);
+    expect(after.revision).toBe(game.revision);
+    expect(after.state.whatsNew).toEqual({ seen: LATEST_RELEASE_ID });
+    expect(after.state.daysUsed).toBe(game.state.daysUsed);
+    await saveNewsSeen(user.id, "2000-01-01");
+    expect((await loadGame(user.id)).state.whatsNew).toEqual({ seen: LATEST_RELEASE_ID });
   });
 
   it("applies actions, bumps the revision and persists the state", async () => {
