@@ -133,7 +133,7 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
           </div>
           <div>
             <small>Team</small>
-            <b>{m.team} Leute</b>
+            <b>{Math.round(m.team).toLocaleString("de-DE")} Leute</b>
             <span>Stimmung {Math.round(m.morale)}</span>
           </div>
           <div>
