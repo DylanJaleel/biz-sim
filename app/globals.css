@@ -7254,3 +7254,458 @@ html:has(dialog.menu[open]) {
     display: none !important;
   }
 }
+
+/* Rangliste (League Table), Rivalen, Bietgefecht und große Mandate */
+
+.league .chip,
+.duel .chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.league .chip--bad {
+  background: var(--disagree-soft);
+  color: var(--disagree);
+}
+
+.league__tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.league .segmented a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.league .segmented a.is-on {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.league__table {
+  margin: 12px 0 10px;
+  padding: 0;
+  list-style: none;
+}
+
+.league__row {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto 54px;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 12px;
+}
+
+.league__row + .league__row {
+  border-top: 1px solid var(--line);
+}
+
+.league__row.is-me {
+  border-top-color: transparent;
+  background: var(--accent-soft);
+}
+
+.league__row.is-me + .league__row {
+  border-top-color: transparent;
+}
+
+.league__rank {
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.league__name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
+  min-width: 0;
+}
+
+.league__name small {
+  flex-basis: 100%;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.league__value {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.league__value small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.league__move {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.league__move.is-up {
+  color: var(--agree);
+}
+
+.league__move.is-down {
+  color: var(--disagree);
+}
+
+.league__history {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.league__history li {
+  display: flex;
+  flex-direction: column;
+  min-width: 120px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.league__history small,
+.league__history span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.league__rivals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.league__rival {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.league__rival p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.league__rival-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.league__rival-head small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.league__avatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--disagree-soft);
+  color: var(--disagree);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.league__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.duel.is-open {
+  border-color: color-mix(in srgb, var(--maybe) 45%, transparent);
+}
+
+.duel__vs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.duel__vs > div {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px 16px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.duel__vs > div.is-ahead {
+  border-color: var(--accent);
+}
+
+.duel__vs small,
+.duel__vs span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.duel__vs b {
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+}
+
+.duel__vs i {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 4px;
+  background: var(--accent);
+}
+
+.duel__log {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.duel__log li + li {
+  margin-top: 4px;
+}
+
+.teaser {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(240px, 1fr);
+  gap: 16px;
+  margin-top: 10px;
+}
+
+.teaser__facts {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.teaser__facts label {
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.teaser__facts label.is-on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.teaser__facts input {
+  flex: none;
+  margin-top: 2px;
+}
+
+.teaser__facts small {
+  display: block;
+  color: var(--muted);
+}
+
+.teaser__fx {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.teaser__fx em {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 600;
+}
+
+.teaser__fx .is-good {
+  background: var(--agree-soft);
+  color: var(--agree);
+}
+
+.teaser__fx .is-warn {
+  background: var(--maybe-soft);
+  color: color-mix(in srgb, var(--maybe) 80%, var(--ink));
+}
+
+.teaser__fx .is-bad {
+  background: var(--disagree-soft);
+  color: var(--disagree);
+}
+
+.teaser__fx .is-line {
+  border: 1px solid var(--line-strong);
+  background: transparent;
+}
+
+.teaser__side {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.teaser__meter > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.teaser__meter output {
+  color: var(--muted);
+}
+
+.teaser__bar {
+  display: block;
+  height: 6px;
+  margin-top: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-2);
+}
+
+.teaser__bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+}
+
+.teaser__bar--good i {
+  background: var(--agree);
+}
+
+.teaser__bar--warn i {
+  background: var(--maybe);
+}
+
+.teaser__bar--bad i {
+  background: var(--disagree);
+}
+
+.rounds__bids {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rounds__bids button {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rounds__bids button[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.rounds__bids button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.rounds__bids small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.rounds__offer {
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.rounds__power {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+
+.rounds__power .teaser__bar {
+  margin: 0;
+}
+
+@media (max-width: 720px), (max-height: 500px) {
+  .teaser {
+    grid-template-columns: 1fr;
+  }
+
+  .league__row {
+    grid-template-columns: 26px minmax(0, 1fr) auto 40px;
+    gap: 8px;
+    padding: 7px 6px;
+  }
+}
+
+@media (max-width: 420px) {
+  .duel__vs {
+    grid-template-columns: 1fr;
+  }
+}

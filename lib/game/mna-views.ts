@@ -1,4 +1,5 @@
 import { BUYOUT_REPUTATION } from "./config";
+import { bigFee } from "./mandate-big";
 import { annualEbitda, enterpriseValue, fairMultiple, sizeMultiple } from "./ebitda";
 import { daysLeft, netWorth } from "./engine";
 import { addonEv, activeSearch, lboAllowsDividends, LOW_BID_INFO, netLeverage, searchBlocker, searchCandidates, type PreviewInput } from "./lbo";
@@ -129,13 +130,14 @@ export function mandateView(state: GameState, id: string): MandateView | null {
     dd: m.dd ?? [],
     ddChoices: DD_MODULES.map((x) => ({ module: x, ...DD_LABEL[x] })),
     found: m.findings.filter((f) => f.found).map(publicFinding),
-    bids: m.bids ?? [],
+    // Without the hidden ceiling of each bidder (large mandates).
+    bids: (m.bids ?? []).map((b) => ({ buyer: b.buyer, kind: b.kind, ev: b.ev, ...(b.earnout ? { earnout: b.earnout } : {}), ...(b.out ? { out: true } : {}) })),
     signed: m.signed,
     leak: Boolean(m.leak),
     outcome: m.outcome,
     multiples: MULTIPLE_CHOICES,
     days: MANDATE_DAYS,
-    feeAtWish: mandateFee(m.wish),
+    feeAtWish: m.big ? bigFee(m.wish) : mandateFee(m.wish),
     blocker,
     daysLeft: daysLeft(state),
     waiting: m.status === "bids",

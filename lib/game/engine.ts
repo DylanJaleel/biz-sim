@@ -1,7 +1,8 @@
 import {
   ACTION_DAYS,
   CARRY,
-  REPUTATION_SOFT_CAP,
+  REPUTATION_FADE_FROM,
+  REPUTATION_GAIN_STEPS,
   FIRE_SALE,
   LIVING_COSTS,
   OVERDRAFT_LIMIT,
@@ -141,6 +142,8 @@ import type {
 import { voteFromStance } from "./votes";
 import type { Ctx } from "./mna-core";
 import { mandatesMonth, planMandates, playMandate } from "./mna";
+import { afterDuelPurchase, duelBlocker, duelsMonth, planRivalHouses, playDuel } from "./rivals";
+import { leagueMonth } from "./league";
 import { acquireDeal, cure, examine, lboAllowsDividends, lboMonth, planSearchTargets, searchMonth, startSearch, stopSearch, targetDeal, targetEv } from "./lbo";
 import { acquire, makePlatform, planAddons, platformMonth, recordSale, startSale, stopSale } from "./platform";
 import { explainValueChange, familyDelta, familyIntroDelta, LBO_EXCLUDED_TEMPLATES, playLever, STARTUP_ONLY_TEMPLATES } from "./family";
@@ -451,8 +454,15 @@ function playAction(current: GameState, action: GameAction): { state: GameState;
     case "acquire": {
       // A rival the player has warmed up to steps back before the price is set.
       defuseRivals(ctxOf(state));
+      const duel = duelBlocker(state, action.targetId, action.bid);
+      if (duel) throw new GameRuleError(duel);
       acquire(ctxOf(state), action.targetId, { bid: action.bid, bank: action.bank, vendor: action.vendor, earnout: action.earnout }, action.integration);
       afterAcquire(state, action.targetId);
+      afterDuelPurchase(ctxOf(state), action.targetId);
+      return { state, result: { kind: "none" } };
+    }
+    case "duel": {
+      playDuel(ctxOf(state), action.targetId, action.move, action.size);
       return { state, result: { kind: "none" } };
     }
     case "favor": {
@@ -868,7 +878,10 @@ function playAction(current: GameState, action: GameAction): { state: GameState;
       if (state.reputation < BUYOUT_REPUTATION) throw new GameRuleError(`Eine Firma übernehmen kannst du ab ${BUYOUT_REPUTATION} Ruf.`);
       // Family businesses valued by EBITDA: the structured purchase with a bank loan in the company.
       if (s.offer.ev) {
+        const duel = duelBlocker(state, s.id, "ask");
+        if (duel) throw new GameRuleError(duel);
         acquireDeal(ctxOf(state), s, { bid: "ask", bank: action.leverage ? BUYOUT_LOAN_SHARE : 0, vendor: 0, earnout: 0 });
+        afterDuelPurchase(ctxOf(state), s.id);
         return { state, result: { kind: "none" } };
       }
       const price = s.offer.ticket;
@@ -1296,7 +1309,7 @@ function applyFull(state: GameState, s: Startup, input: Delta, texts: string[], 
   const delta = input.dilutionTo ? { ...input, dilutionTo: { ...input.dilutionTo, name: fill(input.dilutionTo.name, s) } } : input;
   if (text) texts.push(fill(text, s));
   state.cash += delta.playerCash ?? 0;
-  state.reputation = Math.min(100, Math.max(0, state.reputation + (delta.reputation ?? 0)));
+  state.reputation = Math.min(100, Math.max(0, state.reputation + reputationGain(state, delta.reputation ?? 0)));
   if (delta.exit !== undefined && s.status === "active") {
     const split = waterfall(s, delta.exit);
     const payout = (split.payouts.find((p) => p.id === "you")?.amount ?? 0) + split.carry;
@@ -1373,11 +1386,25 @@ function decide(
 }
 
 /**
- * Reputation is harder to gain at the top: above 80, gains are halved.
+ * The one place where gains of reputation are weighed: the higher the
+ * reputation, the smaller the share that counts (REPUTATION_GAIN_STEPS).
+ * Fractions are carried over in `reputationRest`, so the result must be applied.
  * A known name still opens doors; it just doesn't keep growing by itself.
  */
 export function reputationGain(state: GameState, delta: number): number {
-  return delta > 0 && state.reputation >= REPUTATION_SOFT_CAP ? Math.ceil(delta / 2) : delta;
+  if (delta <= 0) return delta;
+  const step = [...REPUTATION_GAIN_STEPS].reverse().find((s) => state.reputation >= s.from) ?? REPUTATION_GAIN_STEPS[0];
+  const raw = delta * step.factor + (state.reputationRest ?? 0);
+  let whole = Math.floor(raw + 1e-9);
+  state.reputationRest = Math.round((raw - whole) * 1000) / 1000;
+  const month = state.reputationMonth?.month === state.month ? state.reputationMonth : { month: state.month, gained: 0 };
+  if (whole > step.cap - month.gained) {
+    whole = Math.max(0, step.cap - month.gained);
+    state.reputationRest = 0;
+  }
+  month.gained += whole;
+  state.reputationMonth = month;
+  return whole;
 }
 
 function mapValues(o: ReturnType<typeof outlook>): Record<Vote, number> {
@@ -1487,7 +1514,7 @@ function resolveEffects(state: GameState, month: number, lines: Map<string, stri
       if (item) {
         item.result = { good, text: fill(text, s), month };
         if (item.decision && !item.decision.lapsed && item.decision.vote === item.decision.outcome) {
-          state.reputation = Math.min(100, Math.max(0, state.reputation + (good ? RESULT_REPUTATION.good : RESULT_REPUTATION.bad)));
+          state.reputation = Math.min(100, Math.max(0, state.reputation + reputationGain(state, good ? RESULT_REPUTATION.good : RESULT_REPUTATION.bad)));
         }
       }
     } else if (effect.review && state.items.find((i) => i.id === effect.itemId)?.followUp?.done === false) {
@@ -1720,6 +1747,7 @@ export function closeMonth(state: GameState): MonthReport {
   lboMonth(mna, month, notes, lines);
   platformMonth(mna, month, notes, lines);
   mandatesMonth(mna, month, notes, income);
+  duelsMonth(mna, month, notes);
   searchMonth(mna, month, notes, income);
 
   if (month >= NEWS_FROM_MONTH) publishNews(state, month, lines, notes);
@@ -1777,7 +1805,7 @@ export function closeMonth(state: GameState): MonthReport {
   planRounds(state);
   planExits(state);
   // Fame fades a little at the very top: a big name needs to keep delivering.
-  if (state.reputation > REPUTATION_SOFT_CAP + 5) state.reputation -= 1;
+  if (state.reputation > REPUTATION_FADE_FROM && !(state.reputationMonth?.month === month && state.reputationMonth.gained > 0)) state.reputation -= 1;
   offerCorporateSeat(state);
   announceNextStep(state);
   pruneDeals(state);
@@ -1795,6 +1823,8 @@ export function closeMonth(state: GameState): MonthReport {
   state.calendar = [];
   // Favours asked, invitations sent, events accepted earlier now in the calendar.
   planNetwork(mna);
+  planRivalHouses(mna);
+  leagueMonth(mna);
   planAgenda(state);
 
   // Family businesses: one line on why the value moved, so a drop is never a riddle.
