@@ -5,7 +5,6 @@ import { ActionButton } from "@/components/game/ActionButton";
 import { eur, pct } from "@/components/game/format";
 import { FoundationForm } from "./FoundationForm";
 import { WealthTabs } from "./WealthTabs";
-import styles from "./wealth.module.css";
 
 // Stiftung & Dynastie: der Lebenswerk-Wert (nur Anzeige), die Stufen nach dem
 // Plattform-Investor, die gemeinnützige Stiftung und die Nachfolge in der Familie.
@@ -25,17 +24,17 @@ function LegacyChart({ points }: { points: LegacyPageView["history"] }) {
   const area = `${line} L${x(points.length - 1).toFixed(1)},${y(0)} L${x(0)},${y(0)} Z`;
   const ticks = [0, max / 2, max].map((t) => Math.round(t / 10) * 10);
   return (
-    <svg className={styles.chart} viewBox={`0 0 ${w} ${h}`} role="img" aria-label="Verlauf des Lebenswerk-Werts">
+    <svg className="wl-chart" viewBox={`0 0 ${w} ${h}`} role="img" aria-label="Verlauf des Lebenswerk-Werts">
       {ticks.map((t) => (
         <g key={t}>
-          <line className={styles.chartGrid} x1={pad.l} x2={w - pad.r} y1={y(t)} y2={y(t)} />
+          <line className="wl-chart-grid" x1={pad.l} x2={w - pad.r} y1={y(t)} y2={y(t)} />
           <text x={2} y={y(t) + 4}>
             {t}
           </text>
         </g>
       ))}
-      <path className={styles.chartArea} d={area} />
-      <path className={styles.chartLine} d={line} />
+      <path className="wl-chart-area" d={area} />
+      <path className="wl-chart-line" d={line} />
       <text x={pad.l} y={h - 4}>
         {points[0]!.label.replace(" · ", " ")}
       </text>
@@ -48,7 +47,7 @@ function LegacyChart({ points }: { points: LegacyPageView["history"] }) {
 
 function Bar({ value, max, tone }: { value: number; max: number; tone?: "warn" | "good" }) {
   return (
-    <span className={`${styles.bar} ${tone === "warn" ? styles.barWarn : tone === "good" ? styles.barGood : ""}`}>
+    <span className={`wl-bar ${tone === "warn" ? "wl-bar-warn" : tone === "good" ? "wl-bar-good" : ""}`}>
       <i style={{ width: `${Math.max(0, Math.min(100, (value / max) * 100))}%` }} />
     </span>
   );
@@ -102,16 +101,16 @@ export async function Legacy() {
           { id: "dynasty", label: "Dynastie", count: d.council ? 1 : 0 },
         ]}
       >
-        <section aria-label="Lebenswerk" className={styles.two}>
+        <section aria-label="Lebenswerk" className="wl-two">
           <div className="panel">
             <p className="eyebrow">Lebenswerk-Wert</p>
-            <p className={styles.score}>{v.legacy.total}</p>
-            <div className={styles.stack} aria-hidden="true">
+            <p className="wl-score">{v.legacy.total}</p>
+            <div className="wl-stack" aria-hidden="true">
               {v.legacy.parts.map((p) => (
                 <i key={p.id} style={{ width: `${(p.points / Math.max(1, v.legacy.total)) * 100}%`, background: COLORS[p.id] }} />
               ))}
             </div>
-            <ul className={styles.parts}>
+            <ul className="wl-parts">
               {v.legacy.parts.map((p) => (
                 <li key={p.id}>
                   <i style={{ background: COLORS[p.id] }} aria-hidden="true" />
@@ -132,10 +131,10 @@ export async function Legacy() {
             </div>
             <div className="panel">
               <h2 className="panel__title">Die Stufen danach</h2>
-              <ul className={styles.ladder}>
+              <ul className="wl-ladder">
                 {v.ladder.map((s, i) => (
                   <li key={s.title} data-state={s.done ? "done" : s.next ? "next" : undefined}>
-                    <span className={styles.mark}>{s.done ? "✓" : i + 1}</span>
+                    <span className="wl-mark">{s.done ? "✓" : i + 1}</span>
                     <span>
                       <b>{s.title}</b>
                       <small>{s.requirement}</small>
@@ -147,7 +146,7 @@ export async function Legacy() {
             <div className="panel">
               <h2 className="panel__title">Verwaltetes Vermögen (AuM)</h2>
               <p className="muted small">Alles, über dessen Anlage du entscheidest, egal wem es gehört. Für die Fondsfamilie zählt 1 Mrd. €.</p>
-              <div className={styles.lines}>
+              <div className="wl-lines">
                 <div>
                   <span>Family Office (Familienvermögen)</span>
                   <span>{v.familyOffice ? eur(v.aum.familyOffice) : "noch nicht gegründet"}</span>
@@ -180,7 +179,7 @@ export async function Legacy() {
                 Jahr) fließt in die Förderung. Weil der Zweck der Allgemeinheit dient, ist sie gemeinnützig: Zuwendungen bis {eur(f.rules.allowance)} in zehn Jahren erstattet das
                 Finanzamt zu {pct(f.rules.taxRate, 0)}.
               </p>
-              <div className={styles.grid}>
+              <div className="wl-grid">
                 {f.purposes.map((p) => (
                   <div key={p.id} className="panel">
                     <b>{p.label}</b>
@@ -208,11 +207,11 @@ export async function Legacy() {
               </p>
             </div>
           ) : (
-            <div className={styles.two}>
+            <div className="wl-two">
               <div className="panel">
                 <p className="eyebrow">Deine Stiftung</p>
                 <h2 className="panel__title">{f.purposes.find((p) => p.id === f.state!.purpose)?.label}</h2>
-                <div className={styles.lines}>
+                <div className="wl-lines">
                   <div>
                     <span>Grundstockvermögen</span>
                     <span>{eur(f.state.capital)}</span>
@@ -245,7 +244,7 @@ export async function Legacy() {
                   nichts mehr.
                 </p>
                 <FoundationForm mode="give" amounts={[...f.amounts]} refund={f.refund} cash={v.cash} cost={0} days={f.rules.giveDays} disabled={false} revision={revision} />
-                <ul className={styles.list} style={{ marginTop: 12 }}>
+                <ul className="wl-list" style={{ marginTop: 12 }}>
                   {f.state.gifts.map((g) => (
                     <li key={g.month}>
                       {eur(g.amount)} · davon {eur(g.deductible)} steuerlich abziehbar
@@ -292,7 +291,7 @@ export async function Legacy() {
               )}
 
               {d.inCharge ? (
-                <div className={styles.two}>
+                <div className="wl-two">
                   <div className="panel">
                     <p className="eyebrow">Generation 2</p>
                     <h2 className="panel__title">{d.inCharge.name} führt das Tagesgeschäft</h2>
@@ -315,7 +314,7 @@ export async function Legacy() {
                   <div className="panel">
                     <h2 className="panel__title">Anlagestrategie des Family Office</h2>
                     <p className="muted small">Freies Geld über einer Reserve von sechs Monatskosten plus 150.000 € legt das Family Office jeden Monat nach dieser Mischung an.</p>
-                    <div className={styles.grid}>
+                    <div className="wl-grid">
                       {d.strategies.map((s) => (
                         <div key={s.id} className="panel" data-on={ds.strategy === s.id}>
                           <b>
@@ -342,11 +341,11 @@ export async function Legacy() {
                     Wer das Family Office einmal führt, bestimmt, was aus deinem Vermögen wird. Beide brauchen bei gleichem Mentoring etwa gleich lange; sie unterscheiden sich in
                     ihren Eigenschaften, nicht darin, wer besser ist.
                   </p>
-                  <div className={styles.grid}>
+                  <div className="wl-grid">
                     {d.heirs.map((h) => (
-                      <div key={h.kind} className={`panel ${styles.heir}`}>
-                        <div className={styles.heirHead}>
-                          <span className={`${styles.avatar} ${h.kind === "kind" ? styles.avatarWarm : ""}`}>{h.short}</span>
+                      <div key={h.kind} className="panel wl-heir">
+                        <div className="wl-heir-head">
+                          <span className={`wl-avatar ${h.kind === "kind" ? "wl-avatar-warm" : ""}`}>{h.short}</span>
                           <span>
                             <b>{h.name}</b>
                             <br />
@@ -356,7 +355,7 @@ export async function Legacy() {
                           </span>
                         </div>
                         <p className="small">{h.text}</p>
-                        <div className={styles.traits}>
+                        <div className="wl-traits">
                           {Object.entries(h.traits).map(([k, val]) => (
                             <div key={k}>
                               <span className="muted">{k}</span>
@@ -365,7 +364,7 @@ export async function Legacy() {
                             </div>
                           ))}
                         </div>
-                        <div className={styles.lines}>
+                        <div className="wl-lines">
                           <div>
                             <span>Reife heute</span>
                             <span>
@@ -378,13 +377,13 @@ export async function Legacy() {
                           </div>
                         </div>
                         <b className="small">Dafür</b>
-                        <ul className={styles.list}>
+                        <ul className="wl-list">
                           {h.pros.map((p) => (
                             <li key={p}>{p}</li>
                           ))}
                         </ul>
                         <b className="small">Dagegen</b>
-                        <ul className={styles.list}>
+                        <ul className="wl-list">
                           {h.cons.map((p) => (
                             <li key={p}>{p}</li>
                           ))}
@@ -401,10 +400,10 @@ export async function Legacy() {
                   </div>
                 </>
               ) : (
-                <div className={styles.two}>
-                  <div className={`panel ${styles.heir}`}>
-                    <div className={styles.heirHead}>
-                      <span className={`${styles.avatar} ${heir.kind === "kind" ? styles.avatarWarm : ""}`}>{heir.short}</span>
+                <div className="wl-two">
+                  <div className="panel wl-heir">
+                    <div className="wl-heir-head">
+                      <span className={`wl-avatar ${heir.kind === "kind" ? "wl-avatar-warm" : ""}`}>{heir.short}</span>
                       <span>
                         <p className="eyebrow" style={{ margin: 0 }}>
                           Deine Nachfolge seit {heir.since}
@@ -427,11 +426,11 @@ export async function Legacy() {
                       <Bar value={ds.cohesion} max={100} tone={ds.cohesion >= d.rules.cohesion ? "good" : "warn"} />
                     </div>
                     {heir.stalledUntil && (
-                      <p className={styles.stress}>
+                      <p className="wl-stress">
                         Durststrecke bis {heir.stalledUntil}: Die Reife wächst kaum. Mit mindestens {d.rules.stallDays} Mentoring-Tagen bis dahin bleibt {heir.name} meist an Bord.
                       </p>
                     )}
-                    <div className={styles.lines}>
+                    <div className="wl-lines">
                       <div>
                         <span>Mentoring diesen Monat</span>
                         <span>
@@ -479,7 +478,7 @@ export async function Legacy() {
                     Regeln, solange alle sich einig sind. Jeder Artikel kostet einen Tag und {eur(d.rules.charterCost)} für die Anwältin und hebt den Zusammenhalt um{" "}
                     {d.rules.charterCohesion}. Der Familienrat tagt jedes Jahr im April.
                   </p>
-                  <ul className={styles.charter}>
+                  <ul className="wl-charter">
                     {d.charter.map((c) => (
                       <li key={c.id}>
                         <div>

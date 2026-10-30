@@ -5,7 +5,6 @@ import { ActionButton } from "@/components/game/ActionButton";
 import { eur, pct } from "@/components/game/format";
 import { BuyPanel } from "./BuyPanel";
 import { WealthTabs } from "./WealthTabs";
-import styles from "./wealth.module.css";
 
 // Immobilien: Marktplatz, Bestand, Zinsen. Kaufen mit Hypothek, vermieten,
 // sanieren, verkaufen. Die Zinsbindung entscheidet, ob eine Zinswende wehtut.
@@ -27,18 +26,18 @@ function RateChart({ points }: { points: RatePoint[] }) {
   const futureFrom = Math.max(0, past.length - 1);
   const labels = points.filter((_, i) => i === 0 || i === points.length - 1 || (now > 0 && i === now));
   return (
-    <svg className={styles.chart} viewBox={`0 0 ${w} ${h}`} role="img" aria-label="Verlauf des Marktzinses für zehn Jahre Zinsbindung">
+    <svg className="wl-chart" viewBox={`0 0 ${w} ${h}`} role="img" aria-label="Verlauf des Marktzinses für zehn Jahre Zinsbindung">
       {[0.03, 0.04, 0.05, 0.06].map((r) => (
         <g key={r}>
-          <line className={styles.chartGrid} x1={pad.l} x2={w - pad.r} y1={y(r)} y2={y(r)} />
+          <line className="wl-chart-grid" x1={pad.l} x2={w - pad.r} y1={y(r)} y2={y(r)} />
           <text x={4} y={y(r) + 4}>
             {Math.round(r * 100)} %
           </text>
         </g>
       ))}
-      <path className={styles.chartLine} d={line(past, 0)} />
-      {now >= 0 && <path className={styles.chartFuture} d={line(points.slice(futureFrom), futureFrom)} />}
-      {now >= 0 && <line className={styles.chartNow} x1={x(now)} x2={x(now)} y1={pad.t} y2={h - pad.b} />}
+      <path className="wl-chart-line" d={line(past, 0)} />
+      {now >= 0 && <path className="wl-chart-future" d={line(points.slice(futureFrom), futureFrom)} />}
+      {now >= 0 && <line className="wl-chart-now" x1={x(now)} x2={x(now)} y1={pad.t} y2={h - pad.b} />}
       {labels.map((p) => (
         <text key={p.month} x={Math.min(w - 90, Math.max(pad.l, x(points.indexOf(p)) - 40))} y={h - 6}>
           {p.label.replace(" · ", " ")}
@@ -65,21 +64,21 @@ export async function Estate() {
         </p>
       </header>
 
-      <div className={styles.strip}>
-        <span className={styles.note}>
+      <div className="wl-strip">
+        <span className="wl-note">
           Marktzins 10 Jahre <b>{rate(v.rate.now)}</b> · 5 Jahre {rate(v.rate.byBinding[5])} · 15 Jahre {rate(v.rate.byBinding[15])}
         </span>
         {v.rate.turn && (
-          <span className={styles.noteWarn}>
+          <span className="wl-note-warn">
             {v.rate.turn.up ? "Zinswende angekündigt" : "Zinssenkung angekündigt"}: ab {v.rate.turn.month}, danach eher {rate(v.rate.turn.target)}.
           </span>
         )}
         {v.rate.bank.active ? (
-          <span className={styles.noteGood}>{v.rate.bank.name} gibt dir 0,2 Punkte Nachlass.</span>
+          <span className="wl-note-good">{v.rate.bank.name} gibt dir 0,2 Punkte Nachlass.</span>
         ) : (
-          <span className={styles.note}>Mit {v.rate.bank.name} ab Wärme 50 wird der Zins 0,2 Punkte günstiger.</span>
+          <span className="wl-note">Mit {v.rate.bank.name} ab Wärme 50 wird der Zins 0,2 Punkte günstiger.</span>
         )}
-        {v.penthouse.owned && <span className={styles.noteGood}>Du arbeitest aus dem Penthouse: {eur(v.penthouse.rentSaved)} Büromiete gespart.</span>}
+        {v.penthouse.owned && <span className="wl-note-good">Du arbeitest aus dem Penthouse: {eur(v.penthouse.rentSaved)} Büromiete gespart.</span>}
       </div>
 
       <div className="kpis">
@@ -139,11 +138,11 @@ export async function Estate() {
             {v.owned.length === 0 ? (
               <p className="muted">Noch kein Objekt. Im Marktplatz findest du jedes Quartal neue Angebote.</p>
             ) : (
-              <div className={styles.table}>
+              <div className="wl-table">
                 {v.owned.map((p) => (
-                  <article key={p.id} className={styles.row}>
-                    <div className={styles.rowImg} style={{ backgroundImage: `url(/boardroom/${p.image}.webp)` }} aria-hidden="true" />
-                    <div className={styles.cell}>
+                  <article key={p.id} className="wl-row">
+                    <div className="wl-row-img" style={{ backgroundImage: `url(/boardroom/${p.image}.webp)` }} aria-hidden="true" />
+                    <div className="wl-cell">
                       <b>{p.name}</b>
                       <small>
                         {p.label} · {p.cityName} · seit {p.bought}
@@ -154,12 +153,12 @@ export async function Estate() {
                         {p.renovating && ` · Sanierung bis ${p.renovating}`}
                       </small>
                     </div>
-                    <div className={styles.cell}>
+                    <div className="wl-cell">
                       <small>Marktwert</small>
                       <b>{eur(p.value)}</b>
                       <small>Kauf {eur(p.price)}</small>
                     </div>
-                    <div className={styles.cell}>
+                    <div className="wl-cell">
                       <small>Darlehen</small>
                       <b>{p.debt > 0 ? eur(p.debt) : "keins"}</b>
                       {p.ltv !== null && (
@@ -168,7 +167,7 @@ export async function Estate() {
                         </small>
                       )}
                     </div>
-                    <div className={styles.cell}>
+                    <div className="wl-cell">
                       <small>Zins fest</small>
                       <b>{p.rate !== null ? rate(p.rate) : "–"}</b>
                       {p.until && (
@@ -178,14 +177,14 @@ export async function Estate() {
                         </small>
                       )}
                     </div>
-                    <div className={styles.cell}>
+                    <div className="wl-cell">
                       <small>Cashflow im Monat</small>
                       <b className={p.cashflow < 0 ? "neg" : "pos"}>{eur(p.cashflow)}</b>
                       <small>
                         {p.kind === "penthouse" ? "Wohnsitz und Büro" : `Miete ${eur(p.rentMonth)}`} · Rate {eur(p.payment)}
                       </small>
                     </div>
-                    <div className={styles.rowActions}>
+                    <div className="wl-row-actions">
                       <ActionButton
                         action={{ type: "estate", move: "renovate", propertyId: p.id }}
                         revision={revision}
@@ -216,7 +215,7 @@ export async function Estate() {
             )}
           </section>
 
-          <section aria-label="Zinsen und Ziele" className={styles.two}>
+          <section aria-label="Zinsen und Ziele" className="wl-two">
             <div className="panel">
               <h2 className="panel__title">Marktzins für zehn Jahre fest</h2>
               <p className="muted small">
@@ -233,10 +232,10 @@ export async function Estate() {
               <p className="eyebrow">Nebenziel</p>
               <h2 className="panel__title">Immobilien-Magnat{tier ? ` · ${tier.name}` : ""}</h2>
               <p className="muted small">Zählt den Marktwert deiner Anlageobjekte, ohne Penthouse.</p>
-              <ul className={styles.ladder}>
+              <ul className="wl-ladder">
                 {v.magnate.tiers.map((x, i) => (
                   <li key={x.name} data-state={i <= v.magnate.tier ? "done" : i === v.magnate.tier + 1 ? "next" : undefined}>
-                    <span className={styles.mark}>{i <= v.magnate.tier ? "✓" : i + 1}</span>
+                    <span className="wl-mark">{i <= v.magnate.tier ? "✓" : i + 1}</span>
                     <span>
                       <b>{x.name}</b>
                       <small>ab {eur(x.value)} Marktwert</small>
@@ -246,7 +245,7 @@ export async function Estate() {
               </ul>
               {nextTier && (
                 <>
-                  <span className={styles.bar} style={{ marginTop: 12 }}>
+                  <span className="wl-bar" style={{ marginTop: 12 }}>
                     <i style={{ width: `${Math.min(100, (v.magnate.value / nextTier.value) * 100)}%` }} />
                   </span>
                   <p className="muted small">

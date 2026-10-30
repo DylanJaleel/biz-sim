@@ -5,7 +5,6 @@ import type { OfferView } from "@/lib/game/wealth-views";
 import type { Binding } from "@/lib/game/wealth-types";
 import { ActionButton } from "@/components/game/ActionButton";
 import { eur, pct } from "@/components/game/format";
-import styles from "./wealth.module.css";
 
 const BINDINGS: Binding[] = [5, 10, 15];
 const rate = (r: number) => pct(r, 2);
@@ -22,28 +21,33 @@ export function BuyPanel({ offers, cash, daysLeft, days, revision }: { offers: O
   const ltv = ltvWish !== null && ltvs.includes(ltvWish) ? ltvWish : offer.maxLtv;
   const f = offer.options.find((o) => o.ltv === ltv && o.binding === binding)?.f ?? offer.standard;
   const short = Math.max(0, f.cash - cash);
+  // Schmale Ansicht: Das Angebot steht unter den Karten, also dorthin scrollen.
+  const pick = (id: string) => {
+    setSelectedId(id);
+    if (window.matchMedia("(max-width: 1024px)").matches) document.getElementById("wl-offer")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
   return (
-    <div className={styles.market}>
-      <div className={styles.cards}>
+    <div className="wl-market">
+      <div className="wl-cards">
         {offers.map((o) => (
           <button
             key={o.id}
             type="button"
-            className={o.id === offer.id ? styles.cardOn : styles.card}
+            className={o.id === offer.id ? "wl-card-on" : "wl-card"}
             data-blocked={o.blocker !== null}
-            onClick={() => setSelectedId(o.id)}
+            onClick={() => pick(o.id)}
             aria-pressed={o.id === offer.id}
           >
-            <div className={styles.cardImg} style={{ backgroundImage: `url(/boardroom/${o.image}.webp)` }}>
-              <span className={styles.kind}>{o.label}</span>
-              <span className={styles.city}>{o.cityName}</span>
+            <div className="wl-card-img" style={{ backgroundImage: `url(/boardroom/${o.image}.webp)` }}>
+              <span className="wl-kind">{o.label}</span>
+              <span className="wl-city">{o.cityName}</span>
             </div>
-            <div className={styles.cardBody}>
+            <div className="wl-card-body">
               <b>{o.name}</b>
               <span className="muted small">
                 {o.area.toLocaleString("de-DE")} m²{o.units > 1 ? ` · ${o.units} ${o.kind === "gewerbe" ? "Mieter" : "Wohnungen"}` : ""}
               </span>
-              <dl className={styles.facts}>
+              <dl className="wl-facts">
                 <div>
                   <dt>Preis</dt>
                   <dd>{eur(o.price)}</dd>
@@ -63,13 +67,13 @@ export function BuyPanel({ offers, cash, daysLeft, days, revision }: { offers: O
         ))}
       </div>
 
-      <aside className={`panel ${styles.panelSticky}`} aria-label={`Angebot ${offer.name}`}>
+      <aside id="wl-offer" className="panel wl-panel-sticky" aria-label={`Angebot ${offer.name}`}>
         <p className="eyebrow">Angebot prüfen</p>
         <h2 className="panel__title">{offer.name}</h2>
         <p className="muted small">
           {offer.label} in {offer.cityName}, Zustand {offer.conditionLabel}. Steht bis Ende des Quartals.
         </p>
-        <div className={styles.lines}>
+        <div className="wl-lines">
           <div>
             <span>Kaufpreis</span>
             <span>{eur(offer.price)}</span>
@@ -93,19 +97,19 @@ export function BuyPanel({ offers, cash, daysLeft, days, revision }: { offers: O
         </div>
 
         <b className="small">Beleihung (Hypothek in % vom Kaufpreis)</b>
-        <div className={styles.choices} role="radiogroup" aria-label="Beleihung">
+        <div className="wl-choices" role="radiogroup" aria-label="Beleihung">
           {ltvs.map((l) => (
-            <button key={l} type="button" role="radio" aria-checked={l === ltv} className={l === ltv ? styles.choiceOn : styles.choice} onClick={() => setLtv(l)}>
+            <button key={l} type="button" role="radio" aria-checked={l === ltv} className={l === ltv ? "wl-choice-on" : "wl-choice"} onClick={() => setLtv(l)}>
               {pct(l, 0)}
             </button>
           ))}
         </div>
         <b className="small">Zinsbindung</b>
-        <div className={styles.choices} role="radiogroup" aria-label="Zinsbindung">
+        <div className="wl-choices" role="radiogroup" aria-label="Zinsbindung">
           {BINDINGS.map((b) => {
             const r = offer.options.find((o) => o.ltv === ltv && o.binding === b)?.f.rate ?? offer.rates[b];
             return (
-              <button key={b} type="button" role="radio" aria-checked={b === binding} className={b === binding ? styles.choiceOn : styles.choice} onClick={() => setBinding(b)}>
+              <button key={b} type="button" role="radio" aria-checked={b === binding} className={b === binding ? "wl-choice-on" : "wl-choice"} onClick={() => setBinding(b)}>
                 {b} Jahre
                 <small>{rate(r)}</small>
               </button>
@@ -113,7 +117,7 @@ export function BuyPanel({ offers, cash, daysLeft, days, revision }: { offers: O
           })}
         </div>
 
-        <div className={styles.lines}>
+        <div className="wl-lines">
           <div>
             <span>Darlehen</span>
             <span>{eur(f.loan)}</span>
@@ -154,7 +158,7 @@ export function BuyPanel({ offers, cash, daysLeft, days, revision }: { offers: O
           )}
         </div>
         {f.loan > 0 && (
-          <p className={f.stressCashflow < 0 ? styles.stress : styles.stressOk}>
+          <p className={f.stressCashflow < 0 ? "wl-stress" : "wl-stress-ok"}>
             <b>Zinswende-Test:</b> Nach {binding} Jahren bleiben {eur(f.rest)} Restschuld. Bei zwei Punkten mehr ({rate(f.stressRate)}) wird der Cashflow zu {eur(f.stressCashflow)}{" "}
             im Monat.
           </p>

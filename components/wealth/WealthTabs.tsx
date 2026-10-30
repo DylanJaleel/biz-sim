@@ -1,7 +1,6 @@
 "use client";
 
 import { Children, useCallback, useSyncExternalStore, type ReactNode } from "react";
-import styles from "./wealth.module.css";
 
 interface Tab {
   id: string;
@@ -43,11 +42,11 @@ export function WealthTabs({ tabs, storageKey, children }: { tabs: Tab[]; storag
   const panels = Children.toArray(children);
   return (
     <>
-      <div className={styles.tabs} role="tablist">
+      <div className="wl-tabs" role="tablist">
         {tabs.map((t) => (
-          <button key={t.id} type="button" role="tab" aria-selected={t.id === active} className={t.id === active ? styles.tabOn : styles.tab} onClick={() => choose(t.id)}>
+          <button key={t.id} type="button" role="tab" aria-selected={t.id === active} className={t.id === active ? "wl-tab-on" : "wl-tab"} onClick={() => choose(t.id)}>
             {t.label}
-            {t.count !== undefined && t.count > 0 && <span className={styles.tabCount}>{t.count}</span>}
+            {t.count !== undefined && t.count > 0 && <span className="wl-tab-count">{t.count}</span>}
           </button>
         ))}
       </div>

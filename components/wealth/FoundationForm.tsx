@@ -4,7 +4,6 @@ import { useState } from "react";
 import type { FoundationPurpose } from "@/lib/game/wealth-types";
 import { ActionButton } from "@/components/game/ActionButton";
 import { eur } from "@/components/game/format";
-import styles from "./wealth.module.css";
 
 interface Props {
   mode: "found" | "give";
@@ -24,7 +23,7 @@ export function FoundationForm({ mode, amounts, refund, purposes, cash, cost, da
   const [purpose, setPurpose] = useState<FoundationPurpose>(purposes?.[0]?.id ?? "bildung");
   const need = amount + (mode === "found" ? cost : 0);
   return (
-    <div className={styles.form}>
+    <div className="wl-form">
       <label>
         Betrag
         <select value={amount} onChange={(e) => setAmount(Number(e.target.value))}>
