@@ -22,6 +22,20 @@ import {
 } from "./mna-config";
 import { between, eur, generateFindings, mio, mnaOf, pickOf, roundTo, times, type Ctx } from "./mna-core";
 import { BOUTIQUE_MANDATE_BONUS } from "./network-config";
+import { leagueBonus, LEAGUE_TOP, leagueRank, recordLeague, yearOf } from "./league";
+import {
+  bestBig,
+  BIG_DAYS,
+  BIG_MANDATE_REPUTATION,
+  BIG_MANDATE_SHARE,
+  BIG_MANDATE_TOP_SHARE,
+  bidValue,
+  bigBids,
+  bigFee,
+  drawBigMandate,
+  playRound,
+  sendTeaser,
+} from "./mandate-big";
 import type { BuyerFocus, GameAction, GameState, IncomeLines, Mandate, MandateBid, ProcessKind } from "./types";
 
 // M&A-Mandate: Du berätst einen Familienunternehmer beim Verkauf oder einen
@@ -66,7 +80,7 @@ export function planMandates(ctx: Ctx): void {
   const r = mnaRandom(state, `mandate|${state.month}`);
   const warm = state.contacts.some((c) => c.id === "bank" && c.met && c.warmth >= 40);
   const boutique = state.contacts.some((c) => c.id === "boutique" && c.met && c.warmth >= 40);
-  if (r() > MANDATE_CHANCE + (warm ? MANDATE_WARM_BONUS : 0) + (boutique ? BOUTIQUE_MANDATE_BONUS : 0)) return;
+  if (r() > MANDATE_CHANCE + (warm ? MANDATE_WARM_BONUS : 0) + (boutique ? BOUTIQUE_MANDATE_BONUS : 0) + leagueBonus(state)) return;
   m.mandates.push(drawMandate(ctx, r));
 }
 
@@ -86,6 +100,10 @@ export function offerMandate(ctx: Ctx): void {
 
 function drawMandate(ctx: Ctx, r: () => number): Mandate {
   const state = ctx.state;
+  if (state.familyOffice !== undefined && state.reputation >= BIG_MANDATE_REPUTATION) {
+    const place = leagueRank(state, yearOf(state.month) - 1);
+    if (r() < (place !== null && place <= LEAGUE_TOP ? BIG_MANDATE_TOP_SHARE : BIG_MANDATE_SHARE)) return drawBigMandate(ctx, r);
+  }
   const big = state.familyOffice !== undefined && state.reputation >= 70 && r() < 0.3;
   const [lo, hi] = big ? MANDATE_BIG_EV : sizeRange(state);
   const target = between(r, lo, hi);
@@ -143,9 +161,11 @@ export function playMandate(ctx: Ctx, a: MandateAction): void {
       if (activeMandates(state).length >= mandateCapacity(state))
         ctx.fail("Du betreust schon so viele Mandate, wie du schaffst. Mit Family Office und einem Operating Partner werden es zwei.");
       if (md.ebitda * md.fair > MANDATE_BIG_EV[0] && state.familyOffice === undefined) ctx.fail("Ein Mandat dieser Größe braucht ein Team. Gründe zuerst dein Family Office.");
-      ctx.spend("mandate", `Mandat ${md.company}: Auftakt`, MANDATE_DAYS.accept);
+      ctx.spend("mandate", `Mandat ${md.company}: Auftakt`, md.big ? BIG_DAYS.accept : MANDATE_DAYS.accept);
       md.status = "prep";
       md.accepted = state.month;
+      // A group knows its problems: in a large mandate the question is only what goes into the teaser.
+      if (md.big) for (const f of md.findings) f.found = true;
       ctx.lesson("ebitda_multiple");
       return;
     }
@@ -163,8 +183,19 @@ export function playMandate(ctx: Ctx, a: MandateAction): void {
       ctx.lesson("ebitda_multiple");
       return;
     }
+    case "teaser": {
+      if (!md.big) ctx.fail("Einen Teaser gibt es nur bei großen Mandaten.");
+      sendTeaser(ctx, md, a.facts ?? []);
+      return;
+    }
+    case "round": {
+      if (!md.big) ctx.fail("Verhandlungsrunden gibt es nur bei großen Mandaten.");
+      playRound(ctx, md, a.bidder, a.lever);
+      return;
+    }
     case "launch": {
       if (md.status !== "prep") ctx.fail("Der Prozess läuft schon.");
+      if (md.big && !md.big.teaser) ctx.fail("Erst geht der Teaser an die Käufer.");
       const multiple = a.multiple;
       if (multiple === undefined || !Number.isFinite(multiple) || multiple < 2 || multiple > 15) ctx.fail("Wähle ein Vielfaches des EBITDA zwischen 2 und 15.");
       const process: ProcessKind = a.process ?? "exclusive";
@@ -180,7 +211,7 @@ export function playMandate(ctx: Ctx, a: MandateAction): void {
       md.process = process;
       md.buyers = buyers;
       md.dd = dd;
-      for (const f of md.findings) if (dd.includes(f.module)) f.found = true;
+      for (const f of md.findings) if (dd.includes(f.module) && !md.big?.concealed?.includes(f.kind)) f.found = true;
       md.status = "marketing";
       md.due = state.month;
       if (dd.length > 0) ctx.lesson("dd_bausteine");
@@ -191,6 +222,13 @@ export function playMandate(ctx: Ctx, a: MandateAction): void {
       if (md.status !== "bids" || !md.bids?.length) ctx.fail("Es liegt kein Angebot vor.");
       if (md.side === "buy" && md.process === "auction") ctx.fail("Ein anderer Bieter liegt vorn: nachbessern oder aussteigen.");
       ctx.spend("mandate", `Mandat ${md.company}: Zuschlag`, MANDATE_DAYS.close);
+      if (md.big) {
+        const pick = md.bids!.find((b) => b.buyer === a.bidder && !b.out) ?? bestBig(md);
+        md.signed = { buyer: pick.buyer, kind: pick.kind, ev: roundTo(bidValue(pick), 10_000), ...(pick.earnout ? { earnout: pick.earnout } : {}) };
+        md.status = "signing";
+        md.due = state.month;
+        return;
+      }
       md.signed = md.side === "buy" ? { buyer: md.client, kind: "financial", ev: best(md.bids!).ev } : best(md.bids!);
       md.status = "signing";
       md.due = state.month;
@@ -198,6 +236,7 @@ export function playMandate(ctx: Ctx, a: MandateAction): void {
     }
     case "final": {
       if (md.status !== "bids" || !md.bids?.length) ctx.fail("Es liegt kein Angebot vor.");
+      if (md.big) ctx.fail("Bei großen Mandaten verhandelst du in drei Runden.");
       if (md.side === "sell" && (md.process !== "auction" || md.bids!.length < 2)) ctx.fail("Eine zweite Bieterrunde braucht ein Bieterverfahren mit mindestens zwei Bietern.");
       ctx.spend("mandate", `Mandat ${md.company}: ${md.side === "sell" ? "Finale Runde" : "Nachbessern"}`, MANDATE_DAYS.final);
       const r = mnaRandom(state, `final|${md.id}`);
@@ -215,6 +254,7 @@ export function playMandate(ctx: Ctx, a: MandateAction): void {
     }
     case "negotiate": {
       if (md.status !== "bids" || !md.bids?.length) ctx.fail("Es liegt kein Angebot vor.");
+      if (md.big) ctx.fail("Bei großen Mandaten verhandelst du in drei Runden.");
       if (md.process === "auction")
         ctx.fail(md.side === "sell" ? "Im Bieterverfahren gibt es die finale Runde statt Nachverhandlung." : "Im Bieterverfahren kannst du nur nachbessern.");
       ctx.spend("mandate", `Mandat ${md.company}: Nachverhandlung`, MANDATE_DAYS.negotiate);
@@ -265,7 +305,10 @@ export function mandatesMonth(ctx: Ctx, month: number, notes: string[], income: 
         fail(ctx, md, `Der Verkäufer will mehr, als ${md.client} zahlen mag. Die Gespräche sind beendet.`);
         continue;
       }
-      md.signed = md.side === "buy" ? { buyer: md.client, kind: "financial", ev: best(md.bids!).ev } : best(md.bids!);
+      if (md.big) {
+        const pick = bestBig(md);
+        md.signed = { buyer: pick.buyer, kind: pick.kind, ev: roundTo(bidValue(pick), 10_000), ...(pick.earnout ? { earnout: pick.earnout } : {}) };
+      } else md.signed = md.side === "buy" ? { buyer: md.client, kind: "financial", ev: best(md.bids!).ev } : best(md.bids!);
       md.status = "signing";
       md.due = month;
       notes.push(`Mandat ${md.company}: ${md.client} hat ohne dich entschieden.`);
@@ -301,7 +344,8 @@ function sellBids(ctx: Ctx, md: Mandate): void {
   for (let i = 0; i < financials; i++) add("financial");
   const keen = pool.filter((b) => b.max >= asking * 0.85).sort((a, b) => b.max - a.max);
   let bids: MandateBid[];
-  if (md.process === "auction") bids = keen.map((b) => ({ buyer: b.buyer, kind: b.kind, ev: roundTo(b.max * between(r, 0.88, 0.97), 10_000) }));
+  if (md.big) bids = bigBids(ctx, md, credit);
+  else if (md.process === "auction") bids = keen.map((b) => ({ buyer: b.buyer, kind: b.kind, ev: roundTo(b.max * between(r, 0.88, 0.97), 10_000) }));
   else bids = keen.slice(0, 1).map((b) => ({ buyer: b.buyer, kind: b.kind, ev: roundTo(Math.min(b.max * 0.95, Math.max(asking, b.max * 0.8)), 10_000) }));
   if (bids.length === 0) {
     fail(ctx, md, `Bei ${times(md.multiple!)} EBITDA hat niemand geboten. Die Preisvorstellung war zu hoch für diesen Markt.`);
@@ -315,7 +359,7 @@ function sellBids(ctx: Ctx, md: Mandate): void {
     kind: "system",
     from: `Mandat ${md.company}`,
     subject: `${md.company}: ${bids.length === 1 ? "ein Angebot" : `${bids.length} Angebote`}`,
-    body: `${md.leak ? "Im Bieterverfahren ist etwas durchgesickert: Kunden und Mitarbeiter haben vom Verkauf erfahren, die Angebote fallen etwas niedriger aus. " : ""}Bestes Angebot: ${mio(best(bids).ev)} von ${best(bids).buyer} (${times(best(bids).ev / md.ebitda)} EBITDA). Entscheide im Mandat, wie es weitergeht: Zuschlag, Nachverhandlung oder finale Runde.`,
+    body: `${md.leak ? "Im Bieterverfahren ist etwas durchgesickert: Kunden und Mitarbeiter haben vom Verkauf erfahren, die Angebote fallen etwas niedriger aus. " : ""}Bestes Angebot: ${mio(best(bids).ev)} von ${best(bids).buyer} (${times(best(bids).ev / md.ebitda)} EBITDA). ${md.big ? "Jetzt folgen bis zu drei Verhandlungsrunden, dann der Zuschlag." : "Entscheide im Mandat, wie es weitergeht: Zuschlag, Nachverhandlung oder finale Runde."}`,
   });
 }
 
@@ -375,6 +419,11 @@ function close(ctx: Ctx, md: Mandate, notes: string[], income: IncomeLines): voi
     // The buyer's own review: what the vendor review did not show comes up now.
     for (const f of md.findings.filter((x) => !x.found)) {
       const roll = r();
+      if (md.big?.concealed?.includes(f.kind)) {
+        // Left out of the teaser on purpose: the buyer feels misled.
+        ctx.reputation(-1);
+        texts.push(`Im Teaser fehlte: ${f.title}. Der Käufer fühlt sich getäuscht, das kostet dich Ansehen.`);
+      }
       if (roll < 0.5) {
         ev = roundTo(ev * (1 - f.priceCut), 10_000);
         texts.push(`Der Käufer findet: ${f.title}. Der Preis sinkt um ${Math.round(f.priceCut * 100)} %.`);
@@ -390,11 +439,12 @@ function close(ctx: Ctx, md: Mandate, notes: string[], income: IncomeLines): voi
       } else texts.push(`Der Käufer findet: ${f.title}. Eine Garantie im Vertrag fängt es auf.`);
     }
   }
-  const fee = mandateFee(ev);
+  const fee = md.big ? bigFee(ev) : mandateFee(ev);
   state.cash += fee;
   income.mandates = (income.mandates ?? 0) + fee;
   const rec = mnaOf(state).record;
   rec.mandatesDone += 1;
+  recordLeague(ctx, state.month, ev);
   rec.mandateFees += fee;
   let mood: "happy" | "ok" | "unhappy";
   if (md.side === "sell") {
@@ -418,9 +468,17 @@ function close(ctx: Ctx, md: Mandate, notes: string[], income: IncomeLines): voi
     bank.warmth = Math.min(100, bank.warmth + 10);
   }
   const moodText = {
-    happy: md.side === "sell" ? "Die Familie ist begeistert und empfiehlt dich weiter." : `${md.client} ist sehr zufrieden mit dem Preis.`,
+    happy: md.big
+      ? "Der Vorstand ist begeistert und erzählt es weiter."
+      : md.side === "sell"
+        ? "Die Familie ist begeistert und empfiehlt dich weiter."
+        : `${md.client} ist sehr zufrieden mit dem Preis.`,
     ok: "Der Mandant ist zufrieden.",
-    unhappy: md.side === "sell" ? `Die Familie hatte auf ${mio(md.wish)} gehofft und ist enttäuscht.` : `${md.client} hat zu viel bezahlt und weiß es.`,
+    unhappy: md.big
+      ? `Der Vorstand hatte auf ${mio(md.wish)} gehofft und ist enttäuscht.`
+      : md.side === "sell"
+        ? `Die Familie hatte auf ${mio(md.wish)} gehofft und ist enttäuscht.`
+        : `${md.client} hat zu viel bezahlt und weiß es.`,
   }[mood];
   const text = `Mandat ${md.company} abgeschlossen: ${mio(ev)} (${times(ev / md.ebitda)} EBITDA). Erfolgshonorar ${eur(fee)}. ${moodText}`;
   md.outcome = { ev, fee, reputation: rep, mood, text: [...texts, text].join(" ") };

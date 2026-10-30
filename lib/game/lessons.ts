@@ -577,6 +577,42 @@ export const LESSONS: Lesson[] = [
     inGame:
       "Unter „Eingreifen“ refinanzierst du den Bankkredit einer gekauften Firma, auch fällige Verkäuferdarlehen kann die Bank übernehmen. Bei gebrochenem Covenant verhandelt sie nicht.",
   },
+  {
+    id: "teaser",
+    title: "Teaser",
+    summary:
+      "Der Teaser ist das erste Blatt, das mögliche Käufer sehen: ein anonymes Kurzprofil auf ein bis zwei Seiten, ohne den Namen des Verkäufers. Wer interessiert ist, unterschreibt eine Geheimhaltungsvereinbarung und bekommt erst dann das ausführliche Infomemo.",
+    rule: "Mehr verraten bringt mehr Bieter und höhere Gebote, aber das Risiko, dass etwas durchsickert. Wesentliche Probleme gehören hinein: Was verschwiegen wird, findet die Due Diligence trotzdem.",
+    example: "Ein Konzern verkauft eine Sparte mit 84 Mio. € Umsatz. Der Teaser nennt „Umsatz 80 bis 90 Mio. €“ statt der genauen Zahl und lässt den Namen des Konzerns weg.",
+    inGame: "Bei großen Mandaten (Carve-outs ab Ruf 80 mit Family Office) wählst du in der Vorbereitung, welche Angaben in den Teaser kommen.",
+  },
+  {
+    id: "batna",
+    title: "BATNA und Verhandlungsmacht",
+    summary:
+      "BATNA heißt „Best Alternative to a Negotiated Agreement“: die beste Alternative, wenn die Verhandlung scheitert. Wer eine glaubwürdige Alternative hat, etwa einen zweiten Bieter, kann mehr fordern. Exklusivität gibt diese Macht für einen kleinen Aufschlag aus der Hand.",
+    rule: "Je mehr ernsthafte Bieter noch am Tisch sitzen, desto stärker wirkt der Hinweis auf Konkurrenzgebote. Ein Earn-out hebt die Schlagzeile, nicht den sicheren Barpreis.",
+    example: "Zwei Bieter liegen bei 68 und 74 Mio. €. Du nennst dem Zweiten das bessere Gebot, er legt auf 76 Mio. € nach.",
+    inGame: "In großen Mandaten verhandelst du nach den ersten Geboten drei Runden mit vier Hebeln. Dein Erfolgshonorar steigt mit dem Preis.",
+  },
+  {
+    id: "league_table",
+    title: "League Table",
+    summary:
+      "Eine League Table ist die Rangliste der Berater: Wer hat im Jahr die meisten oder die größten Deals begleitet? Banken und Boutiquen werben damit, Mandanten schauen darauf.",
+    rule: "Gezählt wird das Volumen (Summe der Unternehmenswerte) oder die Anzahl der Deals. Ein großer Deal bewegt das Volumen, viele kleine die Anzahl.",
+    example: "Ein Haus berät zwölf Verkäufe mit zusammen 380 Mio. €. Ein anderes nur drei, darunter einen Carve-out über 250 Mio. €: nach Volumen liegt es fast gleichauf.",
+    inGame: "Unter „Rangliste“ siehst du dich, die übrigen Häuser und deine Rivalen. Wer zum Jahresende unter den ersten fünf steht, bekommt mehr und größere Anfragen.",
+  },
+  {
+    id: "bietgefecht",
+    title: "Bietgefecht und Gewinnerfluch",
+    summary:
+      "Bieten zwei Käufer um dieselbe Firma, entscheidet nicht nur der Preis. Ein Inhaber im Mittelstand fragt auch: Was wird aus meinen Leuten, meinem Standort, meinem Namen? Wer dafür ein gutes Konzept hat, kann einen höheren Preis schlagen.",
+    rule: "Gewinnerfluch: Wer im Bietgefecht gewinnt, hat oft zu viel bezahlt. Jeder Euro über dem fairen Wert senkt die Rendite. Aussteigen ist manchmal der beste Zug.",
+    example: "Ein Fonds bietet 8,6 Mio. €, du 8,0 Mio. € und sicherst den Standort fünf Jahre. Dem Inhaber ist das 0,9 Mio. € wert: Du bekommst den Zuschlag.",
+    inGame: "Ab Ruf 50 bieten drei Rivalen um Familienbetriebe mit. Du erhöhst, legst ein Nachfolge-Konzept vor oder steigst aus, höchstens drei Runden.",
+  },
 ];
 
 /** Order in which "Weiterbildung" unlocks cards. */
@@ -643,6 +679,10 @@ export const CURRICULUM = [
   "ltm_ebitda",
   "interim_management",
   "refinanzierung",
+  "teaser",
+  "batna",
+  "league_table",
+  "bietgefecht",
 ];
 
 export function lessonOf(id: string): Lesson {

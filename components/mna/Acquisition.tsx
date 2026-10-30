@@ -8,6 +8,8 @@ import { eur, pct } from "@/components/game/format";
 import { DealDesk } from "./DealDesk";
 import { HelpersPanel } from "@/components/network/HelpersPanel";
 import { rivalFor, specialistsFor } from "@/lib/game/network-views";
+import { duelView } from "@/lib/game/rivals-views";
+import { DuelPanel } from "./DuelPanel";
 
 // Übernahme strukturieren: ein Familienbetrieb aus der Post, von der
 // Suchenden, oder ein Zukauf für die Plattform.
@@ -32,6 +34,7 @@ export async function Acquisition({ params }: { params: Promise<{ id: string }> 
     notFound();
   }
   const addon = v.kind === "addon";
+  const duel = addon ? null : duelView(state, id);
   return (
     <div className="page mna mna--acq">
       <header className="page__head">
@@ -116,6 +119,8 @@ export async function Acquisition({ params }: { params: Promise<{ id: string }> 
         </p>
       )}
 
+      {duel && <DuelPanel id={id} duel={duel} revision={revision} />}
+
       <HelpersPanel
         helpers={specialistsFor(state, id)}
         rival={rivalFor(state, id)}
@@ -152,7 +157,7 @@ export async function Acquisition({ params }: { params: Promise<{ id: string }> 
         cash={v.cash}
         daysLeft={v.daysLeft}
         acquireDays={v.acquireDays}
-        blocker={v.blocker}
+        blocker={duel?.status === "open" ? "Erst das Bietgefecht entscheiden: erhöhen, Konzept vorlegen oder aussteigen." : v.blocker}
         integration={addon ? v.integration : undefined}
         group={addon ? { bank: v.platform!.bank, ebitda: v.platform!.ebitda } : undefined}
       />

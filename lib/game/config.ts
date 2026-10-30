@@ -225,5 +225,20 @@ export function monthName(month: number): string {
   return MONTH_NAMES[(START_MONTH_INDEX + month - 1) % 12];
 }
 
-/** Above this reputation, gains are halved. */
+/** Former soft cap of reputation (gains were halved above it); the gain curve below replaces it. */
 export const REPUTATION_SOFT_CAP = 80;
+/**
+ * Reputation grows slower the higher it already is: from `from` on, only `factor`
+ * of a gain counts (the rest is carried over, so small gains are not lost).
+ * `cap` is the most reputation that can be won in one month at that level.
+ * Losses always count in full. 100 is a late goal, not a quick one.
+ */
+export const REPUTATION_GAIN_STEPS = [
+  { from: 0, factor: 0.7, cap: 5 },
+  { from: 50, factor: 0.5, cap: 3 },
+  { from: 60, factor: 0.4, cap: 3 },
+  { from: 75, factor: 0.3, cap: 2 },
+  { from: 85, factor: 0.2, cap: 2 },
+] as const;
+/** At the very top fame fades: above this, a month without any gain costs one point. */
+export const REPUTATION_FADE_FROM = 90;
