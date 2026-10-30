@@ -150,6 +150,13 @@ function Row({ r }: { r: CockpitRow }) {
             <b>{r.name}</b>
             <span className="pill">{r.tag}</span>
             {r.pace && <span className={`pill pill--pace-${r.pace}`}>{PACE_LABEL[r.pace]}</span>}
+            {r.lead && (
+              <span className={`cockpit-lead cockpit-lead--${r.lead.fit}`} title={`Zuständig: ${r.lead.name}`} style={{ ["--member" as string]: r.lead.color }}>
+                <i aria-hidden="true">{r.lead.initials}</i>
+                <span className="sr-only">Zuständig: </span>
+                {r.lead.name.split(" ").slice(-1)[0]}
+              </span>
+            )}
           </span>
           <span className={`cockpit-reason cockpit-reason--${r.light}`}>
             {r.reason}

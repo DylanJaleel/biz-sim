@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "./boardroom.css";
 @import "./glass.css";
+@import "./team-holding.css";
 
 /* ---------------------------------------------------------------------------
    Tokens. Ruhig, hell, präzise; im Dunkeln wie ein abendlicher Sitzungssaal.

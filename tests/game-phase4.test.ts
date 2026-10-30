@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { totalPct } from "../lib/game/captable";
-import { FAMILY_OFFICE_COST, FUND_EXITS, FUND_OFFICE_MONTHS, IPO_LOCKUP, SALARY } from "../lib/game/config";
+import { FAMILY_OFFICE_COST, FUND_EXITS, FUND_OFFICE_MONTHS, IPO_LOCKUP } from "../lib/game/config";
 import { TEMPLATES } from "../lib/game/content";
 import { generateDeal, SECTORS, type DealStage } from "../lib/game/dealgen";
 import { applyAction, closeMonth, fundBlocker, netWorth, newGame, randomFor, startupOf, upgradeState } from "../lib/game/engine";
@@ -98,20 +98,22 @@ describe("family office", () => {
     state = act(state, { type: "foundFamilyOffice" });
     expect(state.familyOffice).toBe(state.month);
     expect(state.cash).toBe(3_000_000 - FAMILY_OFFICE_COST);
-    state = act(state, { type: "hire", role: "partner" });
-    expect(monthDays(state)).toBe(monthDays({ ...state, team: [] }) + 3);
-    expect(() => act(state, { type: "hire", role: "partner" })).toThrow();
-    state = act(state, { type: "hire", role: "associate" });
+    expect(() => act(state, { type: "hire", role: "partner" })).toThrow(/Operating Partner/);
+    state = act(state, { type: "hire", role: "operating", profile: "voss" });
+    expect(() => act(state, { type: "hire", role: "operating", profile: "voss" })).toThrow();
+    state = act(state, { type: "hire", role: "operating", profile: "brandt" });
+    const salaries = state.team.reduce((sum, m) => sum + m.salary, 0);
     const report = closeMonth(structuredClone(state));
-    expect(report.income?.salaries).toBe(-(SALARY.partner + SALARY.associate));
+    expect(report.income?.salaries).toBe(-salaries);
   });
 
-  it("an associate decides the mandate's open items at month end", () => {
+  it("an operating partner decides the company's open items at month end", () => {
     let state = act(rich(5), { type: "invest", startupId: "pendelwerk" });
     state = act(state, { type: "foundFamilyOffice" });
-    state = act(state, { type: "hire", role: "associate" });
+    state = act(state, { type: "hire", role: "operating", profile: "reiter" });
     const member = state.team[0]!;
     state = act(state, { type: "assign", memberId: member.id, startupId: "pendelwerk" });
+    expect(monthDays(state)).toBe(monthDays({ ...state, team: [] }) + 1);
     state = { ...state, items: [{ id: "v900", startupId: "pendelwerk", templateId: "influencer", month: state.month, status: "open", asked: [], pretalks: [], cfo: false }] };
     const next = structuredClone(state);
     closeMonth(next);
@@ -150,7 +152,15 @@ describe("IPO", () => {
   it("pays half now and the rest after the lockup, at the market's price", () => {
     const state = act(newGame(7), { type: "invest", startupId: "pendelwerk" });
     const s = startupOf(state, "pendelwerk");
-    const offer: ExitOffer = { id: "x9", startupId: s.id, month: state.month, buyer: "Börsengang in Frankfurt", price: Math.round(valuation(s.metrics) * 1.6), status: "open", ipo: true };
+    const offer: ExitOffer = {
+      id: "x9",
+      startupId: s.id,
+      month: state.month,
+      buyer: "Börsengang in Frankfurt",
+      price: Math.round(valuation(s.metrics) * 1.6),
+      status: "open",
+      ipo: true,
+    };
     let after = act({ ...state, exits: [offer] }, { type: "exit", exitId: "x9", choice: "accept" });
     expect(after.exits[0]!.status).toBe("accepted");
     expect(after.lockups).toHaveLength(1);

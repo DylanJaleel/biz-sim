@@ -53,8 +53,7 @@ export function activeMandates(state: GameState): Mandate[] {
 }
 
 export function mandateCapacity(state: GameState): number {
-  const associate = state.team.some((t) => t.role === "associate");
-  return MANDATE_MAX_ACTIVE + (state.familyOffice !== undefined && associate ? 1 : 0);
+  return MANDATE_MAX_ACTIVE + (state.familyOffice !== undefined && state.team.length > 0 ? 1 : 0);
 }
 
 export function mandateFee(ev: number): number {
@@ -159,7 +158,8 @@ export function playMandate(ctx: Ctx, a: MandateAction): void {
     case "accept": {
       if (md.status !== "offered") ctx.fail("Dieses Mandat liegt nicht mehr vor.");
       if (state.reputation < MANDATE_REPUTATION) ctx.fail(`M&A-Mandate bekommst du ab ${MANDATE_REPUTATION} Ruf.`);
-      if (activeMandates(state).length >= mandateCapacity(state)) ctx.fail("Du betreust schon so viele Mandate, wie du schaffst. Mit Family Office und Associate werden es zwei.");
+      if (activeMandates(state).length >= mandateCapacity(state))
+        ctx.fail("Du betreust schon so viele Mandate, wie du schaffst. Mit Family Office und einem Operating Partner werden es zwei.");
       if (md.ebitda * md.fair > MANDATE_BIG_EV[0] && state.familyOffice === undefined) ctx.fail("Ein Mandat dieser Größe braucht ein Team. Gründe zuerst dein Family Office.");
       ctx.spend("mandate", `Mandat ${md.company}: Auftakt`, md.big ? BIG_DAYS.accept : MANDATE_DAYS.accept);
       md.status = "prep";

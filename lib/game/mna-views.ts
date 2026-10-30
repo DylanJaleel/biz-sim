@@ -1,4 +1,6 @@
 import { BUYOUT_REPUTATION } from "./config";
+import { integrationCapacity, leadOf, platformPrep } from "./team";
+import { addonFit, addonVeto, FIT_CRITERIA, fitKnown, holdoutDiscount, type AddonFitLevel } from "./holdco";
 import { bigFee } from "./mandate-big";
 import { annualEbitda, enterpriseValue, fairMultiple, sizeMultiple } from "./ebitda";
 import { daysLeft, netWorth } from "./engine";
@@ -349,6 +351,10 @@ export interface AcquisitionView {
   searcher?: { name: string; operator: number };
   integration: typeof INTEGRATION;
   synergyShare: number;
+  /** Add-ons: the fit with the platform, once a commercial due diligence (or a partner) checked it. */
+  fit?: { known: boolean; level?: AddonFitLevel; criteria: { label: string; value: -1 | 0 | 1; text: string }[]; by?: string };
+  /** A co-owner of the platform blocks the purchase. */
+  veto?: string;
 }
 
 export function acquisitionView(state: GameState, id: string): AcquisitionView | null {
@@ -455,6 +461,21 @@ export function acquisitionView(state: GameState, id: string): AcquisitionView |
     },
     blocker,
     expires: a.expires,
+    acquireDays: ACQUIRE_DAYS - platformPrep(state, p).days,
+    fit: (() => {
+      const known = fitKnown(state, a);
+      const f = addonFit(state, a);
+      const by = !a.dd.includes("commercial") && known ? platformPrep(state, p).name : undefined;
+      return known
+        ? {
+            known,
+            level: f.level,
+            by,
+            criteria: FIT_CRITERIA.map((c) => ({ label: c.label, value: f.criteria[c.id], text: f.criteria[c.id] > 0 ? c.good : f.criteria[c.id] < 0 ? c.bad : "unauffällig" })),
+          }
+        : { known, criteria: [] };
+    })(),
+    veto: addonVeto(state, p, a) ?? undefined,
     platform: {
       id: p.id,
       name: p.name,
@@ -508,11 +529,7 @@ export function platformRedirect(state: GameState, id: string): string | null {
   return companyRedirect(state, id) ?? `/firma/${s.id}`;
 }
 
-export function integrationCapacity(state: GameState, s: Startup): number {
-  const partners = state.team.filter((t) => t.role === "partner").length;
-  const associate = state.team.some((t) => t.role === "associate" && t.mandate === s.id);
-  return 1 + partners + (associate ? 1 : 0);
-}
+export { integrationCapacity };
 
 // ---------------------------------------------------------------------------
 // Beteiligung und Plattform
@@ -544,7 +561,11 @@ export interface PlatformView {
   moic: number;
   integrations: (Integration & { left: number })[];
   capacity: number;
-  targets: { id: string; name: string; ebitda: number; ev: number; multiple: number; expires: number; dd: number; status: string }[];
+  targets: { id: string; name: string; ebitda: number; ev: number; multiple: number; expires: number; dd: number; status: string; fit?: AddonFitLevel }[];
+  /** Operating partner looking after the company. */
+  lead?: string;
+  holdco?: string;
+  holdout: number;
   exitId?: string;
   saleDays: typeof PLATFORM_SALE_DAYS;
   saleMonths: { exclusive: number; auction: number };
@@ -600,7 +621,11 @@ export function platformView(state: GameState, id: string): PlatformView | null 
         expires: a.expires,
         dd: a.dd.length,
         status: a.status,
+        fit: fitKnown(state, a) ? addonFit(state, a).level : undefined,
       })),
+    lead: leadOf(state, s)?.member.name,
+    holdco: state.holdco?.name,
+    holdout: holdoutDiscount(state, s),
     exitId: state.exits.find((x) => x.startupId === s.id && x.status === "open")?.id,
     saleDays: PLATFORM_SALE_DAYS,
     saleMonths: { exclusive: PLATFORM_SALE.exclusive.months, auction: PLATFORM_SALE.auction.months },

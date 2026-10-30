@@ -17,6 +17,8 @@ import { activeSearch, searchBlocker, searchCandidates, structureDeal } from "./
 import { annualEbitda, sizeMultiple } from "./ebitda";
 import { platformBlocker, platformOf } from "./platform";
 import { networkActions } from "./network-bots";
+import { currentMandates, hireFee, integrationCapacity, leadOf, OP_PROFILES, opTypeOf, profileOf } from "./team";
+import { addonFit, fitKnown, HOLDCO } from "./holdco";
 import type { CovenantId, GameAction, GameState, MandateLever, Startup, Vote } from "./types";
 
 // Skript-Spieler für die Balance: Sie spielen das Spiel über die echte Engine.
@@ -210,7 +212,7 @@ export const proBot = (prefer?: string): Bot => {
 
 /**
  * The long game: invests in several companies, buys family businesses with a
- * bank loan, founds the family office, hires associates and raises a fund.
+ * bank loan, founds the family office, hires operating partners and raises a fund.
  */
 export const mogulBot = (prefer?: string): Bot => {
   const base = proBot(prefer);
@@ -239,15 +241,9 @@ export const mogulBot = (prefer?: string): Bot => {
       }
       if (!s.familyOffice) actions.push({ type: "foundFamilyOffice" });
       else {
-        const associates = s.team.filter((m) => m.role === "associate");
-        if (associates.length < Math.min(3, active.length - 2) && s.cash > 150_000) actions.push({ type: "hire", role: "associate" });
-        if (!s.team.some((m) => m.role === "partner") && s.cash > 400_000) actions.push({ type: "hire", role: "partner" });
-        const free = active.filter((x) => !s.team.some((m) => m.mandate === x.id));
-        associates
-          .filter((m) => !m.mandate || !active.some((x) => x.id === m.mandate))
-          .forEach((m, i) => {
-            if (free[i]) actions.push({ type: "assign", memberId: m.id, startupId: free[i]!.id });
-          });
+        // Operating partners: the platform and bought companies first, then the rest.
+        const order = [...active].sort((a, b) => Number(Boolean(b.platform)) - Number(Boolean(a.platform)) || Number(Boolean(b.lbo)) - Number(Boolean(a.lbo)));
+        actions.push(...teamActions(s, order.slice(0, Math.max(0, active.length - 1)), 3, 150_000));
         if (!s.fund) actions.push({ type: "raiseFund" });
       }
       return [...networkActions(s, "mogul"), ...mnaActions(s, "mogul"), ...actions, ...base.month(s, random)];
@@ -349,7 +345,7 @@ export const expertBot = (style: ExpertStyle = {}, name = "Experte"): Bot => {
       // New companies: the most promising first, buyouts once the money is there.
       const offers = s.startups.filter((x) => x.status === "offered" && x.offer).sort((a, b) => promise(b) - promise(a));
       for (const o of offers) {
-        if (active.length >= 4 + s.team.filter((m) => m.role === "associate").length * 1.5) break;
+        if (active.length >= 4 + Math.min(3, s.team.length) * 1.5) break;
         const ticket = o.offer!.ticket;
         if (o.offer!.buyout) {
           const own = ticket * (1 - 0.4);
@@ -371,16 +367,9 @@ export const expertBot = (style: ExpertStyle = {}, name = "Experte"): Bot => {
       // Holding: family office, team, fund.
       if (!s.familyOffice) actions.push({ type: "foundFamilyOffice" });
       else {
-        const associates = s.team.filter((m) => m.role === "associate");
-        if (associates.length < Math.min(3, active.length - 3) && s.cash > 200_000) actions.push({ type: "hire", role: "associate" });
-        if (!s.team.some((m) => m.role === "partner") && s.cash > 500_000) actions.push({ type: "hire", role: "partner" });
-        // Associates look after the weakest mandates; the player keeps the best.
-        const weakest = [...ranked].reverse().filter((x) => !s.team.some((m) => m.mandate === x.id));
-        associates
-          .filter((m) => !m.mandate || !active.some((x) => x.id === m.mandate))
-          .forEach((m, i) => {
-            if (weakest[i] && ranked.indexOf(weakest[i]!) >= 2) actions.push({ type: "assign", memberId: m.id, startupId: weakest[i]!.id });
-          });
+        // Operating partners look after the platform and the weakest companies; the player keeps the best two.
+        const delegate = [...ranked.filter((x) => x.platform), ...[...ranked].reverse().filter((x) => !x.platform && ranked.indexOf(x) >= 2)];
+        actions.push(...teamActions(s, delegate, 3, 200_000));
         if (!s.fund) actions.push({ type: "raiseFund" });
       }
       // The network works for the best company.
@@ -452,7 +441,7 @@ const STYLE = {
     vendor: 0.1,
     earnout: 0.1,
     dd: DD_MODULES,
-    addonDd: ["financial", "legal"] as DdModule[],
+    addonDd: ["financial", "legal", "commercial"] as DdModule[],
     integration: "careful" as const,
     cashShare: 0.6,
     sellAddons: 3,
@@ -506,6 +495,8 @@ export function mnaActions(s: GameState, style: keyof typeof STYLE): GameAction[
   }
   const worth = netWorth(s);
   const owned = s.startups.filter((x) => x.status === "active" && x.lbo);
+  // A bought company: separate the liability with an intermediate holding.
+  if (!s.holdco && s.familyOffice !== undefined && owned.length > 0 && s.cash > HOLDCO.cost * 5) out.push({ type: "holdco" });
   // The bank wants money: pay if possible.
   for (const x of owned.filter((y) => y.lbo!.status === "cure" && y.lbo!.cure && y.lbo!.cure.amount <= s.cash)) out.push({ type: "platform", startupId: x.id, move: "cure" });
   // Fund a search while no company of the programme is owned.
@@ -554,10 +545,34 @@ export function mnaActions(s: GameState, style: keyof typeof STYLE): GameAction[
   }
   const busy = p.integrations.length;
   for (const a of mna.addons.filter((x) => x.platformId === platform.id && x.status === "open")) {
-    if (p.sale || (style === "mogul" && busy >= 1 + s.team.filter((t) => t.role === "partner").length)) break;
+    if (p.sale || (style === "mogul" && busy >= integrationCapacity(s, platform))) break;
+    // Known misfits are left alone; a careful buyer checks the fit first and decides next month.
+    if (fitKnown(s, a) && addonFit(s, a).level === "bad") continue;
     const todo = st.addonDd.filter((m) => !a.dd.includes(m));
     if (todo.length > 0) out.push({ type: "examine", targetId: a.id, modules: todo });
+    if (todo.includes("commercial") && !fitKnown(s, a)) continue;
     out.push({ type: "acquire", targetId: a.id, bid: "ask", bank: 0.6, vendor: st.vendor, earnout: st.earnout, integration: st.integration });
+  }
+  return out;
+}
+
+/** Hires operating partners while companies lack a lead, and gives each free company to the best-fitting partner with room. */
+function teamActions(s: GameState, companies: Startup[], max: number, minCash: number): GameAction[] {
+  const out: GameAction[] = [];
+  const free = companies.filter((c) => !c.corporate && !leadOf(s, c));
+  const room = s.team.reduce((n, m) => n + Math.max(0, profileOf(m).capacity - currentMandates(m).length), 0);
+  if (s.team.length < max && free.length > room && s.cash > minCash) {
+    const want = opTypeOf(free[0]!);
+    const pick = OP_PROFILES.filter((p) => !s.team.some((m) => m.profile === p.id) && hireFee(p) < s.cash * 0.2).sort((a, b) => b.strengths[want] - a.strengths[want])[0];
+    if (pick) out.push({ type: "hire", role: "operating", profile: pick.id });
+  }
+  const spare = new Map(s.team.map((m) => [m.id, profileOf(m).capacity - currentMandates(m).length]));
+  for (const c of free) {
+    const t = opTypeOf(c);
+    const best = s.team.filter((m) => (spare.get(m.id) ?? 0) > 0).sort((a, b) => profileOf(b).strengths[t] - profileOf(a).strengths[t])[0];
+    if (!best) break;
+    out.push({ type: "assign", memberId: best.id, startupId: c.id });
+    spare.set(best.id, spare.get(best.id)! - 1);
   }
   return out;
 }

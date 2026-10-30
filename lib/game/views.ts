@@ -1,4 +1,6 @@
 import { playerAmount, postMoney, stakeAfter, syndicateAmount, waterfall } from "./captable";
+import { leadOf, teamCarry, teamView, type TeamView } from "./team";
+import { dragAlong } from "./holdco";
 import { outcomeViews, type OutcomeView } from "./cfo";
 import {
   ACTION_DAYS,
@@ -12,7 +14,6 @@ import {
   LEAD_REPUTATION,
   RING_REPUTATION,
   SYNDICATE_REPUTATION,
-  TEAM_MAX,
   FUND_EXITS,
   FUND_OFFICE_MONTHS,
   FUND_REPUTATION,
@@ -61,8 +62,6 @@ import type {
   RoundTake,
   ShareOffer,
   Startup,
-  TeamMember,
-  TeamRole,
   Vote,
   PaceKind,
 } from "./types";
@@ -329,7 +328,7 @@ export interface CompanyView {
     result?: BoardItem["result"];
     delegated?: boolean;
   }[];
-  /** The associate who looks after this mandate. */
+  /** The operating partner who looks after this company. */
   associate?: string;
   calledThisMonth: boolean;
   askedThisMonth: boolean;
@@ -417,7 +416,7 @@ export function companyView(state: GameState, startupId: string): CompanyView {
     rounds: state.rounds.filter((r) => r.startupId === s.id && r.amount > 0 && r.status !== "open").sort((a, b) => b.month - a.month),
     offers: state.shareOffers.filter((o) => o.startupId === s.id && o.status === "open"),
     exits: state.exits.filter((e) => e.startupId === s.id),
-    associate: state.team.find((m) => m.role === "associate" && m.mandate === s.id)?.name,
+    associate: leadOf(state, s)?.member.name,
     analyst: officeOf(state).analyst,
     followUps: followUpsOf(state, s.id),
   };
@@ -504,6 +503,11 @@ export interface ExitView {
   /** Who gets what at the offered price (or what was paid). */
   payouts: Payout[];
   carry: number;
+  /** Carry of your operating partners out of your proceeds (paid, or what it would be). */
+  teamCarry: { name: string; amount: number }[];
+  /** Drag-along under the holding; holdout = price cut without it. */
+  dragAlong: boolean;
+  holdout: number;
   daysLeft: number;
 }
 
@@ -521,6 +525,9 @@ export function exitView(state: GameState, exitId: string): ExitView | null {
     holders: s.capTable,
     payouts: split.payouts,
     carry: split.carry,
+    teamCarry: offer.teamCarry ?? (offer.status === "open" ? teamCarry(state, s, (split.payouts.find((p) => p.id === "you")?.amount ?? 0) + split.carry, false).lines : []),
+    dragAlong: dragAlong(state, s),
+    holdout: offer.holdout ?? 0,
     daysLeft: daysLeft(state),
   };
 }
@@ -584,9 +591,7 @@ export interface HoldingView {
   foundRequirements: Requirement[];
   worth: number;
   cash: number;
-  team: (TeamMember & { mandateName?: string })[];
-  canHire: Record<TeamRole, boolean>;
-  mandates: { id: string; name: string }[];
+  team: TeamView;
   fund?: FundState;
   fundBlocker: string | null;
   fundSize: number;
@@ -609,12 +614,7 @@ export function holdingView(state: GameState): HoldingView {
     ],
     worth,
     cash: state.cash,
-    team: state.team.map((m) => ({ ...m, mandateName: m.mandate ? state.startups.find((s) => s.id === m.mandate)?.name : undefined })),
-    canHire: {
-      associate: state.team.filter((m) => m.role === "associate").length < TEAM_MAX.associate,
-      partner: state.team.filter((m) => m.role === "partner").length < TEAM_MAX.partner,
-    },
-    mandates: active.map((s) => ({ id: s.id, name: s.name })),
+    team: teamView(state),
     fund: state.fund,
     fundBlocker: fundBlocker(state),
     fundSize: fundSize(state),
@@ -711,7 +711,7 @@ export function nextStepView(state: GameState): NextStepView | null {
           : undefined;
       return {
         title: next.title,
-        text: "Mit einem Family Office arbeitest du nicht mehr allein: Associates übernehmen Mandate, eine Partnerin bringt Zeit und Deals.",
+        text: "Mit einem Family Office arbeitest du nicht mehr allein: Operating Partner betreuen deine Firmen, sparen dir Tage und bereiten Zukäufe vor.",
         requirements,
         action: requirements.every((r) => r.done) ? { move: { type: "foundFamilyOffice" }, label: "Family Office gründen", days: ACTION_DAYS.foundFamilyOffice } : undefined,
         side,
