@@ -99,6 +99,8 @@ import {
   waterfall,
 } from "./captable";
 import { CORPORATE_ID, corporateStartup } from "./corporate";
+import { CORPORATE_BOOKS, correctOldCorporate, ebitdaMargin } from "./corporate-books";
+import { CYCLE_REVENUE } from "./mna-config";
 import { NEWS, targetsOf } from "./news";
 import { monthDays, OFFICES, officeOf } from "./office";
 import { addBal, contactDef, contactOf, helpStrength, initialContacts, introCooldown, introWarmthCost, personOf, refuses, ringOpen } from "./network";
@@ -254,12 +256,29 @@ function offer(state: GameState, id: string): void {
  */
 export function upgradeState(input: GameState): GameState {
   let state = input as GameState & { version: number };
-  if (state.version >= 6) return state;
+  if (state.version >= 6) return upgradeCorporate(state);
   if (state.version < 5) state = upgradeToV5(state);
   // Version 6: display cabinet and garage. What was earned before shows up quietly.
   const next: GameState = { ...state, version: 6, trophies: state.trophies ?? [], garage: state.garage ?? [] };
   awardTrophies(next, netWorth(next));
   for (const t of next.trophies) t.seen = true;
+  return upgradeCorporate(next);
+}
+
+/** Older games ran the Konzern on the startup path, which made it shrink: corrected once on loading. */
+function upgradeCorporate(state: GameState): GameState {
+  const old = state.startups.find((s) => s.corporate && (s.corporateModel ?? 1) < CORPORATE_BOOKS.model);
+  const fixed = old && correctOldCorporate(old);
+  if (!old || !fixed) return state;
+  const next: GameState = { ...state, startups: state.startups.map((s) => (s === old ? fixed : s)), mails: [...state.mails] };
+  if (fixed.metrics !== old.metrics)
+    mail(next, {
+      kind: "founder",
+      from: "Martina Hollerbach, Nordhafen AG",
+      subject: "Zahlen der Nordhafen AG neu aufgestellt",
+      body: `Unsere Zahlen wurden bisher wie bei einem Startup fortgeschrieben, das ließ den Konzern Monat für Monat schrumpfen. Neu gerechnet: ${Math.round(fixed.metrics.revenue / 1_000_000)} Mio. € Umsatz im Monat, eine EBITDA-Marge von ${Math.round(ebitdaMargin(fixed.metrics) * 100)} % und ${Math.round(fixed.metrics.debt / 1_000_000)} Mio. € Schulden.`,
+      startupId: CORPORATE_ID,
+    });
   return next;
 }
 
@@ -1674,8 +1693,8 @@ export function closeMonth(state: GameState): MonthReport {
 
   for (const current of state.startups.filter((x) => x.status === "active")) {
     let s = current;
-    // A corporation does not go bust over one decision: it draws on its credit line.
-    if (s.corporate && s.metrics.cash < 5_000_000) s = applyDelta(s, { cash: 20_000_000, debt: 20_000_000 });
+    // A Konzern feels the business cycle; when money runs short it draws on its credit line (see stepMonth).
+    if (s.corporate) s = applyDelta(s, { revenuePct: CYCLE_REVENUE[state.market.regime] });
     const step = stepMonth(s, randomFor(state.seed, `step|${s.id}|${month}`));
     const texts = lines.get(s.id) ?? [];
     texts.push(...step.events);

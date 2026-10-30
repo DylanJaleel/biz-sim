@@ -120,6 +120,8 @@ export interface Startup {
   playerPref?: number;
   /** A corporate supervisory board seat: no shares, a fee, quarterly meetings. */
   corporate?: boolean;
+  /** Konzern only: version of its books (see corporate-books.ts); missing = old startup path. */
+  corporateModel?: number;
   /** Month the player joined; 0 while only offered. */
   joined: number;
   offer?: {
