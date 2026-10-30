@@ -45,6 +45,13 @@ export const UNLOCKS: Unlock[] = [
     href: "/nachfolge",
   },
   {
+    id: "league",
+    reputation: MANDATE_REPUTATION,
+    title: "Rangliste",
+    text: `Der League Table zeigt dich im Vergleich mit den anderen M&A-Beratern. Später kommen Rivalen dazu, die bei Übernahmen gegen dich bieten.`,
+    href: "/rangliste",
+  },
+  {
     id: "lead",
     reputation: LEAD_REPUTATION,
     title: "Runden anführen",

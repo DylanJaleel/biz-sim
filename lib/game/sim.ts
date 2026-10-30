@@ -19,6 +19,7 @@ import {
   CUSTOMER_LOSS_THRESHOLD,
 } from "./config";
 import { ebitdaEquityValue, familyGrowth, FAMILY_NOISE, FAMILY_OVERDRAFT_RATE } from "./ebitda";
+import { corporateCosts, corporateCredit, corporateGrowth, corporateInterest } from "./corporate-books";
 import { EBITDA_GROWTH_CAP, EBITDA_GROWTH_FLOOR } from "./mna-config";
 import type { Axes, Delta, Holder, HolderKind, Metrics, Startup, StartupPhase } from "./types";
 
@@ -169,15 +170,23 @@ export function stepMonth(s: Startup, random: () => number = () => 0.5): StepRes
   const m = s.metrics;
   // Family businesses (valued on EBITDA) are mature: no startup growth path, no scale drag, calmer revenue.
   const family = m.valuedOn === "ebitda";
-  const noise = (random() - 0.5) * 2 * REVENUE_NOISE * (family ? FAMILY_NOISE : 1);
+  // The Konzern of the supervisory board seat is just as mature (see corporate-books.ts).
+  const corporate = s.corporate === true;
+  const mature = family || corporate;
+  const noise = (random() - 0.5) * 2 * REVENUE_NOISE * (mature ? FAMILY_NOISE : 1);
   // Big companies are tankers: pushes above their potential fade faster.
-  const pull = family ? GROWTH_PULL : Math.min(0.6, GROWTH_PULL * (1 + (scaleDrag(m) / SCALE_DRAG) * SCALE_PULL));
-  const drift = m.growth + ((family ? familyGrowth(m) : potentialGrowth(m)) - m.growth) * pull;
-  const growth = family ? Math.min(EBITDA_GROWTH_CAP, Math.max(EBITDA_GROWTH_FLOOR, drift)) : drift;
+  const pull = mature ? GROWTH_PULL : Math.min(0.6, GROWTH_PULL * (1 + (scaleDrag(m) / SCALE_DRAG) * SCALE_PULL));
+  const drift = m.growth + ((corporate ? corporateGrowth(m) : family ? familyGrowth(m) : potentialGrowth(m)) - m.growth) * pull;
+  const growth = mature ? Math.min(EBITDA_GROWTH_CAP, Math.max(EBITDA_GROWTH_FLOOR, drift)) : drift;
   const revenue = Math.max(0, m.revenue * (1 + growth + noise));
-  const interest = monthlyInterest(m);
-  const repayment = m.debt * DEBT_REPAYMENT_RATE;
-  const cash = m.cash + revenue * m.grossMargin - m.opex - interest - repayment;
+  const interest = corporate ? corporateInterest(m.debt) : monthlyInterest(m);
+  // The Konzern repays its credit line from surplus cash, not on a startup loan schedule.
+  const repayment = corporate ? 0 : m.debt * DEBT_REPAYMENT_RATE;
+  const { grossMargin, opex } = corporate ? corporateCosts(m, revenue) : m;
+  const flow = m.cash + revenue * grossMargin - opex - interest - repayment;
+  const credit = corporate ? corporateCredit(flow, m.debt) : { cash: flow, debt: m.debt - repayment, drawn: 0 };
+  const cash = credit.cash;
+  if (credit.drawn > 0) events.push(`Die Kasse ist knapp: ${Math.round(credit.drawn / 1_000_000).toLocaleString("de-DE")} Mio. € aus der Kreditlinie.`);
   const morale = m.morale + (60 - m.morale) * 0.05;
   // New customers slowly dilute the share of the largest one.
   let topCustomer = Math.max(0.05, m.topCustomer * (1 - Math.max(0, growth) * 0.5));
@@ -187,10 +196,10 @@ export function stepMonth(s: Startup, random: () => number = () => 0.5): StepRes
     events.push(`Der größte Kunde kündigt. ${Math.round(topCustomer * 85)} % des Umsatzes fallen weg.`);
     topCustomer = 0.15;
   }
-  let next: Startup = { ...s, metrics: { ...m, growth, revenue: shockedRevenue, cash, morale, topCustomer, debt: m.debt - repayment } };
+  let next: Startup = { ...s, metrics: { ...m, growth, revenue: shockedRevenue, cash, morale, topCustomer, debt: credit.debt, opex, grossMargin } };
   next = { ...next, phase: phaseOf(next.metrics) };
-  // Startup phases mean nothing to a family business.
-  if (next.phase !== s.phase && !family) events.push(phaseText(next.phase));
+  // Startup phases mean nothing to a family business or a Konzern.
+  if (next.phase !== s.phase && !mature) events.push(phaseText(next.phase));
 
   if (cash < 0 && family && revenue * m.grossMargin - m.opex > 0) {
     // A family business that earns money bridges an empty till with its overdraft, at a price.

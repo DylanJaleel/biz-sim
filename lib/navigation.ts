@@ -124,7 +124,14 @@ export const NAV_ITEMS: NavItem[] = [
 
   { href: "/notizbuch", label: "Notizbuch", group: "knowledge", icon: "book", description: "Lernkarten zu Fachbegriffen und deine Notizen." },
   { href: "/einfuehrung", label: "Einführung", group: "knowledge", icon: "help", description: "Die kurze Tour: wo du was findest und wann was freigeschaltet wird." },
-  // { href: "/rangliste", label: "Rangliste", group: "knowledge", icon: "podium", description: "Du und die anderen Berater im Vergleich." },
+  {
+    href: "/rangliste",
+    label: "Rangliste",
+    group: "knowledge",
+    icon: "podium",
+    description: "League Table: du, die anderen M&A-Berater und deine Rivalen im Vergleich.",
+    locked: (s) => (s.reputation < MANDATE_REPUTATION ? `ab Ruf ${MANDATE_REPUTATION}` : null),
+  },
 
   { href: "/konto", label: "Konto", group: "account", icon: "user", description: "Spielstände, Anmeldung und Einstellungen." },
 ];

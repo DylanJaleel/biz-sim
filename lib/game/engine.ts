@@ -1,7 +1,8 @@
 import {
   ACTION_DAYS,
   CARRY,
-  REPUTATION_SOFT_CAP,
+  REPUTATION_FADE_FROM,
+  REPUTATION_GAIN_STEPS,
   FIRE_SALE,
   LIVING_COSTS,
   OVERDRAFT_LIMIT,
@@ -99,6 +100,8 @@ import {
   waterfall,
 } from "./captable";
 import { CORPORATE_ID, corporateStartup } from "./corporate";
+import { CORPORATE_BOOKS, correctOldCorporate, ebitdaMargin } from "./corporate-books";
+import { CYCLE_REVENUE } from "./mna-config";
 import { NEWS, targetsOf } from "./news";
 import { monthDays, OFFICES, officeOf } from "./office";
 import { addBal, contactDef, contactOf, helpStrength, initialContacts, introCooldown, introWarmthCost, personOf, refuses, ringOpen } from "./network";
@@ -139,6 +142,8 @@ import type {
 import { voteFromStance } from "./votes";
 import type { Ctx } from "./mna-core";
 import { mandatesMonth, planMandates, playMandate } from "./mna";
+import { afterDuelPurchase, duelBlocker, duelsMonth, planRivalHouses, playDuel } from "./rivals";
+import { leagueMonth } from "./league";
 import { acquireDeal, cure, examine, lboAllowsDividends, lboMonth, planSearchTargets, searchMonth, startSearch, stopSearch, targetDeal, targetEv } from "./lbo";
 import { acquire, makePlatform, planAddons, platformMonth, recordSale, startSale, stopSale } from "./platform";
 import { explainValueChange, familyDelta, familyIntroDelta, LBO_EXCLUDED_TEMPLATES, playLever, STARTUP_ONLY_TEMPLATES } from "./family";
@@ -255,12 +260,29 @@ function offer(state: GameState, id: string): void {
  */
 export function upgradeState(input: GameState): GameState {
   let state = input as GameState & { version: number };
-  if (state.version >= 6) return state;
+  if (state.version >= 6) return upgradeCorporate(state);
   if (state.version < 5) state = upgradeToV5(state);
   // Version 6: display cabinet and garage. What was earned before shows up quietly.
   const next: GameState = { ...state, version: 6, trophies: state.trophies ?? [], garage: state.garage ?? [] };
   awardTrophies(next, netWorth(next));
   for (const t of next.trophies) t.seen = true;
+  return upgradeCorporate(next);
+}
+
+/** Older games ran the Konzern on the startup path, which made it shrink: corrected once on loading. */
+function upgradeCorporate(state: GameState): GameState {
+  const old = state.startups.find((s) => s.corporate && (s.corporateModel ?? 1) < CORPORATE_BOOKS.model);
+  const fixed = old && correctOldCorporate(old);
+  if (!old || !fixed) return state;
+  const next: GameState = { ...state, startups: state.startups.map((s) => (s === old ? fixed : s)), mails: [...state.mails] };
+  if (fixed.metrics !== old.metrics)
+    mail(next, {
+      kind: "founder",
+      from: "Martina Hollerbach, Nordhafen AG",
+      subject: "Zahlen der Nordhafen AG neu aufgestellt",
+      body: `Unsere Zahlen wurden bisher wie bei einem Startup fortgeschrieben, das ließ den Konzern Monat für Monat schrumpfen. Neu gerechnet: ${Math.round(fixed.metrics.revenue / 1_000_000)} Mio. € Umsatz im Monat, eine EBITDA-Marge von ${Math.round(ebitdaMargin(fixed.metrics) * 100)} % und ${Math.round(fixed.metrics.debt / 1_000_000)} Mio. € Schulden.`,
+      startupId: CORPORATE_ID,
+    });
   return next;
 }
 
@@ -433,8 +455,15 @@ function playAction(current: GameState, action: GameAction): { state: GameState;
     case "acquire": {
       // A rival the player has warmed up to steps back before the price is set.
       defuseRivals(ctxOf(state));
+      const duel = duelBlocker(state, action.targetId, action.bid);
+      if (duel) throw new GameRuleError(duel);
       acquire(ctxOf(state), action.targetId, { bid: action.bid, bank: action.bank, vendor: action.vendor, earnout: action.earnout }, action.integration);
       afterAcquire(state, action.targetId);
+      afterDuelPurchase(ctxOf(state), action.targetId);
+      return { state, result: { kind: "none" } };
+    }
+    case "duel": {
+      playDuel(ctxOf(state), action.targetId, action.move, action.size);
       return { state, result: { kind: "none" } };
     }
     case "favor": {
@@ -850,7 +879,10 @@ function playAction(current: GameState, action: GameAction): { state: GameState;
       if (state.reputation < BUYOUT_REPUTATION) throw new GameRuleError(`Eine Firma übernehmen kannst du ab ${BUYOUT_REPUTATION} Ruf.`);
       // Family businesses valued by EBITDA: the structured purchase with a bank loan in the company.
       if (s.offer.ev) {
+        const duel = duelBlocker(state, s.id, "ask");
+        if (duel) throw new GameRuleError(duel);
         acquireDeal(ctxOf(state), s, { bid: "ask", bank: action.leverage ? BUYOUT_LOAN_SHARE : 0, vendor: 0, earnout: 0 });
+        afterDuelPurchase(ctxOf(state), s.id);
         return { state, result: { kind: "none" } };
       }
       const price = s.offer.ticket;
@@ -1278,7 +1310,7 @@ function applyFull(state: GameState, s: Startup, input: Delta, texts: string[], 
   const delta = input.dilutionTo ? { ...input, dilutionTo: { ...input.dilutionTo, name: fill(input.dilutionTo.name, s) } } : input;
   if (text) texts.push(fill(text, s));
   state.cash += delta.playerCash ?? 0;
-  state.reputation = Math.min(100, Math.max(0, state.reputation + (delta.reputation ?? 0)));
+  state.reputation = Math.min(100, Math.max(0, state.reputation + reputationGain(state, delta.reputation ?? 0)));
   if (delta.exit !== undefined && s.status === "active") {
     const split = waterfall(s, delta.exit);
     const payout = (split.payouts.find((p) => p.id === "you")?.amount ?? 0) + split.carry;
@@ -1355,11 +1387,25 @@ function decide(
 }
 
 /**
- * Reputation is harder to gain at the top: above 80, gains are halved.
+ * The one place where gains of reputation are weighed: the higher the
+ * reputation, the smaller the share that counts (REPUTATION_GAIN_STEPS).
+ * Fractions are carried over in `reputationRest`, so the result must be applied.
  * A known name still opens doors; it just doesn't keep growing by itself.
  */
 export function reputationGain(state: GameState, delta: number): number {
-  return delta > 0 && state.reputation >= REPUTATION_SOFT_CAP ? Math.ceil(delta / 2) : delta;
+  if (delta <= 0) return delta;
+  const step = [...REPUTATION_GAIN_STEPS].reverse().find((s) => state.reputation >= s.from) ?? REPUTATION_GAIN_STEPS[0];
+  const raw = delta * step.factor + (state.reputationRest ?? 0);
+  let whole = Math.floor(raw + 1e-9);
+  state.reputationRest = Math.round((raw - whole) * 1000) / 1000;
+  const month = state.reputationMonth?.month === state.month ? state.reputationMonth : { month: state.month, gained: 0 };
+  if (whole > step.cap - month.gained) {
+    whole = Math.max(0, step.cap - month.gained);
+    state.reputationRest = 0;
+  }
+  month.gained += whole;
+  state.reputationMonth = month;
+  return whole;
 }
 
 function mapValues(o: ReturnType<typeof outlook>): Record<Vote, number> {
@@ -1469,7 +1515,7 @@ function resolveEffects(state: GameState, month: number, lines: Map<string, stri
       if (item) {
         item.result = { good, text: fill(text, s), month };
         if (item.decision && !item.decision.lapsed && item.decision.vote === item.decision.outcome) {
-          state.reputation = Math.min(100, Math.max(0, state.reputation + (good ? RESULT_REPUTATION.good : RESULT_REPUTATION.bad)));
+          state.reputation = Math.min(100, Math.max(0, state.reputation + reputationGain(state, good ? RESULT_REPUTATION.good : RESULT_REPUTATION.bad)));
         }
       }
     } else if (effect.review && state.items.find((i) => i.id === effect.itemId)?.followUp?.done === false) {
@@ -1676,8 +1722,8 @@ export function closeMonth(state: GameState): MonthReport {
 
   for (const current of state.startups.filter((x) => x.status === "active")) {
     let s = current;
-    // A corporation does not go bust over one decision: it draws on its credit line.
-    if (s.corporate && s.metrics.cash < 5_000_000) s = applyDelta(s, { cash: 20_000_000, debt: 20_000_000 });
+    // A Konzern feels the business cycle; when money runs short it draws on its credit line (see stepMonth).
+    if (s.corporate) s = applyDelta(s, { revenuePct: CYCLE_REVENUE[state.market.regime] });
     const step = stepMonth(s, randomFor(state.seed, `step|${s.id}|${month}`));
     const texts = lines.get(s.id) ?? [];
     texts.push(...step.events);
@@ -1703,6 +1749,7 @@ export function closeMonth(state: GameState): MonthReport {
   lboMonth(mna, month, notes, lines);
   platformMonth(mna, month, notes, lines);
   mandatesMonth(mna, month, notes, income);
+  duelsMonth(mna, month, notes);
   searchMonth(mna, month, notes, income);
 
   if (month >= NEWS_FROM_MONTH) publishNews(state, month, lines, notes);
@@ -1760,7 +1807,7 @@ export function closeMonth(state: GameState): MonthReport {
   planRounds(state);
   planExits(state);
   // Fame fades a little at the very top: a big name needs to keep delivering.
-  if (state.reputation > REPUTATION_SOFT_CAP + 5) state.reputation -= 1;
+  if (state.reputation > REPUTATION_FADE_FROM && !(state.reputationMonth?.month === month && state.reputationMonth.gained > 0)) state.reputation -= 1;
   offerCorporateSeat(state);
   announceNextStep(state);
   pruneDeals(state);
@@ -1778,6 +1825,8 @@ export function closeMonth(state: GameState): MonthReport {
   state.calendar = [];
   // Favours asked, invitations sent, events accepted earlier now in the calendar.
   planNetwork(mna);
+  planRivalHouses(mna);
+  leagueMonth(mna);
   planAgenda(state);
 
   // Family businesses: one line on why the value moved, so a drop is never a riddle.
