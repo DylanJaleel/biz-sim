@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { OfficeStyleCard } from "@/components/account/OfficeStyleCard";
 import { ResetGameCard } from "@/components/account/ResetGameCard";
 import { officeStyle } from "@/lib/office-style";
@@ -24,6 +25,15 @@ export async function AccountContent() {
       <SaveGames userId={user.id!} email={user.email ?? ""} />
 
       <OfficeStyleCard current={await officeStyle()} />
+
+      <section className="panel" id="einfuehrung">
+        <p className="eyebrow">Einführung</p>
+        <p className="panel__title">Kurze Tour durchs Spiel</p>
+        <p className="muted small">Wo du was findest und wann was freigeschaltet wird. Du kannst sie jederzeit noch einmal ansehen.</p>
+        <Link href="/einfuehrung" className="btn btn--sm">
+          Einführung ansehen
+        </Link>
+      </section>
 
       <UsageCard />
 

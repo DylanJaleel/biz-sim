@@ -123,6 +123,7 @@ export const NAV_ITEMS: NavItem[] = [
   // { href: "/stiftung", label: "Stiftung & Dynastie", group: "life", icon: "heart", description: "Stiftung gründen, Nachfolge in der Familie." },
 
   { href: "/notizbuch", label: "Notizbuch", group: "knowledge", icon: "book", description: "Lernkarten zu Fachbegriffen und deine Notizen." },
+  { href: "/einfuehrung", label: "Einführung", group: "knowledge", icon: "help", description: "Die kurze Tour: wo du was findest und wann was freigeschaltet wird." },
   {
     href: "/rangliste",
     label: "Rangliste",

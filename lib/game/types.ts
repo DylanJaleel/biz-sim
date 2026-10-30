@@ -672,6 +672,15 @@ export interface GameState {
   reputationMonth?: { month: number; gained: number };
   /** Rival houses: appear from reputation 50, bid against you, stand in the league table (see rivals.ts). */
   rivals?: RivalState;
+  /** Introduction for new players and the unlock hints already shown (missing in older games). */
+  onboarding?: OnboardingState;
+}
+
+/** Progress of the introduction. `seen` holds the ids of unlock hints already acknowledged. */
+export interface OnboardingState {
+  done?: boolean;
+  step?: number;
+  seen?: string[];
 }
 
 /** The rivals of this game: drawn from a pool by seed; only their record with you is stored. */
