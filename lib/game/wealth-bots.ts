@@ -66,7 +66,8 @@ export function wealthActions(s: GameState, style: WealthStyle): GameAction[] {
       if (!o) continue;
       const ltv = Math.min(st.ltv, maxLtv(kind));
       const f = financing(s, o, ltv, binding);
-      if (afford(f.cash + reserve)) {
+      // Only houses that carry themselves: rent after costs covers the loan.
+      if (f.cashflow >= 0 && afford(f.cash + reserve)) {
         out.push({ type: "estate", move: "buy", offerId: o.id, ltv, binding });
         break;
       }
