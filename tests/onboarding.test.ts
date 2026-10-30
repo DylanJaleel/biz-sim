@@ -61,8 +61,8 @@ describe("Hinweise bei Freischaltungen", () => {
     const state = applyAction(fresh(), { type: "closeMonth" }).state;
     expect(state.onboarding?.seen).toEqual([]);
     state.reputation = MANDATE_REPUTATION;
-    expect(pendingUnlocks(state).map((u) => u.id)).toEqual(["mandate"]);
-    state.onboarding = applyOnboardingPatch(state.onboarding, { seen: ["mandate"] });
+    expect(pendingUnlocks(state).map((u) => u.id)).toEqual(["mandate", "league"]);
+    state.onboarding = applyOnboardingPatch(state.onboarding, { seen: ["mandate", "league"] });
     expect(pendingUnlocks(state)).toHaveLength(0);
     state.reputation = LEAD_REPUTATION;
     expect(pendingUnlocks(state).map((u) => u.id)).toEqual(["lead"]);

@@ -7622,6 +7622,9 @@ html:has(dialog.menu[open]) {
 
   .unlock {
     animation: none;
+  }
+}
+
 /* Rangliste (League Table), Rivalen, Bietgefecht und große Mandate */
 
 .league .chip,
