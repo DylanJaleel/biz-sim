@@ -302,7 +302,12 @@ function Tour({ step, reputation, onFinish }: { step: number; reputation: number
       ) : (
         <div className="tour__dim" aria-hidden="true" />
       )}
-      <div ref={card} className={`tour__card${def.extra === "ladder" ? " tour__card--wide" : ""}`} style={style} data-side={place?.side ?? "none"}>
+      <div
+        ref={card}
+        className={`tour__card${def.extra === "ladder" ? " tour__card--wide" : def.extra === "stats" ? " tour__card--stats" : ""}`}
+        style={style}
+        data-side={place?.side ?? "none"}
+      >
         {place && place.side !== "none" && (
           <span className="tour__arrow" data-side={place.side} style={{ "--tour-arrow": `${place.arrow}px` } as React.CSSProperties} aria-hidden="true" />
         )}

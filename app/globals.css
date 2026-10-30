@@ -7601,11 +7601,23 @@ html:has(dialog.menu[open]) {
     line-height: 1.4;
   }
 
+  .tour__card--stats {
+    width: min(560px, calc(100vw - 24px));
+  }
+
   .tour__facts {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(3, 1fr);
     gap: 4px 12px;
     padding: 8px 10px;
     font-size: 12px;
+  }
+
+  .tour__facts div {
+    display: block;
+  }
+
+  .tour__ladder {
+    grid-template-columns: repeat(3, 1fr);
   }
 
   .tour__ladder li {
