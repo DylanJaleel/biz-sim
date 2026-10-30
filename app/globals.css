@@ -6578,269 +6578,6 @@ html:has(dialog.menu[open]) {
 }
 
 /* ---------------------------------------------------------------------------
-   Fondsfamilie, Venture Studio, Wachstumspfad (Fonds-Seite, Studio-Seite, Firma „Wachstum“)
-   --------------------------------------------------------------------------- */
-
-.fund-kpis {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  margin-bottom: 12px;
-}
-
-.fund-invested {
-  position: relative;
-  height: 8px;
-  margin: 4px 0 10px;
-  border-radius: 99px;
-  background: var(--line);
-}
-
-.fund-invested i {
-  position: absolute;
-  inset: 0 auto 0 0;
-  border-radius: 99px;
-  background: var(--accent);
-}
-
-.fund-invested__mark {
-  position: absolute;
-  top: -4px;
-  bottom: -4px;
-  width: 2px;
-  background: var(--ink);
-  opacity: 0.55;
-}
-
-.wf {
-  margin: 16px 0 8px;
-}
-
-.wf__cap {
-  margin-bottom: 8px;
-  font-size: 13px;
-  font-weight: 650;
-}
-
-.wf__bar {
-  position: relative;
-  height: 28px;
-  margin-bottom: 26px;
-  border-radius: 8px;
-  background: var(--line);
-}
-
-.wf__seg {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-}
-
-.wf__seg--capital,
-.wf__step--capital i {
-  background: #2f6fd6;
-}
-
-.wf__seg--hurdle,
-.wf__step--hurdle i {
-  background: #7fa8ec;
-}
-
-.wf__seg--catchup,
-.wf__step--catchup i {
-  background: #d48a10;
-}
-
-.wf__seg--split,
-.wf__step--split i {
-  background: repeating-linear-gradient(90deg, #7fa8ec 0 8px, #d48a10 8px 10px);
-}
-
-.wf__seg--capital {
-  border-radius: 8px 0 0 8px;
-}
-
-.wf__mark {
-  position: absolute;
-  top: -4px;
-  bottom: -4px;
-  width: 2px;
-  background: var(--ink);
-}
-
-.wf__mark small {
-  position: absolute;
-  top: calc(100% + 2px);
-  left: 50%;
-  transform: translateX(-50%);
-  color: var(--muted);
-  font-size: 11px;
-  white-space: nowrap;
-}
-
-.wf__mark--value {
-  background: none;
-  border-left: 2px dashed var(--ink);
-}
-
-.wf__mark--value small {
-  top: auto;
-  bottom: calc(100% + 2px);
-}
-
-.wf__steps {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px 16px;
-  margin: 0 0 8px;
-  padding: 0;
-  list-style: none;
-}
-
-.wf__step {
-  display: grid;
-  grid-template-columns: 12px minmax(0, 1fr) auto;
-  gap: 8px;
-  align-items: start;
-}
-
-.wf__step i {
-  width: 12px;
-  height: 12px;
-  margin-top: 3px;
-  border-radius: 3px;
-}
-
-.wf__step span {
-  display: flex;
-  flex-direction: column;
-}
-
-.wf__amt {
-  align-items: flex-end;
-  font-variant-numeric: tabular-nums;
-}
-
-.wf__gp {
-  color: #b06f00;
-  font-weight: 650;
-}
-
-.lpac__vote + .lpac__vote {
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid var(--line);
-}
-
-.lpac__vote h3 {
-  margin: 0 0 4px;
-  font-size: 15px;
-}
-
-.lpac__options {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 10px;
-}
-
-.lpac__option,
-.studio-size {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 12px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-}
-
-.lpac__option .action,
-.studio-size .action {
-  margin-top: auto;
-}
-
-.roadshow__bar {
-  position: relative;
-  height: 10px;
-  margin: 8px 0 26px;
-  border-radius: 99px;
-  background: var(--line);
-}
-
-.roadshow__bar i {
-  position: absolute;
-  inset: 0 auto 0 0;
-  border-radius: 99px;
-  background: var(--agree);
-}
-
-.roadshow__bar span {
-  position: absolute;
-  top: 14px;
-  transform: translateX(-50%);
-  color: var(--muted);
-  font-size: 11px;
-  white-space: nowrap;
-}
-
-.roadshow__bar span::before {
-  content: "";
-  position: absolute;
-  top: -18px;
-  left: 50%;
-  width: 2px;
-  height: 14px;
-  background: var(--ink);
-  opacity: 0.5;
-}
-
-.lps {
-  margin: 0 0 14px;
-  padding: 0;
-  list-style: none;
-}
-
-.lps__row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 16px;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 0;
-  border-top: 1px solid var(--line);
-}
-
-.lps__row--declined {
-  opacity: 0.6;
-}
-
-.lps__who {
-  display: flex;
-  flex: 1 1 260px;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.lps__act {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-}
-
-.studio-firms,
-.ideas {
-  display: grid;
-  gap: 14px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.ideas {
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-}
-
-.studio-firm,
-.idea {
-  padding: 14px;
    Monatsüberblick nach „Monat abschließen“: Summe oben, Firmen nach Wirkung
    (alle zugeklappt), kurze Bereiche für Handlungsbedarf, Netzwerk, Post, Termine.
    --------------------------------------------------------------------------- */
@@ -7282,196 +7019,6 @@ html:has(dialog.menu[open]) {
   border-radius: 16px;
 }
 
-.studio-firm__head,
-.idea__head {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 10px;
-  align-items: baseline;
-  justify-content: space-between;
-}
-
-.idea p {
-  margin: 6px 0;
-}
-
-.tranches {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
-  margin: 12px 0;
-  padding: 0;
-  list-style: none;
-}
-
-.tranches li {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 8px 10px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  font-size: 13px;
-}
-
-.tranches li.is-done {
-  border-color: transparent;
-  background: var(--agree-soft);
-}
-
-.tranches li.is-next {
-  border-color: var(--accent);
-}
-
-.studio-firm__sizes {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.found {
-  display: grid;
-  gap: 10px;
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid var(--line);
-}
-
-.found__ceos {
-  display: grid;
-  gap: 6px;
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-
-.found__ceo {
-  display: flex;
-  gap: 8px;
-  align-items: flex-start;
-  padding: 8px 10px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  cursor: pointer;
-}
-
-.found__ceo.is-on {
-  border-color: var(--accent);
-  background: var(--accent-soft);
-}
-
-.found__ceo span,
-.found__keep {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.found .warn {
-  color: var(--maybe);
-}
-
-.ladder {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 6px;
-  margin: 8px 0 14px;
-  padding: 0;
-  list-style: none;
-}
-
-.ladder__step {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 8px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  font-size: 12.5px;
-}
-
-.ladder__step.is-reached {
-  border-color: transparent;
-  background: var(--accent-soft);
-}
-
-.ladder__step.is-current {
-  border-color: var(--accent);
-}
-
-.ladder__step--top {
-  border-color: #d4a72c;
-}
-
-.ladder__step--top.is-reached {
-  background: linear-gradient(135deg, #f7e3a1, #d4a72c);
-  color: #3b2a00;
-}
-
-.venture__values {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  margin-bottom: 8px;
-}
-
-.venture__sub {
-  margin: 14px 0 6px;
-  font-size: 14px;
-}
-
-.venture__checks {
-  display: grid;
-  gap: 6px;
-  margin: 0 0 10px;
-  padding: 0;
-  list-style: none;
-}
-
-.venture__checks li {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 120px;
-  gap: 10px;
-  align-items: center;
-}
-
-.venture__banner {
-  padding: 12px 14px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #f7e3a1, #d4a72c);
-  color: #3b2a00;
-  font-weight: 600;
-}
-
-.venture--unicorn {
-  box-shadow:
-    0 0 0 2px #d4a72c,
-    var(--shadow);
-}
-
-.award--unicorn .award__card {
-  position: relative;
-  overflow: hidden;
-  box-shadow:
-    0 0 0 2px #d4a72c,
-    0 0 60px rgba(212, 167, 44, 0.45);
-}
-
-.award__burst {
-  position: absolute;
-  z-index: 0;
-  inset: -40%;
-  background: repeating-conic-gradient(from 0deg, transparent 0 12deg, rgba(247, 227, 161, 0.16) 12deg 18deg);
-  pointer-events: none;
-  animation: award-spin 24s linear infinite;
-}
-
-.award--unicorn .award__card > :not(.award__burst) {
-  position: relative;
-  z-index: 1;
-}
-
-@keyframes award-spin {
-  to {
-    transform: rotate(1turn);
 .mbd-card > header,
 .mbd-income > summary {
   display: flex;
@@ -7698,38 +7245,6 @@ html:has(dialog.menu[open]) {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .award__burst {
-    animation: none;
-  }
-}
-
-@media (max-width: 1100px), (pointer: coarse) and (max-width: 1400px) {
-  .ctabs[data-active="wachstum"] [data-pane]:not([data-pane="wachstum"]) {
-    display: none;
-  }
-
-  .ctabs:not([data-active="wachstum"]) [data-pane="wachstum"] {
-    display: none;
-  }
-}
-
-@media (max-width: 900px) {
-  .fund-kpis,
-  .venture__values {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .ladder {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .wf__steps,
-  .studio-firm__sizes {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .tranches {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   .mbd *,
   .mbd *::before,
   .mbd *::after {
@@ -8576,5 +8091,502 @@ html:has(dialog.menu[open]) {
 @media (max-width: 420px) {
   .duel__vs {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Fondsfamilie, Venture Studio, Wachstumspfad (Fonds-Seite, Studio-Seite, Firma „Wachstum“)
+   --------------------------------------------------------------------------- */
+
+.fund-kpis {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 12px;
+}
+
+.fund-invested {
+  position: relative;
+  height: 8px;
+  margin: 4px 0 10px;
+  border-radius: 99px;
+  background: var(--line);
+}
+
+.fund-invested i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 99px;
+  background: var(--accent);
+}
+
+.fund-invested__mark {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  background: var(--ink);
+  opacity: 0.55;
+}
+
+.wf {
+  margin: 16px 0 8px;
+}
+
+.wf__cap {
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.wf__bar {
+  position: relative;
+  height: 28px;
+  margin-bottom: 26px;
+  border-radius: 8px;
+  background: var(--line);
+}
+
+.wf__seg {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+.wf__seg--capital,
+.wf__step--capital i {
+  background: #2f6fd6;
+}
+
+.wf__seg--hurdle,
+.wf__step--hurdle i {
+  background: #7fa8ec;
+}
+
+.wf__seg--catchup,
+.wf__step--catchup i {
+  background: #d48a10;
+}
+
+.wf__seg--split,
+.wf__step--split i {
+  background: repeating-linear-gradient(90deg, #7fa8ec 0 8px, #d48a10 8px 10px);
+}
+
+.wf__seg--capital {
+  border-radius: 8px 0 0 8px;
+}
+
+.wf__mark {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  background: var(--ink);
+}
+
+.wf__mark small {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.wf__mark--value {
+  background: none;
+  border-left: 2px dashed var(--ink);
+}
+
+.wf__mark--value small {
+  top: auto;
+  bottom: calc(100% + 2px);
+}
+
+.wf__steps {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 16px;
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.wf__step {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: start;
+}
+
+.wf__step i {
+  width: 12px;
+  height: 12px;
+  margin-top: 3px;
+  border-radius: 3px;
+}
+
+.wf__step span {
+  display: flex;
+  flex-direction: column;
+}
+
+.wf__amt {
+  align-items: flex-end;
+  font-variant-numeric: tabular-nums;
+}
+
+.wf__gp {
+  color: #b06f00;
+  font-weight: 650;
+}
+
+.lpac__vote + .lpac__vote {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.lpac__vote h3 {
+  margin: 0 0 4px;
+  font-size: 15px;
+}
+
+.lpac__options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.lpac__option,
+.studio-size {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.lpac__option .action,
+.studio-size .action {
+  margin-top: auto;
+}
+
+.roadshow__bar {
+  position: relative;
+  height: 10px;
+  margin: 8px 0 26px;
+  border-radius: 99px;
+  background: var(--line);
+}
+
+.roadshow__bar i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 99px;
+  background: var(--agree);
+}
+
+.roadshow__bar span {
+  position: absolute;
+  top: 14px;
+  transform: translateX(-50%);
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.roadshow__bar span::before {
+  content: "";
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  width: 2px;
+  height: 14px;
+  background: var(--ink);
+  opacity: 0.5;
+}
+
+.lps {
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+}
+
+.lps__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+
+.lps__row--declined {
+  opacity: 0.6;
+}
+
+.lps__who {
+  display: flex;
+  flex: 1 1 260px;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lps__act {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.studio-firms,
+.ideas {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ideas {
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+
+.studio-firm,
+.idea {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+
+.studio-firm__head,
+.idea__head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.idea p {
+  margin: 6px 0;
+}
+
+.tranches {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 12px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tranches li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font-size: 13px;
+}
+
+.tranches li.is-done {
+  border-color: transparent;
+  background: var(--agree-soft);
+}
+
+.tranches li.is-next {
+  border-color: var(--accent);
+}
+
+.studio-firm__sizes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.found {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.found__ceos {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.found__ceo {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.found__ceo.is-on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.found__ceo span,
+.found__keep {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.found .warn {
+  color: var(--maybe);
+}
+
+.ladder {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+  margin: 8px 0 14px;
+  padding: 0;
+  list-style: none;
+}
+
+.ladder__step {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font-size: 12.5px;
+}
+
+.ladder__step.is-reached {
+  border-color: transparent;
+  background: var(--accent-soft);
+}
+
+.ladder__step.is-current {
+  border-color: var(--accent);
+}
+
+.ladder__step--top {
+  border-color: #d4a72c;
+}
+
+.ladder__step--top.is-reached {
+  background: linear-gradient(135deg, #f7e3a1, #d4a72c);
+  color: #3b2a00;
+}
+
+.venture__values {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 8px;
+}
+
+.venture__sub {
+  margin: 14px 0 6px;
+  font-size: 14px;
+}
+
+.venture__checks {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 10px;
+  padding: 0;
+  list-style: none;
+}
+
+.venture__checks li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px;
+  gap: 10px;
+  align-items: center;
+}
+
+.venture__banner {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #f7e3a1, #d4a72c);
+  color: #3b2a00;
+  font-weight: 600;
+}
+
+.venture--unicorn {
+  box-shadow:
+    0 0 0 2px #d4a72c,
+    var(--shadow);
+}
+
+.award--unicorn .award__card {
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 2px #d4a72c,
+    0 0 60px rgba(212, 167, 44, 0.45);
+}
+
+.award__burst {
+  position: absolute;
+  z-index: 0;
+  inset: -40%;
+  background: repeating-conic-gradient(from 0deg, transparent 0 12deg, rgba(247, 227, 161, 0.16) 12deg 18deg);
+  pointer-events: none;
+  animation: award-spin 24s linear infinite;
+}
+
+.award--unicorn .award__card > :not(.award__burst) {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes award-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .award__burst {
+    animation: none;
+  }
+}
+
+@media (max-width: 1100px), (pointer: coarse) and (max-width: 1400px) {
+  .ctabs[data-active="wachstum"] [data-pane]:not([data-pane="wachstum"]) {
+    display: none;
+  }
+
+  .ctabs:not([data-active="wachstum"]) [data-pane="wachstum"] {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .fund-kpis,
+  .venture__values {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ladder {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .wf__steps,
+  .studio-firm__sizes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tranches {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
