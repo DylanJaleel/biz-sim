@@ -139,9 +139,9 @@ import type { Ctx } from "./mna-core";
 import { mandatesMonth, planMandates, playMandate } from "./mna";
 import { acquireDeal, cure, examine, lboAllowsDividends, lboMonth, planSearchTargets, searchMonth, startSearch, stopSearch, targetDeal, targetEv } from "./lbo";
 import { acquire, makePlatform, planAddons, platformMonth, recordSale, startSale, stopSale } from "./platform";
-import { fundId, fundProceeds, fundsFees, fundsMonth, fundsOf, fundDistribute, investingFund, playFund, playLpac } from "./funds";
+import { fundFollowOn, fundId, fundProceeds, fundsFees, fundsMonth, fundsOf, fundDistribute, investingFund, playFund, playLpac } from "./funds";
 import { fixedDays, playStudio, studioMonth } from "./studio";
-import { companyValue, creditedValue, ventureMonth, ventureRoundClosed, ventureRoundFailed } from "./venture";
+import { companyValue, creditedValue, saleValue, ventureMonth, ventureRoundClosed, ventureRoundFailed } from "./venture";
 import { VENTURE_IPO_STAGE } from "./venture-config";
 import { explainValueChange, familyDelta, familyIntroDelta, LBO_EXCLUDED_TEMPLATES, playLever, STARTUP_ONLY_TEMPLATES } from "./family";
 
@@ -633,6 +633,8 @@ function playAction(current: GameState, action: GameAction): { state: GameState;
       if (!round || round.status !== "open") throw new GameRuleError("Über diese Runde wurde schon entschieden.");
       const s = startupOf(state, round.startupId);
       if (s.status !== "active") throw new GameRuleError("Die Firma ist nicht mehr aktiv.");
+      if (round.venture !== undefined && (action.take === "lead" || action.take === "syndicate"))
+        throw new GameRuleError("Eine Wachstumsrunde führt der Wachstumsinvestor. Du kannst anteilig mitziehen.");
       if (action.take === "lead" && state.reputation < LEAD_REPUTATION) {
         throw new GameRuleError(`Eine Runde anführen kannst du ab ${LEAD_REPUTATION} Ruf.`);
       }
@@ -1226,7 +1228,8 @@ const FUNDING_TEMPLATES = ["bridge", "seed_round"];
 function settleRound(state: GameState, round: Round, take: RoundTake, vote: GvVote | "abstain", notes: string[]): void {
   let s = startupOf(state, round.startupId);
   // Growth rounds are led by the growth investor: the player can only follow pro rata.
-  if (round.venture !== undefined && (take === "lead" || take === "syndicate")) throw new GameRuleError("Eine Wachstumsrunde führt der Wachstumsinvestor. Du kannst anteilig mitziehen.");
+  if (round.venture !== undefined && (take === "lead" || take === "syndicate"))
+    throw new GameRuleError("Eine Wachstumsrunde führt der Wachstumsinvestor. Du kannst anteilig mitziehen.");
   const { ballots, approved } = shareholderVote(round, s, vote);
   round.ballots = ballots;
   round.take = take;
@@ -1276,6 +1279,8 @@ function settleRound(state: GameState, round: Round, take: RoundTake, vote: GvVo
   notes.push(text);
   mail(state, { kind: "round", from: s.name, subject: `${round.label} abgeschlossen`, body: text, startupId: s.id, roundId: round.id });
   if (round.venture !== undefined) ventureRoundClosed(ctxOf(state), round, notes);
+  // The player's funds follow their companies pro rata (reserves for follow-ons).
+  if (state.fund) fundFollowOn(ctxOf(state), round, notes);
   checkMajority(state, startupOf(state, s.id), before);
 }
 
@@ -1952,12 +1957,12 @@ function planExits(state: GameState): void {
   const mood = sentimentOf(state.market.regime);
   for (const s of state.startups.filter((x) => x.status === "active" && !x.corporate)) {
     if (state.month - s.joined < EXIT_MIN_AGE || s.flags.includes("round_open") || s.platform?.sale) continue;
-    // Companies on the venture path are priced at their last round.
-    const value = companyValue(s);
+    // Companies on the venture path: buyers pay part of the last round's premium, a listing all of it.
+    const value = saleValue(s);
     if (value < EXIT_MIN_VALUE) continue;
     if (state.exits.some((e) => e.startupId === s.id && (e.status === "open" || state.month - e.month < 6))) continue;
     if (openItems(state).some((i) => i.startupId === s.id && i.templateId === "acquisition")) continue;
-    if (planIpo(state, s, value, mood)) continue;
+    if (planIpo(state, s, companyValue(s), mood)) continue;
     const random = randomFor(state.seed, `exit|${s.id}|${state.month}`);
     const chance = EXIT_CHANCE * (1 + mood * 0.6) * (s.metrics.growth > 0.03 ? 1.4 : 1);
     if (random() > chance) continue;

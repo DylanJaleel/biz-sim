@@ -18,13 +18,23 @@ export function AwardPopup({ ids, details, revision }: { ids: string[]; details:
     button.current?.focus();
   }, []);
   if (defs.length === 0) return null;
+  // The unicorn is the rare moment: it goes first and gets its own staging.
+  defs.sort((a, b) => Number(b.id === "unicorn") - Number(a.id === "unicorn"));
   const first = defs[0]!;
+  const unicorn = first.id === "unicorn";
   const more = defs.length - 1;
   const seen = () => play({ type: "seenTrophies" });
   return (
-    <div className="glass-page award" role="dialog" aria-modal="true" aria-labelledby="award-title" onKeyDown={(e) => e.key === "Escape" && seen()}>
+    <div
+      className={`glass-page award${unicorn ? " award--unicorn" : ""}`}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="award-title"
+      onKeyDown={(e) => e.key === "Escape" && seen()}
+    >
       <div className="gwin award__card">
-        <div className="glbl">Neuer Tombstone</div>
+        {unicorn && <div className="award__burst" aria-hidden="true" />}
+        <div className="glbl">{unicorn ? "Titelseite · Unicorn" : "Neuer Tombstone"}</div>
         <Tomb def={first} detail={details[first.id]} fresh eager />
         <h2 id="award-title">{first.title}</h2>
         <p>{first.story}</p>

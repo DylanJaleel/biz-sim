@@ -341,7 +341,8 @@ export const LESSONS: Lesson[] = [
     summary:
       "Ein Fonds sammelt Geld von Investoren (Limited Partners) ein und legt es in Firmen an. Der Manager bekommt eine jährliche Verwaltungsgebühr und einen Anteil am Gewinn, den Carry. Die Investoren bekommen ihr Geld zurück, wenn Beteiligungen verkauft werden.",
     rule: "Üblich: 2 % Gebühr pro Jahr, 20 % Carry auf den Gewinn des ganzen Fonds, erst nach Kapital und Hurdle.",
-    example: "Ein Fonds über 5 Mio. € bringt 100.000 € Gebühr im Jahr. Zahlt er am Ende 9 Mio. € an die Investoren aus, die 5 Mio. € eingezahlt haben, gehen rund 800.000 € Carry an den Manager.",
+    example:
+      "Ein Fonds über 5 Mio. € bringt 100.000 € Gebühr im Jahr. Zahlt er am Ende 9 Mio. € an die Investoren aus, die 5 Mio. € eingezahlt haben, gehen rund 800.000 € Carry an den Manager.",
     inGame:
       "Mit 85 Ruf, zwei erfolgreichen Verkäufen und einem Family Office, das seit einem Jahr läuft, kannst du einen Fonds auflegen. Er investiert bei jedem neuen Einstieg das Doppelte deines Tickets.",
   },
@@ -530,7 +531,8 @@ export const LESSONS: Lesson[] = [
       "Ein Venture Studio gründet Firmen selbst: Es wählt die Idee, holt eine Geschäftsführung und stellt Geld und Leute. Dafür hält es anfangs die Mehrheit. Das Geld kommt in Tranchen, jeweils wenn ein Meilenstein erreicht ist.",
     rule: "Tranchen begrenzen das Risiko. Der CEO braucht genug Anteil, um dranzubleiben.",
     example: "Ein Studio gibt 105.000 € zur Gründung, 140.000 € nach dem Prototyp und 210.000 € bei 100 Kunden. Scheitert die Idee früh, ist nur die erste Tranche weg.",
-    inGame: "Ab Ruf 75 und zwei Verkäufen. Bis zu zwei Studio-Firmen gleichzeitig im Aufbau, jede kostet zwei Tage im Monat. Fragst du deinen eigenen Fonds um Geld, muss der LPAC zustimmen.",
+    inGame:
+      "Ab Ruf 75 und zwei Verkäufen. Bis zu zwei Studio-Firmen gleichzeitig im Aufbau, jede kostet zwei Tage im Monat. Fragst du deinen eigenen Fonds um Geld, muss der LPAC zustimmen.",
   },
   {
     id: "venture_path",
@@ -538,13 +540,15 @@ export const LESSONS: Lesson[] = [
     summary:
       "Wächst eine junge Firma schnell, steigen Wachstumsinvestoren ein: Serie A, B, C, D. Jede Runde setzt einen neuen Preis für die ganze Firma, den Papierwert. Er ist kein Geld auf dem Konto: Erst ein Verkauf oder Börsengang macht daraus Erlös.",
     rule: "Papierwert deines Anteils = dein Anteil × Bewertung der letzten Runde",
-    example: "Du hältst nach drei Runden 7,6 % an einer Firma mit 70 Mio. € Bewertung: auf dem Papier 5,3 Mio. €. Im Spiel zählt bis zum Exit nur ein Teil davon zu deinem Vermögen.",
+    example:
+      "Du hältst nach drei Runden 7,6 % an einer Firma mit 70 Mio. € Bewertung: auf dem Papier 5,3 Mio. €. Im Spiel zählt bis zum Exit nur ein Teil davon zu deinem Vermögen.",
     inGame: "Firmenseite, Bereich „Wachstum“: Stufen, Voraussetzungen, Chance auf die nächste Runde und angerechneter Wert.",
   },
   {
     id: "unicorn",
     title: "Unicorn",
-    summary: "Ein Unicorn ist eine junge, nicht börsennotierte Firma mit mehr als einer Milliarde Bewertung. Das ist sehr selten: Von hundert Firmen mit Serie A schaffen es nur wenige.",
+    summary:
+      "Ein Unicorn ist eine junge, nicht börsennotierte Firma mit mehr als einer Milliarde Bewertung. Das ist sehr selten: Von hundert Firmen mit Serie A schaffen es nur wenige.",
     rule: "Unicorn = Bewertung ab 1 Mrd. € vor dem Börsengang",
     example: "Nach Seed, Serie A bis D und einer Pre-IPO-Runde ist die Firma 1,05 Mrd. € wert. Wer am Anfang 20 % hatte, hält jetzt vielleicht 5 %: gut 50 Mio. € auf dem Papier.",
     inGame: "Etwa eine von 25 Partien erlebt einen Unicorn. Es gibt einen goldenen Tombstone; das Geld kommt erst mit Verkauf oder Börsengang.",

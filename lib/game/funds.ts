@@ -3,7 +3,7 @@ import { mnaRandom } from "./lbo";
 import { applyDelta } from "./sim";
 import { companyValue } from "./venture";
 import type { Ctx } from "./mna-core";
-import type { FundFamily, FundRaising, FundState, FundTerms, GameState, IncomeLines, LpacKind, LpacVote, LpConcession, LpKind, LpProspect, Startup } from "./types";
+import type { FundFamily, FundRaising, FundState, FundTerms, GameState, IncomeLines, LpacKind, LpacVote, LpConcession, LpKind, LpProspect, Round, Startup } from "./types";
 import {
   CONCESSION_COST,
   CROSS_FUND_AGE,
@@ -120,10 +120,19 @@ export function investing(state: GameState, f: FundState): boolean {
   return f.closed === undefined && state.month < f.raised + FUND_INVEST_MONTHS;
 }
 
+function pickInvesting(state: GameState, funds: FundState[]): FundState | undefined {
+  const all = funds.filter((f) => f.closed === undefined && f.cash >= 10_000);
+  return [...all].reverse().find((f) => investing(state, f)) ?? all[all.length - 1];
+}
+
 /** The fund that puts money into new deals: the newest one still investing with money left. */
 export function investingFund(state: GameState): FundState | undefined {
-  const all = fundsOf(state).filter((f) => f.closed === undefined && f.cash >= 10_000);
-  return [...all].reverse().find((f) => investing(state, f)) ?? all[all.length - 1];
+  return pickInvesting(state, fundsOf(state));
+}
+
+/** Same as investingFund, for pages and bots (never writes). */
+export function investingFundRead(state: GameState): FundState | undefined {
+  return pickInvesting(state, fundsRead(state));
 }
 
 // ---------------------------------------------------------------------------
@@ -392,22 +401,54 @@ export interface LpacOption {
 
 export const LPAC_OPTIONS: Record<LpacKind, LpacOption[]> = {
   studio: [
-    { id: "fair", label: "Mit Fairness Opinion vorlegen", text: "Ein unabhängiger Gutachter prüft den Preis (15.000 €). Der Fonds zahlt den heutigen Wert.", chance: 0.85, cost: FAIRNESS_OPINION_COST },
+    {
+      id: "fair",
+      label: "Mit Fairness Opinion vorlegen",
+      text: "Ein unabhängiger Gutachter prüft den Preis (15.000 €). Der Fonds zahlt den heutigen Wert.",
+      chance: 0.85,
+      cost: FAIRNESS_OPINION_COST,
+    },
     { id: "direct", label: "Zum Studio-Preis vorlegen", text: "Der Fonds soll 50 % über dem heutigen Wert einsteigen. Gut für dich, schlecht für die Investoren.", chance: 0.4 },
     { id: "drop", label: "Zurückziehen", text: "Die Studio-Firma bekommt kein Geld vom Fonds. Kein Konflikt.", chance: 1 },
   ],
   crossfund: [
-    { id: "fair", label: "Mit unabhängiger Bewertung vorlegen", text: "Ein Gutachter setzt den Preis (15.000 €). Fonds I bekommt Geld für seine Investoren, der spätere Fonds steigt fair ein.", chance: 0.8, cost: FAIRNESS_OPINION_COST },
-    { id: "premium", label: "Mit 15 % Aufschlag vorlegen", text: "Fonds I verkauft teurer: mehr Rückfluss und Carry dort, auf Kosten der Investoren des späteren Fonds.", chance: 0.35 },
+    {
+      id: "fair",
+      label: "Mit unabhängiger Bewertung vorlegen",
+      text: "Ein Gutachter setzt den Preis (15.000 €). Fonds I bekommt Geld für seine Investoren, der spätere Fonds steigt fair ein.",
+      chance: 0.8,
+      cost: FAIRNESS_OPINION_COST,
+    },
+    {
+      id: "premium",
+      label: "Mit 15 % Aufschlag vorlegen",
+      text: "Fonds I verkauft teurer: mehr Rückfluss und Carry dort, auf Kosten der Investoren des späteren Fonds.",
+      chance: 0.35,
+    },
     { id: "drop", label: "Nicht vorlegen", text: "Fonds I behält den Anteil. Kein Konflikt.", chance: 1 },
   ],
   extension: [
-    { id: "waive", label: "Verlängerung ohne Gebühr beantragen", text: "Ein Jahr mehr Zeit für gute Verkäufe; dafür verzichtest du in der Verlängerung auf die Gebühr.", chance: 0.9 },
-    { id: "fee", label: "Verlängerung mit voller Gebühr beantragen", text: "Ein Jahr mehr Zeit und weiter Gebühr. Lehnt der LPAC ab, wird der Rest mit 25 % Abschlag verkauft.", chance: 0.45 },
+    {
+      id: "waive",
+      label: "Verlängerung ohne Gebühr beantragen",
+      text: "Ein Jahr mehr Zeit für gute Verkäufe; dafür verzichtest du in der Verlängerung auf die Gebühr.",
+      chance: 0.9,
+    },
+    {
+      id: "fee",
+      label: "Verlängerung mit voller Gebühr beantragen",
+      text: "Ein Jahr mehr Zeit und weiter Gebühr. Lehnt der LPAC ab, wird der Rest mit 25 % Abschlag verkauft.",
+      chance: 0.45,
+    },
     { id: "sell", label: "Rest am Zweitmarkt verkaufen", text: "Käufer für Fondsanteile zahlen 85 % des heutigen Werts. Der Fonds wird abgewickelt.", chance: 1 },
   ],
   fee: [
-    { id: "stepdown", label: "Gebühr auf investiertes Kapital senken", text: "Marktüblich: Nach der Investitionsphase zählt nur noch das Geld, das noch in Firmen steckt.", chance: 1 },
+    {
+      id: "stepdown",
+      label: "Gebühr auf investiertes Kapital senken",
+      text: "Marktüblich: Nach der Investitionsphase zählt nur noch das Geld, das noch in Firmen steckt.",
+      chance: 1,
+    },
     { id: "keep", label: "Volle Gebühr weiter beantragen", text: "Mehr Gebühr für dich. Das geht nur mit einem sehr guten Ergebnis durch.", chance: 0.25 },
   ],
 };
@@ -426,7 +467,7 @@ function defaultChoice(kind: LpacKind): string {
 function addVote(ctx: Ctx, data: Omit<LpacVote, "id" | "month" | "due" | "status">): LpacVote {
   const state = ctx.state;
   const family = familyOf(state);
-  const vote: LpacVote = { id: ctx.id("lpac"), month: state.month, due: state.month, status: "open", ...data };
+  const vote: LpacVote = { id: ctx.id("lpac"), month: state.month, due: state.month + 1, status: "open", ...data };
   family.votes.push(vote);
   if (family.votes.length > 30) family.votes.splice(0, family.votes.length - 30);
   ctx.lesson("lpac");
@@ -505,7 +546,10 @@ function decideLpac(ctx: Ctx, v: LpacVote, choice: string, notes: string[], laps
       if (!yes) {
         trust(option.id === "direct" ? -12 : -3);
         if (option.id === "direct") ctx.reputation(-2);
-        result = option.id === "direct" ? "Abgelehnt. Die Investoren fühlen sich übervorteilt; das spricht sich herum." : "Abgelehnt, trotz Gutachten. Die Investoren wollen keine Firma des Managers im Fonds.";
+        result =
+          option.id === "direct"
+            ? "Abgelehnt. Die Investoren fühlen sich übervorteilt; das spricht sich herum."
+            : "Abgelehnt, trotz Gutachten. Die Investoren wollen keine Firma des Managers im Fonds.";
         break;
       }
       const amount = Math.min(v.amount ?? 0, f.cash);
@@ -529,7 +573,10 @@ function decideLpac(ctx: Ctx, v: LpacVote, choice: string, notes: string[], laps
       if (!yes) {
         trust(option.id === "premium" ? -12 : -2);
         if (option.id === "premium") ctx.reputation(-2);
-        result = option.id === "premium" ? "Abgelehnt. Ein Aufschlag zwischen zwei eigenen Fonds riecht nach Selbstbedienung." : "Abgelehnt. Die Investoren wollen keine Geschäfte zwischen den Fonds.";
+        result =
+          option.id === "premium"
+            ? "Abgelehnt. Ein Aufschlag zwischen zwei eigenen Fonds riecht nach Selbstbedienung."
+            : "Abgelehnt. Die Investoren wollen keine Geschäfte zwischen den Fonds.";
         break;
       }
       const price = Math.min(other.cash, (v.amount ?? 0) * (option.id === "premium" ? 1.15 : 1));
@@ -584,7 +631,10 @@ function decideLpac(ctx: Ctx, v: LpacVote, choice: string, notes: string[], laps
       } else {
         f.terms = { ...termsOf(f), stepDown: true };
         trust(option.id === "keep" ? -8 : 4);
-        result = option.id === "keep" ? "Abgelehnt. Die Gebühr zählt ab jetzt nur auf das investierte Kapital." : "Beschlossen. Die Gebühr zählt ab jetzt nur auf das investierte Kapital.";
+        result =
+          option.id === "keep"
+            ? "Abgelehnt. Die Gebühr zählt ab jetzt nur auf das investierte Kapital."
+            : "Beschlossen. Die Gebühr zählt ab jetzt nur auf das investierte Kapital.";
         if (option.id === "stepdown") v.status = "done";
       }
       break;
@@ -605,6 +655,42 @@ export function fundInvest(f: FundState, s: Startup, amount: number, pre: number
   f.cash -= amount;
   f.invested += amount;
   return next;
+}
+
+/**
+ * A round closed at a company a fund holds: the fund takes its pro-rata share
+ * of the new shares from the lead, out of its reserves, up to a quarter of the fund per company.
+ */
+export function fundFollowOn(ctx: Ctx, round: Round, notes: string[]): void {
+  const state = ctx.state;
+  const s = state.startups.find((x) => x.id === round.startupId);
+  if (!s || s.status !== "active") return;
+  const post = round.preMoney + round.amount;
+  const lead = s.capTable.find((h) => h.id === round.leadId);
+  if (!lead || post <= 0) return;
+  let capTable = s.capTable;
+  for (const f of fundsOf(state)) {
+    const id = fundId(f);
+    const h = capTable.find((x) => x.id === id && x.kind === "fund");
+    if (!h || f.closed !== undefined || state.month >= endsOf(f) - 24) continue;
+    const before = h.pct / ((round.preMoney / post) * 100 || 1);
+    const room = f.size * FUND_MAX_DEAL - (h.cost ?? 0);
+    const amount = Math.floor(Math.min(round.amount * before, room, f.cash, (lead.pref ?? 0) * 0.9) / 1000) * 1000;
+    if (amount < 10_000) continue;
+    const pct = (amount / post) * 100;
+    if (pct >= lead.pct) continue;
+    capTable = capTable.map((x) =>
+      x.id === lead.id
+        ? { ...x, pct: x.pct - pct, pref: (x.pref ?? 0) - amount }
+        : x.id === id
+          ? { ...x, pct: x.pct + pct, pref: (x.pref ?? 0) + amount, cost: (x.cost ?? 0) + amount }
+          : x,
+    );
+    f.cash -= amount;
+    f.invested += amount;
+    notes.push(`${f.name} zieht bei ${s.name} anteilig mit: ${eur(amount)}.`);
+  }
+  if (capTable !== s.capTable) ctx.replace({ ...s, capTable });
 }
 
 /** Secondary sale of all the fund's stakes; returns the money it brought. */

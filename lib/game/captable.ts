@@ -251,7 +251,8 @@ function withCarry(payouts: Payout[], parties: { id: string; cost: number }[]): 
 }
 
 function holderExitVote(h: Holder, offer: ExitOffer, s: Startup, payout: number): { vote: GvVote; reason: string } {
-  const value = valuation(s.metrics);
+  // On the venture path everyone measures an offer against the last round.
+  const value = Math.max(valuation(s.metrics), s.venture?.paper ?? 0);
   const runway = runwayMonths(s.metrics);
   const ratio = offer.price / Math.max(1, value);
   switch (h.kind) {

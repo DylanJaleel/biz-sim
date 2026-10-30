@@ -27,6 +27,8 @@ export async function TopBar() {
     openItems: open.length,
     networkTasks: networkTasks(state).filter((t) => t.hurry).length,
     familyOffice: state.familyOffice !== undefined,
+    funds: (state.fund ? 1 : 0) + (state.funds?.later.length ?? 0),
+    exits: state.exits.filter((e) => e.status === "accepted").length,
   };
   const fresh = state.trophies.filter((t) => !t.seen);
   return (

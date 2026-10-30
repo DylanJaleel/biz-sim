@@ -4,10 +4,12 @@ import type { Ctx } from "./mna-core";
 import type { GameState, Round, Startup, VenturePath } from "./types";
 import {
   DOWN_ROUND_CUT,
+  DOWN_ROUND_END,
   GROWTH_INVESTORS,
   PAPER_CAP,
   PAPER_CREDIT,
   PAPER_FADE,
+  SALE_PAPER_SHARE,
   UNICORN_STAGE,
   VENTURE_CHANCE,
   VENTURE_ENTRY,
@@ -33,6 +35,12 @@ export function ventureEligible(s: Startup): boolean {
 export function companyValue(s: Startup): number {
   const fundamental = valuation(s.metrics);
   return s.venture ? Math.max(fundamental, s.venture.paper) : fundamental;
+}
+
+/** What a trade buyer bases an offer on: the numbers plus part of the paper premium. */
+export function saleValue(s: Startup): number {
+  const fundamental = valuation(s.metrics);
+  return fundamental + Math.max(0, companyValue(s) - fundamental) * SALE_PAPER_SHARE;
 }
 
 export interface CreditedValue {
@@ -135,7 +143,7 @@ export function ventureMonth(ctx: Ctx, notes: string[]): void {
       const value = valuation(s.metrics);
       if (value < VENTURE_ENTRY.value || s.metrics.growth < VENTURE_ENTRY.growth) continue;
       const r = mnaRandom(state, `venture|enter|${s.id}`);
-      ctx.replace({ ...s, venture: { stage: 0, paper: value, since: month, next: month + gap(r), log: [] } });
+      ctx.replace({ ...s, venture: { stage: 0, paper: value, since: month, next: month + gap(r), log: [{ stage: 0, month, lead: "", amount: 0, post: value }] } });
       ctx.lesson("venture_path");
       ctx.mail({
         kind: "round",
@@ -198,7 +206,7 @@ function openVentureRound(ctx: Ctx, s: Startup, path: VenturePath, r: () => numb
 
 function downRound(ctx: Ctx, s: Startup, path: VenturePath, r: () => number, notes: string[]): void {
   const state = ctx.state;
-  const ends = r() < 0.5;
+  const ends = r() < DOWN_ROUND_END;
   const paper = Math.max(valuation(s.metrics), path.paper * (1 - DOWN_ROUND_CUT));
   const next: VenturePath = {
     ...path,
@@ -306,7 +314,7 @@ export function ventureView(state: GameState, s: Startup): VentureView {
     stage,
     stages: VENTURE_STAGES.map((d, i) => ({
       label: d.label,
-      post: i === 0 && path ? path.log.find((l) => l.stage === 0)?.post ?? d.post : (path?.log.find((l) => l.stage === i && !l.down)?.post ?? d.post),
+      post: i === 0 && path ? (path.log.find((l) => l.stage === 0)?.post ?? d.post) : (path?.log.find((l) => l.stage === i && !l.down)?.post ?? d.post),
       reached: i <= stage,
       current: i === stage,
       month: path?.log.find((l) => l.stage === i && !l.down)?.month ?? (i === 0 && path ? path.since : undefined),

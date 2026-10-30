@@ -106,19 +106,22 @@ export const VENTURE_STAGES: VentureStage[] = [
 ];
 export const UNICORN_STAGE = VENTURE_STAGES.length - 1;
 /** A venture company enters the path (Seed level) at this valuation and growth. */
-export const VENTURE_ENTRY = { value: 4_000_000, growth: 0.035, age: 6 } as const;
+export const VENTURE_ENTRY = { value: 6_000_000, growth: 0.04, age: 6 } as const;
 /** Months between two tries for the next round. */
 export const VENTURE_GAP: [number, number] = [9, 14];
 /** Chance of the next round: base + span × fulfilment (0..1), then times the market mood. */
-export const VENTURE_CHANCE = { base: 0.12, span: 0.42, min: 0.06, max: 0.6 } as const;
+export const VENTURE_CHANCE = { base: 0.13, span: 0.4, min: 0.05, max: 0.58 } as const;
 export const VENTURE_MOOD: Record<"boom" | "normal" | "weak" | "crash", number> = { boom: 1.15, normal: 1, weak: 0.85, crash: 0.6 };
-/** A failed try is a down round: the paper value falls by this share; half of them end the path. */
+/** A failed try is a down round: the paper value falls by this share; most of them end the path. */
 export const DOWN_ROUND_CUT = 0.35;
+export const DOWN_ROUND_END = 0.75;
+/** Trade buyers pay the numbers plus this share of the paper premium (a listing pays the full last round). */
+export const SALE_PAPER_SHARE = 0.6;
 /** Paper value of an ended path fades towards the fundamental value each month. */
 export const PAPER_FADE = 0.97;
 /** Until the exit only this share of the paper gain counts towards net worth, at most PAPER_CAP per company. */
 export const PAPER_CREDIT = 0.3;
 export const PAPER_CAP = 5_000_000;
-/** Companies on the path list only from Serie D on. */
-export const VENTURE_IPO_STAGE = 4;
+/** Companies on the path list only as a unicorn (or once the path is over). */
+export const VENTURE_IPO_STAGE = 5;
 export const GROWTH_INVESTORS = ["Atlas Growth", "Kranich Capital", "Elbtal Growth Partners", "Silberhorn Ventures", "Vierwald Capital", "Brückentor Partners"];

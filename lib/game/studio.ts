@@ -78,7 +78,18 @@ function drawPool(state: GameState, p: number): StudioIdea[] {
       const via = k === 1 && warm ? personOf(state, warm).name : undefined;
       return { name: `${first} ${last}`, short: first, fit, strength: Math.round(45 + r() * 35 + (via ? 10 : 0)), ask: Math.round(12 + r() * 16), ...(via ? { via } : {}) };
     });
-    ideas.push({ id: `idea${p}-${ideas.length}`, name, tagline: idea.tagline, pitch: idea.pitch, sector: sec.sector, market, risk, need, ...(pilot ? { pilot: pilot.name } : {}), ceos });
+    ideas.push({
+      id: `idea${p}-${ideas.length}`,
+      name,
+      tagline: idea.tagline,
+      pitch: idea.pitch,
+      sector: sec.sector,
+      market,
+      risk,
+      need,
+      ...(pilot ? { pilot: pilot.name } : {}),
+      ceos,
+    });
   }
   return ideas;
 }
@@ -126,11 +137,21 @@ export function milestone(s: Startup, index: number): Milestone {
   switch (index) {
     case 1: {
       const p = Math.max(m.axes.product / STUDIO_MILESTONE.prototypeProduct, m.revenue / STUDIO_MILESTONE.prototypeRevenue);
-      return { label: "Prototyp", done: p >= 1, progress: Math.min(1, p), text: `Produkt ${Math.round(m.axes.product)} von ${STUDIO_MILESTONE.prototypeProduct} oder ${k(m.revenue)} von ${k(STUDIO_MILESTONE.prototypeRevenue)} Umsatz im Monat` };
+      return {
+        label: "Prototyp",
+        done: p >= 1,
+        progress: Math.min(1, p),
+        text: `Produkt ${Math.round(m.axes.product)} von ${STUDIO_MILESTONE.prototypeProduct} oder ${k(m.revenue)} von ${k(STUDIO_MILESTONE.prototypeRevenue)} Umsatz im Monat`,
+      };
     }
     case 2: {
       const p = m.revenue / STUDIO_MILESTONE.customers;
-      return { label: "100 Kunden", done: p >= 1, progress: Math.min(1, p), text: `${k(m.revenue)} von ${k(STUDIO_MILESTONE.customers)} Umsatz im Monat (rund ${Math.min(100, Math.round(p * 100))} Kunden)` };
+      return {
+        label: "100 Kunden",
+        done: p >= 1,
+        progress: Math.min(1, p),
+        text: `${k(m.revenue)} von ${k(STUDIO_MILESTONE.customers)} Umsatz im Monat (rund ${Math.min(100, Math.round(p * 100))} Kunden)`,
+      };
     }
     case 3: {
       const p = m.revenue / STUDIO_MILESTONE.arr;
@@ -218,10 +239,21 @@ export function playStudio(ctx: Ctx, action: { move: string; ideaId?: string; ce
       }
       const tranches: StudioTranche[] = next.studio!.tranches.map((t, k) => (k === i ? { ...t, released: state.month, amount, size } : t));
       const done = tranches.every((t) => t.released !== undefined);
-      next = { ...next, playerCost: (next.playerCost ?? 0) + amount, studio: { ...next.studio!, tranches, ...(done && next.studio!.built === undefined ? { built: state.month } : {}) } };
+      next = {
+        ...next,
+        playerCost: (next.playerCost ?? 0) + amount,
+        studio: { ...next.studio!, tranches, ...(done && next.studio!.built === undefined ? { built: state.month } : {}) },
+      };
       ctx.replace(next);
       ctx.lesson("stage_gate");
-      if (done) ctx.mail({ kind: "founder", from: s.name, subject: `${s.name} steht auf eigenen Beinen`, body: `Mit der letzten Tranche ist der Aufbau im Studio abgeschlossen. Ab jetzt ist ${s.name} eine Beteiligung wie jede andere: Beirat statt Studio-Tage.`, startupId: s.id });
+      if (done)
+        ctx.mail({
+          kind: "founder",
+          from: s.name,
+          subject: `${s.name} steht auf eigenen Beinen`,
+          body: `Mit der letzten Tranche ist der Aufbau im Studio abgeschlossen. Ab jetzt ist ${s.name} eine Beteiligung wie jede andere: Beirat statt Studio-Tage.`,
+          startupId: s.id,
+        });
       return;
     }
     case "fundAsk": {
@@ -344,5 +376,6 @@ export function fixedDays(state: GameState): void {
     state.daysUsed += take;
   };
   for (const s of building(state)) book(`Venture Studio: ${s.name}`, STUDIO_DAYS);
-  if (state.month % 3 === 0 && (state.fund || state.funds) && fundsOf(state).some((f) => f.closed === undefined && termsOf(f).lpacSeat)) book("LPAC-Sitzung (Investorenbeirat)", LPAC_SEAT_DAYS, "lpac");
+  if (state.month % 3 === 0 && (state.fund || state.funds) && fundsOf(state).some((f) => f.closed === undefined && termsOf(f).lpacSeat))
+    book("LPAC-Sitzung (Investorenbeirat)", LPAC_SEAT_DAYS, "lpac");
 }

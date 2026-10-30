@@ -140,7 +140,7 @@ function Row({ r }: { r: CockpitRow }) {
   const valueSub =
     r.kind === "corporate"
       ? "kein Anteil"
-      : `${r.stake.toLocaleString("de-DE", { maximumFractionDigits: 1 })} %${r.fundPct > 0 ? ` · Fonds ${r.fundPct.toLocaleString("de-DE", { maximumFractionDigits: 1 })} %` : ""}`;
+      : `${r.stake.toLocaleString("de-DE", { maximumFractionDigits: 1 })} %${r.fundPct > 0 ? ` · Fonds ${r.fundPct.toLocaleString("de-DE", { maximumFractionDigits: 1 })} %` : ""}${r.paper ? ` · Papier ${eur(r.paper)}` : ""}`;
   return (
     <li>
       <Link href={`/firma/${r.id}`} className={`cockpit-row cockpit-row--${r.light}`}>

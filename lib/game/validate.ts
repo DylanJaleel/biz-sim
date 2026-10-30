@@ -1,5 +1,22 @@
 import { DD_MODULES, type DdModule } from "./mna-config";
-import type { AssetId, BuyerFocus, CovenantId, ExitChoice, FundMove, GameAction, GigApproach, GvVote, LeverId, MandateMove, ProcessKind, RoundTake, SeatId, StudioMove, TeamRole, Vote } from "./types";
+import type {
+  AssetId,
+  BuyerFocus,
+  CovenantId,
+  ExitChoice,
+  FundMove,
+  GameAction,
+  GigApproach,
+  GvVote,
+  LeverId,
+  MandateMove,
+  ProcessKind,
+  RoundTake,
+  SeatId,
+  StudioMove,
+  TeamRole,
+  Vote,
+} from "./types";
 
 // Server actions receive whatever the browser sends. This turns it into a
 // GameAction or nothing; the engine then checks the game rules.

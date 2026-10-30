@@ -292,7 +292,8 @@ export const TROPHIES: TrophyDef[] = [
     face: "Unicorn\n1 Mrd €",
     title: "Unicorn",
     requirement: "Eine Beteiligung erreicht über Wachstumsrunden eine Bewertung von einer Milliarde Euro",
-    story: "Ein seltener Glücksmoment: Aus einer Beiratsrunde ist eine der wertvollsten jungen Firmen des Landes geworden. Die Titelseite gehört dir, das Geld kommt mit dem Börsengang.",
+    story:
+      "Ein seltener Glücksmoment: Aus einer Beiratsrunde ist eine der wertvollsten jungen Firmen des Landes geworden. Die Titelseite gehört dir, das Geld kommt mit dem Börsengang.",
     earned: (s) => s.startups.some((x) => x.venture?.unicorn !== undefined && (x.venture.unicornStake ?? 0) > 0),
     detail: (s) => s.startups.find((x) => x.venture?.unicorn !== undefined && (x.venture.unicornStake ?? 0) > 0)?.name,
   },
