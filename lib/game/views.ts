@@ -21,6 +21,7 @@ import {
   monthName,
 } from "./config";
 import { careerOf } from "./career";
+import { wealthNextStep } from "./wealth-views";
 import {
   covenantOptions,
   covenantPrep,
@@ -750,6 +751,6 @@ export function nextStepView(state: GameState): NextStepView | null {
       };
     }
     default:
-      return null;
+      return wealthNextStep(state, next.title);
   }
 }

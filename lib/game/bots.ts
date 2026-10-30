@@ -19,6 +19,7 @@ import { platformBlocker, platformOf } from "./platform";
 import { networkActions } from "./network-bots";
 import { currentMandates, hireFee, integrationCapacity, leadOf, OP_PROFILES, opTypeOf, profileOf } from "./team";
 import { addonFit, fitKnown, HOLDCO } from "./holdco";
+import { wealthActions } from "./wealth-bots";
 import type { CovenantId, GameAction, GameState, MandateLever, Startup, Vote } from "./types";
 
 // Skript-Spieler für die Balance: Sie spielen das Spiel über die echte Engine.
@@ -246,7 +247,7 @@ export const mogulBot = (prefer?: string): Bot => {
         actions.push(...teamActions(s, order.slice(0, Math.max(0, active.length - 1)), 3, 150_000));
         if (!s.fund) actions.push({ type: "raiseFund" });
       }
-      return [...networkActions(s, "mogul"), ...mnaActions(s, "mogul"), ...actions, ...base.month(s, random)];
+      return [...wealthActions(s, "mogul"), ...networkActions(s, "mogul"), ...mnaActions(s, "mogul"), ...actions, ...base.month(s, random)];
     },
   };
 };
@@ -388,7 +389,7 @@ export const expertBot = (style: ExpertStyle = {}, name = "Experte"): Bot => {
       }
       // A fast car saves the travel day on far jobs.
       if (!s.garage.includes("elektro") && s.reputation >= 40 && s.cash > 400_000) actions.push({ type: "buyVehicle", vehicleId: "elektro" });
-      return [...networkActions(s, "expert"), ...actions, ...mnaActions(s, "mogul"), ...expertBoard(s, analyst, random)];
+      return [...networkActions(s, "expert"), ...actions, ...wealthActions(s, "expert"), ...mnaActions(s, "mogul"), ...expertBoard(s, analyst, random)];
     },
     end: (s) => {
       if (!depot) return [];
@@ -428,9 +429,10 @@ export const peBot = (prefer?: string): Bot => {
     name: "PE-Profi",
     pick: base.pick,
     month: (s, random) => [
+      ...wealthActions(s, "pe"),
       ...networkActions(s, "pe"),
       ...mnaActions(s, "pe"),
-      ...base.month(s, random).filter((a) => !["acquire", "examine", "platform", "search", "specialist", "favor", "event"].includes(a.type)),
+      ...base.month(s, random).filter((a) => !["acquire", "examine", "platform", "search", "specialist", "favor", "event", "estate", "foundation", "dynasty"].includes(a.type)),
     ],
   };
 };

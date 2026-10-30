@@ -1,4 +1,5 @@
 import { DD_MODULES, type DdModule } from "./mna-config";
+import type { WealthAction } from "./wealth-types";
 import type {
   AssetId,
   BuyerFocus,
@@ -219,9 +220,55 @@ export function parseAction(input: unknown): GameAction | null {
         ...(a.buyers !== undefined ? { buyers: a.buyers as "strategic" | "financial" } : {}),
       };
     }
+    case "estate":
+    case "foundation":
+    case "dynasty":
+      return parseWealth(a);
     case "learn":
     case "closeMonth":
       return { type: a.type };
+    default:
+      return null;
+  }
+}
+
+const BINDINGS = [5, 10, 15] as const;
+const PURPOSES = ["bildung", "gruenderinnen", "nachfolge"] as const;
+const HEIRS = ["kind", "schuetzling"] as const;
+const CHARTER = ["ausschuettung", "eintritt", "streit", "werte", "nachfolge"] as const;
+const STRATEGIES = ["bewahren", "ausgewogen", "wachstum", "none"] as const;
+const oneOf = <T extends string | number>(list: readonly T[], value: unknown): value is T => list.includes(value as T);
+
+/** Property, foundation and dynasty moves (see wealth-types.ts). */
+function parseWealth(a: Record<string, unknown>): WealthAction | null {
+  if (a.type === "estate") {
+    if (a.move === "buy") {
+      const ltv = share(a.ltv, 0.8);
+      const binding = Number(a.binding);
+      return id(a.offerId) && ltv !== null && oneOf(BINDINGS, binding) ? { type: "estate", move: "buy", offerId: a.offerId, ltv, binding } : null;
+    }
+    return (a.move === "sell" || a.move === "renovate") && id(a.propertyId) ? { type: "estate", move: a.move, propertyId: a.propertyId } : null;
+  }
+  if (a.type === "foundation") {
+    const amount = Number(a.amount);
+    if (!Number.isInteger(amount) || amount <= 0 || amount > 100_000_000) return null;
+    if (a.move === "found") return oneOf(PURPOSES, a.purpose) ? { type: "foundation", move: "found", amount, purpose: a.purpose } : null;
+    return a.move === "give" ? { type: "foundation", move: "give", amount } : null;
+  }
+  switch (a.move) {
+    case "choose":
+      return oneOf(HEIRS, a.heir) ? { type: "dynasty", move: "choose", heir: a.heir } : null;
+    case "mentor":
+    case "handover":
+      return { type: "dynasty", move: a.move };
+    case "charter":
+      return oneOf(CHARTER, a.article) ? { type: "dynasty", move: "charter", article: a.article } : null;
+    case "council": {
+      const choice = Number(a.choice);
+      return choice === 0 || choice === 1 ? { type: "dynasty", move: "council", choice } : null;
+    }
+    case "strategy":
+      return oneOf(STRATEGIES, a.strategy) ? { type: "dynasty", move: "strategy", strategy: a.strategy } : null;
     default:
       return null;
   }

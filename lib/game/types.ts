@@ -430,6 +430,10 @@ export interface IncomeLines {
   mandates?: number;
   /** Search capital paid to searchers of the succession programme. */
   search?: number;
+  /** Property: rent after vacancy minus maintenance and mortgage payments. */
+  estate?: number;
+  /** Foundation: tax refund on endowment gifts; family council payouts. */
+  foundation?: number;
 }
 
 export type ExitChoice = "accept" | "negotiate" | "reject";
@@ -691,6 +695,8 @@ export interface GameState {
   network?: NetworkState;
   /** Intermediate holding for the bought companies (holdco.ts); missing = none. */
   holdco?: { since: number; name: string };
+  /** Property, foundation, dynasty and the legacy score (missing in older games). */
+  wealth?: import("./wealth-types").WealthState;
   /** Fraction of a reputation gain carried over to the next one (see reputationGain). */
   reputationRest?: number;
   /** Reputation won in this month so far (the monthly cap of reputationGain). */
@@ -770,7 +776,10 @@ export type ActionKind =
   | "favor"
   | "event"
   | "specialist"
-  | "holdco";
+  | "holdco"
+  | "estate"
+  | "foundation"
+  | "dynasty";
 
 export type GameAction =
   | { type: "dd"; startupId: string }
@@ -828,7 +837,8 @@ export type GameAction =
   | { type: "examine"; targetId: string; modules: import("./mna-config").DdModule[] }
   | { type: "acquire"; targetId: string; bid: "ask" | "low"; bank: number; vendor: number; earnout: number; integration?: IntegrationKind }
   | { type: "platform"; startupId: string; move: "make" | "sell" | "cure" | "stopSale"; process?: ProcessKind; buyers?: "strategic" | "financial" }
-  | { type: "lever"; startupId: string; lever: LeverId };
+  | { type: "lever"; startupId: string; lever: LeverId }
+  | import("./wealth-types").WealthAction;
 
 // ---------------------------------------------------------------------------
 // M&A-Mandate, Nachfolge-Programm (Search Fund) und Buy-and-Build

@@ -145,6 +145,9 @@ import { acquireDeal, cure, examine, lboAllowsDividends, lboMonth, planSearchTar
 import { acquire, makePlatform, planAddons, platformMonth, recordSale, startSale, stopSale } from "./platform";
 import { assignOp, delegateFor, fireOp, hireOp, migrateTeam, teamCarry, teamDealFlow, teamMonth } from "./team";
 import { dragAlong, foundHoldco, guaranteeClaim, guaranteeText } from "./holdco";
+import { estateEquity, officeRent } from "./estate";
+import { heirBlocks, heirInCharge } from "./dynasty";
+import { playWealth, wealthMonth } from "./wealth";
 import { explainValueChange, familyDelta, familyIntroDelta, LBO_EXCLUDED_TEMPLATES, playLever, STARTUP_ONLY_TEMPLATES } from "./family";
 import { seedUnlocks } from "./onboarding";
 
@@ -351,7 +354,7 @@ export function daysLeft(state: GameState): number {
 export function netWorth(state: GameState): number {
   const debt = state.loans.reduce((sum, l) => sum + l.balance, 0);
   const locked = state.lockups.reduce((sum, l) => sum + l.amount * (state.market.prices.tech / l.index), 0);
-  return state.cash + holdingsValue(state.market) + portfolioValue(state) + garageValue(state) + locked - debt;
+  return state.cash + holdingsValue(state.market) + portfolioValue(state) + garageValue(state) + locked - debt + estateEquity(state);
 }
 
 export function portfolioValue(state: GameState): number {
@@ -437,7 +440,15 @@ export function ctxOf(state: GameState): Ctx {
 
 function playAction(current: GameState, action: GameAction): { state: GameState; result: ActionResult } {
   const state = clone(current);
+  const heirMove = heirBlocks(state, action);
+  if (heirMove) throw new GameRuleError(heirMove);
   switch (action.type) {
+    case "estate":
+    case "foundation":
+    case "dynasty": {
+      playWealth(ctxOf(state), action);
+      return { state, result: { kind: "none" } };
+    }
     case "mandate": {
       playMandate(ctxOf(state), action);
       return { state, result: { kind: "none" } };
@@ -1692,6 +1703,7 @@ export function closeMonth(state: GameState): MonthReport {
     if (startupOf(state, offer.startupId).status === "active") settleExit(state, offer, "abstain", notes);
     else offer.status = "withdrawn";
   }
+  heirItems(state, notes);
   delegateItems(state, notes);
   lapseItems(state, notes);
   missFollowUps(state, month, notes);
@@ -1758,13 +1770,14 @@ export function closeMonth(state: GameState): MonthReport {
   // Private side: living costs, rent, the stock market, the overdraft.
   state.cash -= LIVING_COSTS;
   income.living = -LIVING_COSTS;
-  const rent = officeOf(state).rent;
+  const rent = officeRent(state);
   state.cash -= rent;
   income.rent = -rent;
   const upkeep = garageUpkeep(state);
   state.cash -= upkeep;
   income.vehicles = -upkeep;
   holdingMonth(state, month, income, notes, payouts);
+  wealthMonth(mna, month, income, notes);
   const regimeBefore = state.market.regime;
   const market = stepMarket(state.market, month, randomFor(state.seed, `market|${month}`));
   state.market = market.market;
@@ -2053,6 +2066,30 @@ function delegateItems(state: GameState, notes: string[]): void {
     d.reputationDelta = half;
     d.delegated = true;
     notes.push(`${s.name}: ${member.name} hat für dich im Beirat entschieden: ${covenant ? `Auflage „${COVENANTS[covenant].name}“` : fill(t.outcomes[vote].label, s)}.`);
+  }
+}
+
+/** Generation 2: the heir decides every open board item, like an associate with the heir's own skill. */
+function heirItems(state: GameState, notes: string[]): void {
+  const heir = heirInCharge(state);
+  if (!heir) return;
+  for (const item of openItems(state)) {
+    const s = state.startups.find((x) => x.id === item.startupId);
+    if (!s || s.status !== "active") continue;
+    const t = templateOf(item.templateId);
+    const planned = covenantOutlook(t, s, covenantsOf(state, item));
+    const random = randomFor(state.seed, `heir|${item.id}`);
+    const pick = random() < heir.skill ? bestOf(optionValues(planned)) : "standard";
+    const vote: Vote = pick === "go" || pick === "no" ? pick : "conditions";
+    const covenant = vote === "conditions" && pick !== "standard" ? (pick as CovenantId) : undefined;
+    const stances = baseStances(t, s, meetingRandom(state, item));
+    decide(state, item, vote, vote, null, stances.ceo, { go: 0, conditions: 0, no: 0, abstain: 0 }, covenant, true, planned);
+    const d = item.decision!;
+    const half = Math.trunc(d.reputationDelta / 2);
+    state.reputation = Math.min(100, Math.max(0, state.reputation - d.reputationDelta + half));
+    d.reputationDelta = half;
+    d.delegated = true;
+    notes.push(`${s.name}: ${heir.name} hat im Beirat entschieden: ${covenant ? `Auflage „${COVENANTS[covenant].name}“` : fill(t.outcomes[vote].label, s)}.`);
   }
 }
 
