@@ -662,6 +662,15 @@ export interface GameState {
   gigLog?: { done: number; cities: string[] };
   /** Favours, invitations and counters of the network (missing in older games). */
   network?: NetworkState;
+  /** Introduction for new players and the unlock hints already shown (missing in older games). */
+  onboarding?: OnboardingState;
+}
+
+/** Progress of the introduction. `seen` holds the ids of unlock hints already acknowledged. */
+export interface OnboardingState {
+  done?: boolean;
+  step?: number;
+  seen?: string[];
 }
 
 export type ActionKind =

@@ -5,7 +5,8 @@ import { redirect } from "next/navigation";
 import type { ActionResult } from "@/lib/action-result";
 import type { ActionResult as GameResult } from "@/lib/game/engine";
 import { parseAction } from "@/lib/game/validate";
-import { GameRuleError, performAction, resetGame } from "@/lib/repository/game";
+import { parseOnboardingPatch } from "@/lib/game/onboarding";
+import { GameRuleError, performAction, resetGame, saveOnboarding } from "@/lib/repository/game";
 import { requireUser } from "@/lib/session";
 
 export interface PlayResult {
@@ -41,4 +42,13 @@ export async function restartGameAction(): Promise<void> {
   await resetGame(user.id!);
   revalidatePath("/", "layout");
   redirect("/");
+}
+
+/** Remembers that the introduction was finished or skipped, or that unlock hints were read. No page refresh needed. */
+export async function saveOnboardingAction(input: unknown): Promise<ActionResult> {
+  const user = await requireUser();
+  const patch = parseOnboardingPatch(input);
+  if (!patch) return { ok: false, error: "Ungültige Eingabe." };
+  await saveOnboarding(user.id!, patch);
+  return { ok: true, data: null };
 }

@@ -142,6 +142,7 @@ import { mandatesMonth, planMandates, playMandate } from "./mna";
 import { acquireDeal, cure, examine, lboAllowsDividends, lboMonth, planSearchTargets, searchMonth, startSearch, stopSearch, targetDeal, targetEv } from "./lbo";
 import { acquire, makePlatform, planAddons, platformMonth, recordSale, startSale, stopSale } from "./platform";
 import { explainValueChange, familyDelta, familyIntroDelta, LBO_EXCLUDED_TEMPLATES, playLever, STARTUP_ONLY_TEMPLATES } from "./family";
+import { seedUnlocks } from "./onboarding";
 
 export class GameRuleError extends Error {
   constructor(message: string) {
@@ -1628,6 +1629,7 @@ export function planAgenda(state: GameState): void {
 
 export function closeMonth(state: GameState): MonthReport {
   const month = state.month;
+  seedUnlocks(state);
   const notes: string[] = [];
   const cashBefore = state.cash;
   const reputationBefore = state.reputation;
