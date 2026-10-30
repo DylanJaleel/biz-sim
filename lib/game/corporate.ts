@@ -1,3 +1,5 @@
+import { CORPORATE_BOOKS, corporateInterest } from "./corporate-books";
+import { annualEbitda } from "./ebitda";
 import { phaseOf } from "./sim";
 import { clampChance, eur, now, later, type Template } from "./templates";
 import type { Startup } from "./types";
@@ -14,7 +16,8 @@ export function corporateStartup(month: number): Startup {
     revenue: 25_000_000,
     growth: 0.004,
     grossMargin: 0.34,
-    opex: 7_600_000,
+    // EBITDA margin about 9.5 %, usual for drives and logistics technology (see corporate-books.ts).
+    opex: 6_125_000,
     team: 2_400,
     morale: 58,
     trust: 55,
@@ -40,6 +43,7 @@ export function corporateStartup(month: number): Startup {
     stake: 0,
     capTable: [],
     corporate: true,
+    corporateModel: CORPORATE_BOOKS.model,
     joined: month,
     flags: [],
     crisisMonths: 0,
@@ -49,6 +53,8 @@ export function corporateStartup(month: number): Startup {
 }
 
 const rev = (s: Startup) => s.metrics.revenue;
+/** The year's profit to distribute: about half of what is left of the EBITDA after interest (depreciation and taxes). */
+const profit = (s: Startup) => Math.max(0, (annualEbitda(s.metrics) - 12 * corporateInterest(s.metrics.debt)) * 0.5);
 const on = (s: Startup) => s.corporate === true;
 
 export const CORPORATE_TEMPLATES: Template[] = [
@@ -58,7 +64,7 @@ export const CORPORATE_TEMPLATES: Template[] = [
     title: "Dividende oder Investition?",
     motion: "Der Vorstand schlägt vor, den Gewinn vollständig als Dividende auszuschütten.",
     pitch: "„Unsere Aktionäre warten seit zwei Jahren auf eine ordentliche Dividende. Zeit, sie zu belohnen.“",
-    context: (s) => `In der Kasse liegen ${eur(s.metrics.cash)}. Die volle Ausschüttung wären ${eur(rev(s) * 0.6)}; die Alternative ist ein Programm für neue Produkte.`,
+    context: (s) => `In der Kasse liegen ${eur(s.metrics.cash)}. Die volle Ausschüttung wären ${eur(profit(s))}; die Alternative ist ein Programm für neue Produkte.`,
     lesson: "kapitalallokation",
     insight:
       "Geld gehört dahin, wo es am meisten verdient. Wenn die Firma mit neuen Produkten mehr erwirtschaftet als Aktionäre anderswo, ist Investieren besser als Ausschütten. Wenn nicht, ist die Dividende ehrlicher.",
@@ -86,18 +92,18 @@ export const CORPORATE_TEMPLATES: Template[] = [
       go: {
         label: "Voll ausschütten",
         summary: "Der Gewinn geht an die Aktionäre.",
-        resolve: (s) => ({ effects: [now("Die Dividende wird ausgezahlt.", { cash: -rev(s) * 0.6, trust: 2, axes: { product: -3 } })] }),
+        resolve: (s) => ({ effects: [now("Die Dividende wird ausgezahlt.", { cash: -profit(s), trust: 2, axes: { product: -3 } })] }),
       },
       conditions: {
         label: "Halb und halb",
         summary: "Die Hälfte als Dividende, die Hälfte in neue Produkte.",
-        resolve: (s) => ({ effects: [now("Halbe Dividende, halbes Entwicklungsbudget.", { cash: -rev(s) * 0.6 }), later(3, "Die ersten Prototypen überzeugen.", { growth: 0.002, axes: { product: 4 } })] }),
+        resolve: (s) => ({ effects: [now("Halbe Dividende, halbes Entwicklungsbudget.", { cash: -profit(s) }), later(3, "Die ersten Prototypen überzeugen.", { growth: 0.002, axes: { product: 4 } })] }),
       },
       no: {
         label: "Investieren",
         summary: "Keine Dividende, das Geld geht in die Entwicklung.",
         resolve: (s) => ({
-          effects: [now("Das Entwicklungsprogramm startet, die Stiftung ist verstimmt.", { cash: -rev(s) * 0.6, trust: -4 })],
+          effects: [now("Das Entwicklungsprogramm startet, die Stiftung ist verstimmt.", { cash: -profit(s), trust: -4 })],
           risk: { delay: 6, chance: 0.55, good: { growth: 0.006, revenuePct: 0.03, axes: { product: 8, edge: 6 } }, bad: { axes: { product: 3 } }, goodText: "Die neuen Antriebe verkaufen sich besser als geplant.", badText: "Das Programm bleibt hinter dem Plan zurück." },
         }),
       },
@@ -113,7 +119,7 @@ export const CORPORATE_TEMPLATES: Template[] = [
     lesson: "kapitalallokation",
     insight: "Zukäufe scheitern selten am Preis, sondern an der Integration. Wer kauft, braucht einen Plan für die ersten hundert Tage.",
     when: on,
-    repeatAfter: 18,
+    repeatAfter: 36,
     pull: { growth: 0.6, control: 0.3, cash: -0.5, team: -0.2 },
     pro: [
       { interest: "growth", text: "Service bringt wiederkehrende Umsätze und bessere Margen." },
@@ -307,7 +313,7 @@ export const CORPORATE_TEMPLATES: Template[] = [
     lesson: "aufsichtsrat",
     insight: "Ein fester Preis über Jahre ist eine Wette auf die Kosten. Gute Verträge teilen das Risiko: Preisgleitklauseln binden den Preis an Rohstoffe.",
     when: on,
-    repeatAfter: 18,
+    repeatAfter: 60,
     pull: { growth: 0.5, customer: 0.4, cash: -0.2, control: -0.3 },
     pro: [
       { interest: "growth", text: "Auslastung für fünf Jahre." },
@@ -328,14 +334,19 @@ export const CORPORATE_TEMPLATES: Template[] = [
         label: "Unterschreiben",
         summary: "Fünf Jahre feste Preise.",
         resolve: () => ({
-          effects: [now("Der Bahnvertrag ist unterschrieben.", { revenuePct: 0.08, morale: 4 })],
+          effects: [now("Der Bahnvertrag ist unterschrieben.", { revenuePct: 0.08, morale: 4 }), later(60, "Der Bahnvertrag läuft nach fünf Jahren aus.", { revenuePct: -0.07 })],
           risk: { delay: 4, chance: 0.5, good: { grossMargin: 0.005 }, bad: { grossMargin: -0.03 }, goodText: "Stahl wird billiger, der Vertrag ist ein Glücksgriff.", badText: "Stahl wird teurer, jede Lieferung kostet Marge." },
         }),
       },
       conditions: {
         label: "Mit Preisgleitklausel",
         summary: "Etwas weniger Preis, dafür kein Rohstoffrisiko.",
-        resolve: () => ({ effects: [now("Der Bahnvertrag mit Preisgleitklausel ist unterschrieben.", { revenuePct: 0.07, grossMargin: -0.004, morale: 3 })] }),
+        resolve: () => ({
+          effects: [
+            now("Der Bahnvertrag mit Preisgleitklausel ist unterschrieben.", { revenuePct: 0.07, grossMargin: -0.004, morale: 3 }),
+            later(60, "Der Bahnvertrag läuft nach fünf Jahren aus.", { revenuePct: -0.06 }),
+          ],
+        }),
       },
       no: {
         label: "Ablehnen",

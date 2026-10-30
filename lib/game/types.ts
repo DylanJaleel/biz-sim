@@ -120,6 +120,8 @@ export interface Startup {
   playerPref?: number;
   /** A corporate supervisory board seat: no shares, a fee, quarterly meetings. */
   corporate?: boolean;
+  /** Konzern only: version of its books (see corporate-books.ts); missing = old startup path. */
+  corporateModel?: number;
   /** Month the player joined; 0 while only offered. */
   joined: number;
   offer?: {
@@ -140,6 +142,8 @@ export interface Startup {
     dd?: import("./mna-config").DdModule[];
     /** A contact bids for the same company (see network-life.ts). */
     rival?: Rival;
+    /** A rival house bids in rounds against you (see rivals.ts). */
+    duel?: Duel;
     /** Specialists from the network already working on this deal (contact ids). */
     spec?: string[];
   };
@@ -608,6 +612,8 @@ export interface MonthReport {
   portfolioValueBefore: number;
   /** Net worth at month end (from Phase 5). */
   worth?: number;
+  /** Net worth before the month closed (for the change in the overview). */
+  worthBefore?: number;
   notes: string[];
   income?: IncomeLines;
 }
@@ -666,6 +672,39 @@ export interface GameState {
   network?: NetworkState;
   /** Property, foundation, dynasty and the legacy score (missing in older games). */
   wealth?: import("./wealth-types").WealthState;
+  /** Fraction of a reputation gain carried over to the next one (see reputationGain). */
+  reputationRest?: number;
+  /** Reputation won in this month so far (the monthly cap of reputationGain). */
+  reputationMonth?: { month: number; gained: number };
+  /** Rival houses: appear from reputation 50, bid against you, stand in the league table (see rivals.ts). */
+  rivals?: RivalState;
+}
+
+/** The rivals of this game: drawn from a pool by seed; only their record with you is stored. */
+export interface RivalState {
+  /** Month they first showed up. */
+  since: number;
+  /** Bidding wars per rival id: won by you, lost to them. */
+  duels: Record<string, { won: number; lost: number }>;
+}
+
+/** A bidding war for a family business: you against one rival, in up to three rounds. */
+export interface Duel {
+  rivalId: string;
+  /** Your bid and the rival's (enterprise value). */
+  you: number;
+  rival: number;
+  /** Hidden: the most the rival will pay. */
+  max: number;
+  /** Your succession concept: what it is worth to the owner, as a share of the price (hidden until offered). */
+  conceptValue: number;
+  concept?: boolean;
+  /** Moves you have made. */
+  round: number;
+  status: "open" | "won" | "lost" | "left";
+  /** The seller decides at the end of this month. */
+  due: number;
+  log: string[];
 }
 
 export type ActionKind =
@@ -751,7 +790,13 @@ export type GameAction =
       buyers?: BuyerFocus;
       process?: ProcessKind;
       dd?: import("./mna-config").DdModule[];
+      /** Teaser of a large mandate: ids of the facts sent to buyers. */
+      facts?: string[];
+      /** Negotiation round of a large mandate: which bidder, which lever. */
+      bidder?: string;
+      lever?: MandateLever;
     }
+  | { type: "duel"; targetId: string; move: "raise" | "concept" | "leave"; size?: "small" | "big" }
   | { type: "search"; move: "start" | "stop"; candidate?: number }
   | { type: "examine"; targetId: string; modules: import("./mna-config").DdModule[] }
   | { type: "acquire"; targetId: string; bid: "ask" | "low"; bank: number; vendor: number; earnout: number; integration?: IntegrationKind }
@@ -783,13 +828,50 @@ export interface Finding {
 
 export type BuyerFocus = "strategic" | "financial" | "mixed";
 export type ProcessKind = "exclusive" | "auction";
-export type MandateMove = "accept" | "decline" | "comps" | "launch" | "accept_bid" | "final" | "negotiate";
+export type MandateMove = "accept" | "decline" | "comps" | "launch" | "accept_bid" | "final" | "negotiate" | "teaser" | "round";
+/** Levers in the three negotiation rounds of a large mandate. */
+export type MandateLever = "bnf" | "exclusive" | "earnout" | "batna";
 export type MandateStatus = "offered" | "prep" | "marketing" | "bids" | "signing" | "closed" | "failed" | "declined" | "expired";
 
 export interface MandateBid {
   buyer: string;
   kind: "strategic" | "financial";
   ev: number;
+  /** Large mandates: earn-out on top of the cash price (headline = ev + earnout). */
+  earnout?: number;
+  /** Large mandates: 0..100, below 30 the bidder walks away. */
+  mood?: number;
+  out?: boolean;
+  /** Hidden: the most this bidder pays in cash (large mandates). */
+  max?: number;
+}
+
+/** One line of a teaser: what it does for interest, price, confidentiality and credibility. */
+export interface TeaserFact {
+  id: string;
+  title: string;
+  text: string;
+  interest: number;
+  price: number;
+  conf: number;
+  cred: number;
+  /** A known problem: left out, the buyers find it later in their due diligence. */
+  finding?: FindingKind;
+}
+
+/** A large mandate (carve-out from a group): teaser, auction, three negotiation rounds. */
+export interface BigMandate {
+  /** The division that is sold. */
+  unit: string;
+  facts: TeaserFact[];
+  /** Ids of the facts in the teaser once it went out. */
+  teaser?: string[];
+  effect?: { interest: number; price: number; conf: number; cred: number };
+  /** Known problems left out of the teaser. */
+  concealed?: FindingKind[];
+  rounds: number;
+  exclusive?: string;
+  log: string[];
 }
 
 /** Sell-side or buy-side advice for a family business: the investment banking part of the game. */
@@ -829,6 +911,8 @@ export interface Mandate {
   /** Price agreed at signing, before the buyer's own review. */
   signed?: MandateBid;
   outcome?: { ev: number; fee: number; reputation: number; mood: "happy" | "ok" | "unhappy" | "failed"; text: string };
+  /** A large mandate with teaser and negotiation rounds (missing for the usual ones). */
+  big?: BigMandate;
 }
 
 export interface Searcher {
@@ -987,4 +1071,6 @@ export interface MnaState {
   searches: SearchFund[];
   addons: AddonTarget[];
   record: MnaRecord;
+  /** Your advised volume (EV) and deals per calendar year, for the league table (missing in older games). */
+  league?: { year: number; volume: number; count: number }[];
 }
