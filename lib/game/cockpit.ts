@@ -1,4 +1,5 @@
 import { CORPORATE_FEE } from "./config";
+import { initialsOf, leadOf, profileOf } from "./team";
 import { annualEbitda } from "./ebitda";
 import { netLeverage } from "./lbo";
 import { COVENANT, VENDOR_RATE } from "./mna-config";
@@ -255,7 +256,14 @@ export function cockpitRow(state: GameState, s: Startup): CockpitRow {
     openItems: need.openItems,
     needs: need.points + (a.light === "red" ? NEEDS.red : a.light === "yellow" ? NEEDS.yellow : 0),
     fee: s.corporate ? CORPORATE_FEE : undefined,
+    lead: leadCell(state, s),
   };
+}
+
+function leadCell(state: GameState, s: Startup): CockpitRow["lead"] {
+  const lead = leadOf(state, s);
+  if (!lead) return undefined;
+  return { name: lead.member.name, initials: initialsOf(lead.member.name), color: profileOf(lead.member).color, fit: lead.fit };
 }
 
 const PHASE_TAG: Record<StartupPhase, string> = { beta: "Beta", launch: "Markteintritt", scale: "Skalierung", profit: "Profitabel" };

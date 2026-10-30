@@ -74,7 +74,7 @@ export const MANDATE_REPUTATION = 35;
 export const MANDATE_CHANCE = 0.1;
 export const MANDATE_WARM_BONUS = 0.1;
 export const MANDATE_FROM_MONTH = 4;
-/** Mandates running at the same time: alone one, with family office and an associate two. */
+/** Mandates running at the same time: alone one, with family office and an operating partner two. */
 export const MANDATE_MAX_ACTIVE = 1;
 /** Enterprise value of the client company by reputation; big ones need the family office. */
 export const MANDATE_SIZE = [

@@ -306,7 +306,7 @@ export function feeLine(state: GameState, f: FundState): FeeLine {
     fee,
     admin: later ? Math.round((f.size * FUND_ADMIN_COST) / 12) : 0,
     esg: t.esg ? Math.round(CONCESSION_COST.esg / 12) : 0,
-    keyPerson: t.keyPerson && !state.team.some((m) => m.role === "partner") ? CONCESSION_COST.keyPerson : 0,
+    keyPerson: t.keyPerson && !state.team.some((m) => m.role !== "associate") ? CONCESSION_COST.keyPerson : 0,
   };
 }
 

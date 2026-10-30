@@ -11,6 +11,8 @@ import { monthOutlook } from "@/lib/game/month-view";
 import { networkTasks } from "@/lib/game/network-views";
 import type { NavState } from "@/lib/navigation";
 import { AwardPopup } from "@/components/vitrine/AwardPopup";
+import { Onboarding } from "./Onboarding";
+import { pendingUnlocks, shouldAutoStartTour } from "@/lib/game/onboarding";
 
 export async function TopBar() {
   const { state, revision, updatedAt } = await currentGame();
@@ -56,6 +58,7 @@ export async function TopBar() {
         </Link>
         <CloseMonth revision={revision} month={state.month} openItems={open} daysLeft={free} outlook={monthOutlook(state)} />
       </header>
+      <Onboarding autoStart={shouldAutoStartTour(state)} reputation={state.reputation} pending={pendingUnlocks(state).map((u) => u.id)} />
       {fresh.length > 0 && <AwardPopup ids={fresh.map((t) => t.id)} details={Object.fromEntries(fresh.map((t) => [t.id, t.detail]))} revision={revision} />}
     </>
   );

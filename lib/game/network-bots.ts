@@ -5,6 +5,7 @@ import { contactDef, contactRead, ringOpen } from "./network";
 import { RIVAL_WARMTH, SPECIALIST_WARMTH_MIN } from "./network-config";
 import { eventCost, eventDef } from "./network-events";
 import { FAVORS, specialistBlocker } from "./network-life";
+import { leadOf } from "./team";
 import type { GameAction, GameState } from "./types";
 
 // Wie die Skript-Spieler das Netzwerk nutzen: Bitten beantworten, passende
@@ -31,7 +32,7 @@ export function networkActions(s: GameState, style: NetStyle): GameAction[] {
   const out: GameAction[] = [];
   const net = s.network;
   // Board work comes first: the network only gets the days it leaves over.
-  const own = openItems(s).filter((i) => !s.team.some((m) => m.role === "associate" && m.mandate === i.startupId));
+  const own = openItems(s).filter((i) => !leadOf(s, i.startupId));
   let budget = daysLeft(s) - own.length * 3 - 4;
   const spend = (days: number) => {
     if (days > budget) return false;

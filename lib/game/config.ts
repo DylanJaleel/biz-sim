@@ -45,11 +45,7 @@ export const NEWS_FROM_MONTH = 3;
 export const FAMILY_OFFICE_REPUTATION = 75;
 export const FAMILY_OFFICE_WORTH = 2_000_000;
 export const FAMILY_OFFICE_COST = 40_000;
-export const SALARY = { associate: 5_000, partner: 9_000 } as const;
-export const TEAM_MAX = { associate: 3, partner: 1 } as const;
-/** An associate finds the best option this often; otherwise they play it safe. */
-export const ASSOCIATE_SKILL = 0.7;
-export const PARTNER_DAYS = 3;
+// Team (Operating Partner): profiles, contracts and effects live in team.ts.
 export const BUYOUT_REPUTATION = 60;
 /** Family businesses offer themselves for sale only to buyers with this net worth. */
 export const BUYOUT_WORTH = 1_000_000;

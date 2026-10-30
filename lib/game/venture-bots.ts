@@ -18,7 +18,7 @@ export function ventureActions(s: GameState, money: number): GameAction[] {
   if (s.familyOffice !== undefined && nextFundBlocker(s) === null) out.push({ type: "fund", move: "launch" });
   const r = family.raising;
   if (r) {
-    const partner = s.team.some((m) => m.role === "partner");
+    const partner = s.team.some((m) => m.role !== "associate");
     for (const lp of r.lps.filter((l) => l.status === "wants")) out.push({ type: "fund", move: lp.wish === "keyPerson" && !partner ? "refuse" : "concede", lpId: lp.id });
     for (const lp of r.lps.filter((l) => l.status === "open").slice(0, 3)) out.push({ type: "fund", move: "pitch", lpId: lp.id });
     const sum = committed(r);

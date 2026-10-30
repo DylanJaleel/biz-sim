@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { monthLabel, monthName } from "@/lib/game/config";
 import { careerOf } from "@/lib/game/career";
+import { ownsPenthouse } from "@/lib/game/estate";
+import { heirInCharge } from "@/lib/game/dynasty";
 import { daysLeft, netWorth, portfolioValue } from "@/lib/game/engine";
 import { holdingsValue } from "@/lib/game/market";
 import { monthDays, OFFICES, officeOf } from "@/lib/game/office";
@@ -342,7 +344,8 @@ export async function GlassOffice() {
                 {office.name}
               </h2>
               <p className="glbl" style={{ margin: 0 }}>
-                {office.rent > 0 ? `${eur(office.rent)} Miete im Monat. ` : "Keine Miete. "}
+                {ownsPenthouse(state) ? "Du arbeitest aus deinem Penthouse: keine Büromiete. " : office.rent > 0 ? `${eur(office.rent)} Miete im Monat. ` : "Keine Miete. "}
+                {heirInCharge(state) && `Generation 2: ${heirInCharge(state)!.name} führt das Tagesgeschäft. `}
                 {office.perks.join(". ")}.
               </p>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>

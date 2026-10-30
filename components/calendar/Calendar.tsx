@@ -32,6 +32,9 @@ const KIND_LABEL: Partial<Record<ActionKind, string>> = {
   favor: "Gefallen",
   event: "Veranstaltung",
   specialist: "Spezialist",
+  estate: "Immobilien",
+  foundation: "Stiftung",
+  dynasty: "Familie",
 };
 
 const WEEKDAYS = ["Mo", "Di", "Mi", "Do", "Fr"];

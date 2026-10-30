@@ -105,6 +105,22 @@ export const NAV_ITEMS: NavItem[] = [
     locked: (s) => (!s.familyOffice && s.reputation < FAMILY_OFFICE_REPUTATION ? `ab Ruf ${FAMILY_OFFICE_REPUTATION}` : null),
   },
   {
+    href: "/holding/team",
+    label: "Operating Partner",
+    group: "company",
+    icon: "people",
+    description: "Team einstellen, Firmen zuweisen, Vergütung und Carry.",
+    visible: (s) => s.familyOffice,
+  },
+  {
+    href: "/holding/struktur",
+    label: "Gesellschaftsstruktur",
+    group: "company",
+    icon: "layers",
+    description: "Wem was gehört, Zwischenholding, Mitgesellschafter und Banken.",
+    visible: (s) => s.familyOffice,
+  },
+  {
     href: "/nachfolge",
     label: "Nachfolge & Übernahmen",
     group: "company",
@@ -138,10 +154,18 @@ export const NAV_ITEMS: NavItem[] = [
 
   { href: "/fuhrpark", label: "Fuhrpark", group: "life", icon: "car", description: "Fahrzeuge kaufen, fahren und pflegen." },
   { href: "/vitrine", label: "Vitrine", group: "life", icon: "trophy", description: "Auszeichnungen und Trophäen." },
-  // { href: "/immobilien", label: "Immobilien", group: "life", icon: "house", description: "Wohnungen, Häuser und das Penthouse." },
-  // { href: "/stiftung", label: "Stiftung & Dynastie", group: "life", icon: "heart", description: "Stiftung gründen, Nachfolge in der Familie." },
+  { href: "/immobilien", label: "Immobilien", group: "life", icon: "house", description: "Wohnungen, Häuser und das Penthouse." },
+  {
+    href: "/stiftung",
+    label: "Stiftung & Dynastie",
+    group: "life",
+    icon: "heart",
+    description: "Lebenswerk, Stiftung gründen, Nachfolge in der Familie.",
+    locked: (s) => (!s.familyOffice ? "ab Family Office" : null),
+  },
 
   { href: "/notizbuch", label: "Notizbuch", group: "knowledge", icon: "book", description: "Lernkarten zu Fachbegriffen und deine Notizen." },
+  { href: "/einfuehrung", label: "Einführung", group: "knowledge", icon: "help", description: "Die kurze Tour: wo du was findest und wann was freigeschaltet wird." },
   {
     href: "/rangliste",
     label: "Rangliste",

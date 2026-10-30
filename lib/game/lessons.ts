@@ -467,7 +467,7 @@ export const LESSONS: Lesson[] = [
     rule: "Schnell integrieren: früher fertig, mehr Unruhe. Behutsam: teurer und länger, aber weniger Verluste.",
     example: "Zwei Speditionen legen ihre Disposition zusammen und sparen 120.000 € im Jahr. Drei Fahrer und ein Großkunde gehen zur Konkurrenz.",
     inGame:
-      "Jeder Zukauf deiner Plattform wird integriert. Dein Team schafft eine Integration gleichzeitig, mit Partnerin oder Associate mehr. Zu viele auf einmal kosten Einsparungen und Kunden.",
+      "Jeder Zukauf deiner Plattform wird integriert. Allein schaffst du eine Integration gleichzeitig, mit Team und einem Operating Partner auf der Plattform mehr. Zu viele auf einmal kosten Einsparungen und Kunden.",
   },
   {
     id: "bieterverfahren",
@@ -552,6 +552,119 @@ export const LESSONS: Lesson[] = [
     rule: "Unicorn = Bewertung ab 1 Mrd. € vor dem Börsengang",
     example: "Nach Seed, Serie A bis D und einer Pre-IPO-Runde ist die Firma 1,05 Mrd. € wert. Wer am Anfang 20 % hatte, hält jetzt vielleicht 5 %: gut 50 Mio. € auf dem Papier.",
     inGame: "Etwa eine von 25 Partien erlebt einen Unicorn. Es gibt einen goldenen Tombstone; das Geld kommt erst mit Verkauf oder Börsengang.",
+  },
+  {
+    id: "operating_partner",
+    title: "Operating Partner",
+    summary:
+      "Operating Partner sind erfahrene Manager in einer Beteiligungsgesellschaft. Sie sitzen nicht nur im Beirat, sondern arbeiten in den Firmen mit: Vertrieb aufbauen, Kosten senken, Zukäufe integrieren. Bezahlt werden sie mit Gehalt und einer Beteiligung am Erfolg, meist als Carry beim Verkauf.",
+    rule: "Vergütung = Grundgehalt + kleiner laufender Anteil am Wertzuwachs + Carry auf den Gewinn beim Exit",
+    example:
+      "Eine Sanierungsexpertin betreut zwei Familienbetriebe. Sie bekommt 9.500 € im Monat und 6 % deines Gewinns, wenn die Firmen verkauft werden: bei 2 Mio. € Gewinn 120.000 €.",
+    inGame:
+      "Unter Holding › Operating Partner stellst du sie ein und gibst ihnen Firmen. Passt die Stärke zum Firmentyp, sparen sie mehr Tage, entscheiden besser und bereiten auf der Plattform Zukäufe vor.",
+  },
+  {
+    id: "zwischenholding",
+    title: "Zwischenholding und Haftungstrennung",
+    summary:
+      "Eine Zwischenholding ist eine eigene Gesellschaft zwischen dem Eigentümer und seinen Firmen. Geht eine Tochter pleite, haftet die Holding mit ihrem Anteil, nicht der Eigentümer privat. Banken verlangen ohne diese Trennung oft eine persönliche Bürgschaft.",
+    rule: "Privatvermögen → Family Office → Zwischenholding → Töchter; jede GmbH haftet nur mit ihrem eigenen Vermögen",
+    example:
+      "Ohne Holding bürgt der Käufer für ein Viertel des Bankkredits von 4 Mio. €. Fällt die Firma aus, zahlt er bis zu 1 Mio. € privat. Mit Holding verliert er nur, was er in die Firma gesteckt hat.",
+    inGame:
+      "Unter Holding › Struktur gründest du sie für 12.000 € Notar und Steuerberatung. Ohne sie greift bei Insolvenz oder Zwangsverkauf einer gekauften Firma deine Bürgschaft.",
+  },
+  {
+    id: "vetorecht",
+    title: "Vetorecht der Mitgesellschafter",
+    summary:
+      "Minderheitsgesellschafter lassen sich im Gesellschaftervertrag Zustimmungsrechte geben: Bei wichtigen Entscheidungen, etwa großen Zukäufen, brauchen sie ihr Ja. So schützen sie sich davor, dass die Mehrheit Geld in schlechte Deals steckt.",
+    rule: "Vetorecht = Zustimmungsvorbehalt für festgelegte Entscheidungen, unabhängig von der Mehrheit",
+    example: "Der alte Inhaber hält noch 10 %. Er blockiert einen Zukauf, der die Gruppe halb so groß macht, bis eine Prüfung zeigt, dass beide Firmen zusammenpassen.",
+    inGame: "Mitgesellschafter deiner Plattform mit mindestens 5 % stimmen großen Zukäufen nur mit geprüfter Passung zu und legen bei schlecht passenden ein Veto ein.",
+  },
+  {
+    id: "mitverkaufspflicht",
+    title: "Mitverkaufspflicht (Drag-along)",
+    summary:
+      "Käufer wollen meist 100 % einer Firma. Die Mitverkaufspflicht zwingt Minderheitsgesellschafter, zu denselben Bedingungen mitzuverkaufen, wenn die Mehrheit verkauft. Im Gegenzug schützt ein Mitverkaufsrecht (Tag-along) die Minderheit davor, zurückzubleiben.",
+    rule: "Drag-along: Mehrheit verkauft, alle verkaufen mit. Ohne sie zahlt der Käufer weniger oder springt ab.",
+    example: "Ein Investor bietet 30 Mio. € für 100 %. Ohne Drag-along könnte die Suchende mit 8 % ihre Anteile behalten; der Käufer zieht deshalb 5 % vom Preis ab.",
+    inGame: "Die Gesellschaftervereinbarung deiner Zwischenholding enthält sie. Ohne Zwischenholding ziehen Käufer deiner Plattform 5 % ab.",
+  },
+  {
+    id: "passung",
+    title: "Passung von Zukäufen",
+    summary:
+      "Ob ein Zukauf Wert schafft, hängt an der Passung: gleiches Geschäft, ähnliche Kultur, nahe Standorte und Kunden, die auch beim anderen kaufen. Passt es, kommen Synergien. Passt es nicht, entstehen Dis-Synergien: Integrationskosten, Kündigungen, Kundenverluste.",
+    rule: "Wert des Zukaufs = Kaufpreis-Vorteil (Multiple) + Synergien − Integrationskosten − Dis-Synergien",
+    example: "Zwei Bäckereien in derselben Stadt bündeln Einkauf und Auslieferung. Ein Großhändler am anderen Ende des Landes bringt nur doppelte Verwaltung.",
+    inGame:
+      "Die Passung siehst du nach einer Commercial Due Diligence oder wenn ein Operating Partner den Zukauf vorbereitet. Gute Passung bringt extra Einsparungen, schlechte kostet Leute und Marge.",
+  },
+  {
+    id: "zinsbindung",
+    title: "Zinsbindung und Anschlusszins",
+    summary:
+      "Bei einer Hypothek legt die Bank den Zins für eine feste Zeit fest, meist 5, 10 oder 15 Jahre. Danach gilt für die Restschuld der Zins, den der Markt dann verlangt: der Anschlusszins. Lange Bindung kostet etwas mehr, schützt aber vor einer Zinswende.",
+    rule: "Rate = Darlehen × (Zins + anfängliche Tilgung) ÷ 12; nach der Bindung: Restschuld × (Anschlusszins + Tilgung) ÷ 12",
+    example:
+      "2 Mio. € zu 3,4 % mit 2 % Tilgung kosten 9.000 € im Monat. Nach zehn Jahren sind noch gut 1,5 Mio. € offen. Bei 5,4 % Anschlusszins steigt die Rate auf 9.400 €, obwohl die Schuld kleiner ist.",
+    inGame:
+      "Bei jedem Immobilienkauf wählst du die Bindung. Die Wirtschaftsnachrichten kündigen eine Zinswende neun Monate vorher an; sechs Monate vor Ablauf schreibt dir die Bank.",
+  },
+  {
+    id: "beleihungsauslauf",
+    title: "Beleihungsauslauf",
+    summary:
+      "Der Beleihungsauslauf (Loan to Value, LTV) sagt, welcher Teil des Objektwerts mit Kredit bezahlt ist. Je höher er ist, desto weniger eigenes Geld steckt drin, desto teurer der Zins und desto schneller wird es eng, wenn der Wert fällt.",
+    rule: "Beleihungsauslauf = Darlehen ÷ Marktwert",
+    example:
+      "Haus für 3 Mio. €, Darlehen 2,1 Mio. €: 70 %. Fällt der Wert nach einer Zinswende auf 2,6 Mio. €, sind es 81 %. Verlangt die Bank höchstens 75 %, musst du 150.000 € nachschießen.",
+    inGame:
+      "Wohnungen beleiht die Bank bis 80 %, Mehrfamilienhäuser bis 75 %, Gewerbe bis 65 %, ein Penthouse bis 60 %. Über 60 % kostet jeder angefangene 5-Punkte-Schritt 0,1 Prozentpunkte Zins. Bei der Anschlussfinanzierung prüft die Bank neu.",
+  },
+  {
+    id: "mietrendite",
+    title: "Mietrendite und Kaufpreisfaktor",
+    summary:
+      "Die Bruttomietrendite setzt die Jahresmiete ins Verhältnis zum Kaufpreis. Der Kaufpreisfaktor ist der Kehrwert: wie viele Jahresmieten das Objekt kostet. Netto bleibt weniger: Leerstand, Instandhaltung und Nebenkosten beim Kauf gehen ab.",
+    rule: "Bruttomietrendite = Jahresmiete ÷ Kaufpreis; Faktor = Kaufpreis ÷ Jahresmiete",
+    example: "Ein Mehrfamilienhaus für 2,4 Mio. € bringt 115.000 € Miete: 4,8 % brutto, Faktor 20,9. Nach 3 % Leerstand und 1,4 % Instandhaltung bleiben etwa 3,3 %.",
+    inGame: "Jedes Angebot im Immobilienmarkt zeigt Faktor und Rendite. Gewerbe bringt mehr, schwankt aber beim Leerstand mit der Konjunktur.",
+  },
+  {
+    id: "gemeinnuetzigkeit",
+    title: "Gemeinnützige Stiftung",
+    summary:
+      "Eine Stiftung ist Vermögen mit einem festen Zweck, das niemandem mehr gehört. Das Grundstockvermögen bleibt für immer erhalten, nur der Ertrag fließt in den Zweck. Dient der Zweck der Allgemeinheit, ist die Stiftung gemeinnützig: Zuwendungen mindern die Steuer.",
+    rule: "Im Spiel vereinfacht: Zustiftungen bis 1 Mio. € in zehn Jahren werden zu 42 % erstattet. Was einmal gestiftet ist, kommt nie zurück.",
+    example:
+      "Du stiftest 1 Mio. €. Das Finanzamt erstattet 420.000 €, die Stiftung schüttet jedes Jahr etwa 30.000 € für Stipendien aus. Dein Vermögen sinkt um 580.000 €, dein Ruf steigt.",
+    inGame:
+      "Unter Stiftung & Dynastie errichtest du die Stiftung ab 70 Ruf und 5 Mio. € Vermögen. Sie zählt zum Lebenswerk und zum verwalteten Vermögen, nicht mehr zu deinem eigenen.",
+  },
+  {
+    id: "aum",
+    title: "Verwaltetes Vermögen (AuM)",
+    summary:
+      "Assets under Management (AuM) ist alles Geld, über dessen Anlage du entscheidest, egal wem es gehört. Bei Fondsmanagern zählt das zugesagte Kapital aller Fonds, also auch das Geld der Investoren. Davon hängen Gebühren und Ansehen ab.",
+    rule: "AuM = Familienvermögen im Family Office + Größe aller eigenen Fonds (mit Investorengeld) + Stiftungskapital",
+    example:
+      "20 Mio. € Familienvermögen, ein Fonds über 15 Mio. € und 2 Mio. € in der Stiftung: 37 Mio. € AuM. Bei 2 % Verwaltungsgebühr bringt allein der Fonds 300.000 € im Jahr.",
+    inGame: "Die Stufe Fondsfamilie verlangt 1 Mrd. € AuM. Der Wert steht unter Stiftung & Dynastie.",
+  },
+  {
+    id: "family_governance",
+    title: "Family Governance",
+    summary:
+      "Familienvermögen zerfällt selten an schlechten Anlagen, öfter an Streit. Family Governance sind die Regeln, mit denen eine Familie gemeinsam entscheidet: eine Familiencharta, ein Familienrat und eine geplante Nachfolge, lange vor dem Ernstfall.",
+    rule: "Regeln vereinbaren, solange alle sich einig sind; Nachfolge über Jahre aufbauen, nicht an einem Tag übergeben.",
+    example:
+      "Die Charta legt fest: Familienmitglieder arbeiten erst nach fünf Jahren außerhalb im Family Office. Als die Cousine einsteigen will, ist die Antwort klar und niemand fühlt sich übergangen.",
+    inGame:
+      "Unter Stiftung & Dynastie wählst du eine Nachfolge, begleitest sie mit Mentoring-Tagen und ordnest die Familie mit Charta und Familienrat. Übergeben kannst du ab Reife 80 und Zusammenhalt 60.",
   },
   {
     id: "werttreiber",
@@ -694,6 +807,17 @@ export const CURRICULUM = [
   "venture_studio",
   "venture_path",
   "unicorn",
+  "operating_partner",
+  "zwischenholding",
+  "passung",
+  "vetorecht",
+  "mitverkaufspflicht",
+  "mietrendite",
+  "zinsbindung",
+  "beleihungsauslauf",
+  "aum",
+  "gemeinnuetzigkeit",
+  "family_governance",
   "werttreiber",
   "ltm_ebitda",
   "interim_management",

@@ -436,6 +436,10 @@ export interface IncomeLines {
   mandates?: number;
   /** Search capital paid to searchers of the succession programme. */
   search?: number;
+  /** Property: rent after vacancy minus maintenance and mortgage payments. */
+  estate?: number;
+  /** Foundation: tax refund on endowment gifts; family council payouts. */
+  foundation?: number;
 }
 
 export type ExitChoice = "accept" | "negotiate" | "reject";
@@ -466,9 +470,26 @@ export interface ExitOffer {
   /** Sale of a buy-and-build platform from a sale process; ev is the enterprise value offered. */
   platform?: boolean;
   ev?: number;
+  /** Carry paid to operating partners out of your proceeds. */
+  teamCarry?: { name: string; amount: number }[];
+  /** Price cut because co-owners could not be dragged along (no drag-along). */
+  holdout?: number;
 }
 
-export type TeamRole = "associate" | "partner";
+/** "associate" and "partner" only in older games; they become operating partners when loaded (see team.ts). */
+export type TeamRole = "associate" | "partner" | "operating";
+
+/** A company an operating partner looks after; values are your stake's value minus your money in. */
+export interface OpMandate {
+  id: string;
+  since: number;
+  /** Value created at the start: the carry counts from here. */
+  base: number;
+  /** High-water mark for the running share. */
+  mark: number;
+  /** Mandate ended in this month; the carry claim stays (vested). */
+  until?: number;
+}
 
 export interface TeamMember {
   id: string;
@@ -476,8 +497,14 @@ export interface TeamMember {
   name: string;
   salary: number;
   hired: number;
-  /** The mandate an associate looks after. */
+  /** Older games: the mandate an associate looked after. */
   mandate?: string;
+  /** Operating partner: profile from the candidate pool (team.ts). */
+  profile?: string;
+  /** Operating partner: companies looked after, current and vested. */
+  mandates?: OpMandate[];
+  /** Running share and carry paid so far. */
+  paid?: number;
 }
 
 export interface FundState {
@@ -850,12 +877,25 @@ export interface GameState {
   funds?: FundFamily;
   /** The venture studio (missing in older games). */
   studio?: StudioState;
+  /** Intermediate holding for the bought companies (holdco.ts); missing = none. */
+  holdco?: { since: number; name: string };
+  /** Property, foundation, dynasty and the legacy score (missing in older games). */
+  wealth?: import("./wealth-types").WealthState;
   /** Fraction of a reputation gain carried over to the next one (see reputationGain). */
   reputationRest?: number;
   /** Reputation won in this month so far (the monthly cap of reputationGain). */
   reputationMonth?: { month: number; gained: number };
   /** Rival houses: appear from reputation 50, bid against you, stand in the league table (see rivals.ts). */
   rivals?: RivalState;
+  /** Introduction for new players and the unlock hints already shown (missing in older games). */
+  onboarding?: OnboardingState;
+}
+
+/** Progress of the introduction. `seen` holds the ids of unlock hints already acknowledged. */
+export interface OnboardingState {
+  done?: boolean;
+  step?: number;
+  seen?: string[];
 }
 
 /** The rivals of this game: drawn from a pool by seed; only their record with you is stored. */
@@ -925,7 +965,11 @@ export type ActionKind =
   | "specialist"
   | "fund"
   | "lpac"
-  | "studio";
+  | "studio"
+  | "holdco"
+  | "estate"
+  | "foundation"
+  | "dynasty";
 
 export type GameAction =
   | { type: "dd"; startupId: string }
@@ -958,9 +1002,10 @@ export type GameAction =
   | { type: "moveOffice"; level: number }
   | { type: "joinCorporate"; accept: boolean }
   | { type: "foundFamilyOffice" }
-  | { type: "hire"; role: TeamRole }
+  | { type: "hire"; role: TeamRole; profile?: string }
   | { type: "fire"; memberId: string }
-  | { type: "assign"; memberId: string; startupId: string | null }
+  | { type: "assign"; memberId: string; startupId: string | null; from?: string }
+  | { type: "holdco" }
   | { type: "buyout"; startupId: string; leverage: boolean }
   | { type: "raiseFund" }
   | { type: "fund"; move: FundMove; lpId?: string }
@@ -985,7 +1030,8 @@ export type GameAction =
   | { type: "examine"; targetId: string; modules: import("./mna-config").DdModule[] }
   | { type: "acquire"; targetId: string; bid: "ask" | "low"; bank: number; vendor: number; earnout: number; integration?: IntegrationKind }
   | { type: "platform"; startupId: string; move: "make" | "sell" | "cure" | "stopSale"; process?: ProcessKind; buyers?: "strategic" | "financial" }
-  | { type: "lever"; startupId: string; lever: LeverId };
+  | { type: "lever"; startupId: string; lever: LeverId }
+  | import("./wealth-types").WealthAction;
 
 // ---------------------------------------------------------------------------
 // M&A-Mandate, Nachfolge-Programm (Search Fund) und Buy-and-Build
@@ -1134,6 +1180,8 @@ export interface Integration {
   revenue: number;
   /** Integration cost per month, paid by the platform. */
   cost: number;
+  /** Fit of the add-on with the platform (holdco.ts); missing = average. */
+  fit?: "good" | "ok" | "bad";
 }
 
 /** A smaller company the platform could buy. */

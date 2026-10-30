@@ -29,6 +29,8 @@ import {
 import { between, eur, generateFindings, mio, mnaOf, pickOf, roundTo, times, type Ctx } from "./mna-core";
 import { INTERIM, KARTELL } from "./network-config";
 import { applyDelta } from "./sim";
+import { addonVeto, FIT_EFFECT, fitAtClose, fitSynergy, holdoutDiscount } from "./holdco";
+import { integrationBonus, integrationCapacity, platformPrep } from "./team";
 import type { AddonTarget, ExitOffer, Finding, GameState, IntegrationKind, Integration, ProcessKind, Startup } from "./types";
 
 // Buy-and-Build: Eine Firma wird Plattform, kleinere Firmen derselben Branche
@@ -61,11 +63,12 @@ export function makePlatform(ctx: Ctx, s: Startup): void {
   ctx.state.cash -= PLATFORM_COST;
   ctx.replace({ ...s, platform: { since: ctx.state.month, addons: [], integrations: [] }, playerCost: (s.playerCost ?? 0) + PLATFORM_COST });
   ctx.lesson("multiple_arbitrage");
+  if (s.capTable.some((h) => (h.kind === "founder" || h.kind === "cofounder") && h.pct >= 5)) ctx.lesson("vetorecht");
   ctx.mail({
     kind: "system",
     from: "Boardroom",
     subject: `${s.name} wird Plattform`,
-    body: `Ab jetzt suchst du kleinere Firmen aus der Branche ${s.sector}. Sie kosten ein niedrigeres Vielfaches ihres EBITDA als die größere Gruppe wert ist. Aber: Jeder Zukauf muss integriert werden, und die Bank finanziert nur bis ${times(ADDON_MAX_LEVERAGE)} EBITDA.`,
+    body: `Ab jetzt suchst du kleinere Firmen aus der Branche ${s.sector}. Sie kosten ein niedrigeres Vielfaches ihres EBITDA als die größere Gruppe wert ist. Aber: Jeder Zukauf muss integriert werden, und die Bank finanziert nur bis ${times(ADDON_MAX_LEVERAGE)} EBITDA.${ctx.state.holdco ? "" : " Überlege, ob du eine Zwischenholding gründest: Sie trennt die Haftung und bringt die Mitverkaufspflicht (Holding › Struktur)."}`,
     startupId: s.id,
   });
 }
@@ -86,7 +89,8 @@ export function planAddons(ctx: Ctx): void {
   if (m.addons.filter((a) => a.platformId === s.id && a.status === "open").length >= ADDON_MAX_OPEN) return;
   const r = mnaRandom(state, `addon|${s.id}|${state.month}`);
   const warm = state.contacts.some((c) => c.id === "dealflow" && c.met && c.warmth >= 40);
-  const chance = ADDON_CHANCE + (state.team.some((t) => t.role === "partner") ? 0.1 : 0) + (warm ? 0.1 : 0);
+  // An operating partner on the platform prepares add-ons and finds more candidates.
+  const chance = ADDON_CHANCE + platformPrep(state, s).chance + (warm ? 0.1 : 0);
   if (r() > chance) return;
   const ep = Math.max(PLATFORM_MIN_EBITDA, annualEbitda(s.metrics));
   const ea = roundTo(Math.max(ADDON_MIN_EBITDA, ep * between(r, ADDON_SIZE[0], ADDON_SIZE[1])), 10_000);
@@ -205,6 +209,8 @@ export function acquire(ctx: Ctx, targetId: string, terms: Terms, integration: I
   if (!s || s.status !== "active" || !s.platform) ctx.fail("Die Plattform gibt es nicht mehr.");
   if (s!.platform!.sale) ctx.fail("Während des Verkaufs der Plattform kaufst du nichts dazu.");
   if (s!.lbo && s!.lbo.status !== "ok") ctx.fail("Zukaufstopp: Die Bank erlaubt keine Zukäufe, solange der Covenant gebrochen ist.");
+  const veto = addonVeto(state, s!, a!);
+  if (veto) ctx.fail(veto);
   if (terms.bid === "low" && !lowBidAccepted(state, a!.id, a!.findings)) {
     ctx.spend("acquire", `Verhandlung ${a!.name}`, 1);
     a!.status = "lost";
@@ -219,7 +225,7 @@ export function acquire(ctx: Ctx, targetId: string, terms: Terms, integration: I
   }
   const plan = planAddon(state, s!, a!, terms);
   if (state.cash < plan.fromPlayer) ctx.fail(`Dafür fehlen dir ${eur(plan.fromPlayer - state.cash)} Eigenkapital.`);
-  ctx.spend("acquire", `Zukauf ${a!.name}`, ACQUIRE_DAYS);
+  ctx.spend("acquire", `Zukauf ${a!.name}`, ACQUIRE_DAYS - platformPrep(state, s!).days);
   state.cash -= plan.fromPlayer;
   const pending = { ev: plan.price, bank: plan.bank, vendor: plan.vendor, earnout: plan.earnout, fromPlatform: plan.fromPlatform, fromPlayer: plan.fromPlayer, integration };
   if (plan.review) {
@@ -261,6 +267,9 @@ function closeAddon(ctx: Ctx, platform: Startup, a: AddonTarget, p: NonNullable<
     },
   };
   s = applyDelta(s, { morale: -4, axes: { management: -2 } });
+  // Fit (holdco.ts): with a bad fit key people of the add-on resign right away.
+  const fit = fitAtClose(state, a);
+  if (fit.leavers > 0) s = applyDelta(s, { team: -fit.leavers, morale: -6 });
   const lbo = s.lbo
     ? { ...s.lbo, vendors: [...s.lbo.vendors], earnouts: [...s.lbo.earnouts] }
     : {
@@ -299,7 +308,8 @@ function closeAddon(ctx: Ctx, platform: Startup, a: AddonTarget, p: NonNullable<
     kind: p.integration,
     ebitda: Math.round(adj.ebitda),
     revenue: Math.round(adj.revenue),
-    cost: roundTo((def.cost * Math.max(0, adj.ebitda)) / def.months, 100),
+    cost: roundTo((def.cost * FIT_EFFECT[fit.level].cost * Math.max(0, adj.ebitda)) / def.months, 100),
+    fit: fit.level,
   };
   const platformState = {
     ...s.platform!,
@@ -320,6 +330,7 @@ function closeAddon(ctx: Ctx, platform: Startup, a: AddonTarget, p: NonNullable<
   mnaOf(state).record.addons += 1;
   ctx.lesson("multiple_arbitrage");
   ctx.lesson("pmi");
+  ctx.lesson("passung");
   if (p.vendor > 0) ctx.lesson("verkaeuferdarlehen");
   if (p.earnout > 0) ctx.lesson("earn_out");
   ctx.mail({
@@ -369,9 +380,8 @@ export function platformMonth(ctx: Ctx, month: number, notes: string[], lines: M
   const texts = lines.get(s.id) ?? [];
   const p = s.platform!;
   const integrations: Integration[] = [];
-  const partners = state.team.filter((t) => t.role === "partner").length;
-  const associate = state.team.some((t) => t.role === "associate" && t.mandate === s.id);
-  const capacity = 1 + partners + (associate ? 1 : 0);
+  const capacity = integrationCapacity(state, s);
+  const op = integrationBonus(state, s);
   const overload = p.integrations.length > capacity;
   for (const i of p.integrations) {
     s = { ...s, metrics: { ...s.metrics, cash: s.metrics.cash - i.cost } };
@@ -384,8 +394,10 @@ export function platformMonth(ctx: Ctx, month: number, notes: string[], lines: M
     const strong = s.metrics.axes.management >= 60;
     // An interim manager from the network on site: integrations go better.
     const interim = (s.lbo?.interim ?? 0) >= month;
-    const synergy = r() < def.synergy + (strong ? 0.1 : 0) - (overload ? 0.25 : 0) + (interim ? INTERIM.synergy : 0);
-    const churn = r() < def.churn + (overload ? 0.2 : 0) - (strong ? 0.05 : 0) + (interim ? INTERIM.churn : 0);
+    // Fit of the add-on and an operating partner on site (holdco.ts, team.ts): terms of their own.
+    const fe = FIT_EFFECT[i.fit ?? "ok"];
+    const synergy = r() < def.synergy + (strong ? 0.1 : 0) - (overload ? 0.25 : 0) + (interim ? INTERIM.synergy : 0) + fe.synergy + op.synergy;
+    const churn = r() < def.churn + (overload ? 0.2 : 0) - (strong ? 0.05 : 0) + (interim ? INTERIM.churn : 0) + fe.churn + op.churn;
     const rec = m.record;
     const parts: string[] = [];
     if (synergy) {
@@ -399,6 +411,17 @@ export function platformMonth(ctx: Ctx, month: number, notes: string[], lines: M
       const loss = i.revenue * between(r, CHURN_LOSS[0], CHURN_LOSS[1]);
       s = applyDelta(s, { revenuePct: -loss / Math.max(1, s.metrics.revenue), morale: -5 });
       parts.push(`Kunden und Mitarbeiter von ${i.name} sind gegangen: ${eur(loss * 12)} Umsatz im Jahr weniger.`);
+    }
+    // Fit term: cross-selling and joint purchasing on top, or lasting double costs.
+    const extra = roundTo(fitSynergy(i.fit, i.ebitda) / 12, 100);
+    if (extra !== 0) {
+      s = applyDelta(s, { opex: -extra });
+      if (s.lbo) s = { ...s, lbo: { ...s.lbo, margin: Math.max(0.03, (s.lbo.margin ?? 0.1) + extra / Math.max(1, s.metrics.revenue)) } };
+      parts.push(
+        extra > 0
+          ? `Die Passung zahlt sich aus: Cross-Selling und gemeinsamer Einkauf bringen weitere ${eur(extra * 12)} im Jahr.`
+          : `${i.name} passt nicht zur Gruppe: Doppelte Strukturen bleiben und kosten ${eur(-extra * 12)} im Jahr.`,
+      );
     }
     if (churn && !synergy) rec.integrationFailures += 1;
     const text = `Integration von ${i.name} abgeschlossen. ${parts.join(" ")}`;
@@ -451,7 +474,9 @@ function saleOffer(ctx: Ctx, s: Startup, process: ProcessKind, buyers: "strategi
   const r = mnaRandom(state, `platformsale|${s.id}|${state.month}`);
   const f = PLATFORM_SALE[process].factor;
   const buyerFactor = buyers === "strategic" ? between(r, 0.98, 1.1) : between(r, 0.93, 1.03) * CREDIT[state.market.regime];
-  const penalty = (s.lbo && s.lbo.status !== "ok" ? 0.85 : 1) * (s.platform!.integrations.length > 0 ? 0.95 : 1);
+  // Without drag-along (no holding) the buyer cannot be sure to get every share.
+  const holdout = holdoutDiscount(state, s);
+  const penalty = (s.lbo && s.lbo.status !== "ok" ? 0.85 : 1) * (s.platform!.integrations.length > 0 ? 0.95 : 1) * (1 - holdout);
   const ev = roundTo(enterpriseValue(s.metrics) * between(r, f[0], f[1]) * buyerFactor * penalty, 10_000);
   // Working capital stays with the business; excess cash goes to the sellers.
   const price = roundTo(ev + Math.max(0, s.metrics.cash - 2 * s.metrics.opex) - s.metrics.debt - (s.metrics.acqDebt ?? 0), 10_000);
@@ -467,14 +492,14 @@ function saleOffer(ctx: Ctx, s: Startup, process: ProcessKind, buyers: "strategi
     return next;
   }
   const buyer = buyers === "strategic" ? s.names.acquirer.charAt(0).toUpperCase() + s.names.acquirer.slice(1) : pickOf(r, FINANCIAL_BUYERS);
-  const offer: ExitOffer = { id: ctx.id("x"), startupId: s.id, month: state.month, buyer, price, status: "open", platform: true, ev };
+  const offer: ExitOffer = { id: ctx.id("x"), startupId: s.id, month: state.month, buyer, price, status: "open", platform: true, ev, ...(holdout > 0 ? { holdout } : {}) };
   state.exits.push(offer);
   const e = annualEbitda(s.metrics);
   ctx.mail({
     kind: "exit",
     from: buyer,
     subject: `Angebot für ${s.name}: ${mio(ev)} Unternehmenswert`,
-    body: `${buyer} bietet ${mio(ev)} für das Unternehmen, das sind ${times(ev / Math.max(1, e))} EBITDA. Nach Abzug der Schulden bleiben ${mio(price)} für die Gesellschafter. Die Gesellschafterversammlung entscheidet bis Ende nächsten Monats.`,
+    body: `${buyer} bietet ${mio(ev)} für das Unternehmen, das sind ${times(ev / Math.max(1, e))} EBITDA. Nach Abzug der Schulden bleiben ${mio(price)} für die Gesellschafter.${holdout > 0 ? ` Weil es keine Mitverkaufspflicht gibt, zieht ${buyer} ${Math.round(holdout * 100)} % ab: Die Mitgesellschafter könnten ihre Anteile behalten.` : ""} Die Gesellschafterversammlung entscheidet bis Ende nächsten Monats.`,
     startupId: s.id,
     exitId: offer.id,
   });

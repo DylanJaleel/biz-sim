@@ -42,7 +42,7 @@ export const CONCESSION_LABEL: Record<"esg" | "fee" | "lpacSeat" | "keyPerson", 
   esg: { title: "ESG-Bericht", text: "Jährlicher Bericht zu Umwelt, Sozialem und Unternehmensführung: 40.000 € im Jahr." },
   fee: { title: "Niedrigere Gebühr", text: "Verwaltungsgebühr 1,75 % statt 2 % im Jahr, für alle Investoren." },
   lpacSeat: { title: "Sitz im LPAC", text: "Der Investorenbeirat tagt jedes Quartal: 2 Tage im Quartal." },
-  keyPerson: { title: "Zweiter Partner", text: "Schlüsselpersonen-Klausel: Ohne Partnerin im Team kostet ein zweiter Partner 9.000 € im Monat." },
+  keyPerson: { title: "Zweiter Partner", text: "Schlüsselpersonen-Klausel: Ohne Operating Partner im Team kostet ein zweiter Partner 9.000 € im Monat." },
 };
 
 // ---------------------------------------------------------------------------
@@ -110,7 +110,7 @@ export const VENTURE_ENTRY = { value: 6_000_000, growth: 0.04, age: 6 } as const
 /** Months between two tries for the next round. */
 export const VENTURE_GAP: [number, number] = [9, 14];
 /** Chance of the next round: base + span × fulfilment (0..1), then times the market mood. */
-export const VENTURE_CHANCE = { base: 0.14, span: 0.4, min: 0.05, max: 0.58 } as const;
+export const VENTURE_CHANCE = { base: 0.16, span: 0.4, min: 0.05, max: 0.6 } as const;
 export const VENTURE_MOOD: Record<"boom" | "normal" | "weak" | "crash", number> = { boom: 1.15, normal: 1, weak: 0.85, crash: 0.6 };
 /** A failed try is a down round: the paper value falls by this share; most of them end the path. */
 export const DOWN_ROUND_CUT = 0.35;

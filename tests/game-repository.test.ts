@@ -13,7 +13,7 @@ afterAll(async () => {
 });
 
 const { getDb } = await import("../lib/db");
-const { loadGame, performAction, resetGame, GameRuleError } = await import("../lib/repository/game");
+const { loadGame, performAction, resetGame, saveOnboarding, GameRuleError } = await import("../lib/repository/game");
 
 let counter = 0;
 async function newUser() {
@@ -29,6 +29,18 @@ describe("game repository", () => {
     expect(first.state.month).toBe(1);
     expect(first.state.startups.filter((s) => s.status === "offered")).toHaveLength(2);
     expect(first.revision).toBe(0);
+  });
+
+  it("saves the introduction progress quietly: no revision bump, state otherwise untouched", async () => {
+    const user = await newUser();
+    const game = await loadGame(user.id);
+    expect(game.state.onboarding).toBeUndefined();
+    await saveOnboarding(user.id, { done: true, step: 4 });
+    await saveOnboarding(user.id, { seen: ["mandate"] });
+    const after = await loadGame(user.id);
+    expect(after.revision).toBe(game.revision);
+    expect(after.state.onboarding).toEqual({ done: true, step: 4, seen: ["mandate"] });
+    expect(after.state.daysUsed).toBe(game.state.daysUsed);
   });
 
   it("applies actions, bumps the revision and persists the state", async () => {
@@ -91,9 +103,7 @@ describe("first visit race", () => {
     const winner = await loadGame(user.id);
     // Mocked rather than provoked: PGlite's socket server can't recover from real constraint errors.
     vi.spyOn(db.game, "findUnique").mockResolvedValueOnce(null);
-    vi.spyOn(db.game, "create").mockRejectedValueOnce(
-      new Prisma.PrismaClientKnownRequestError("Unique constraint failed", { code: "P2002", clientVersion: "test" }),
-    );
+    vi.spyOn(db.game, "create").mockRejectedValueOnce(new Prisma.PrismaClientKnownRequestError("Unique constraint failed", { code: "P2002", clientVersion: "test" }));
     const loser = await loadGame(user.id);
     expect(loser.id).toBe(winner.id);
   });

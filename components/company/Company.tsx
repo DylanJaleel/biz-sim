@@ -95,7 +95,7 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
         {s.status === "exited" && <p className="notice notice--good">Verkauft für {eur(s.exitValue ?? 0)}. Dein Erlös ist in deinem Privatkapital.</p>}
         {view.associate && active && (
           <p className="notice">
-            {view.associate} betreut dieses Mandat. Vorlagen, die du bis Monatsende nicht selbst entscheidest, entscheidet {view.associate.split(" ")[0]} für dich.
+            {view.associate} betreut diese Firma als Operating Partner. Vorlagen, die du bis Monatsende nicht selbst entscheidest, entscheidet {view.associate} für dich.
           </p>
         )}
         {s.flags.includes("mittelstand") && active && s.stake > 50 && !s.lbo && (
@@ -494,7 +494,7 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
                             <>
                               {p.outcome && <span className={`tag tag--${p.outcome}`}>{p.outcomeLabel}</span>}
                               {p.judgment && <span className={`tag tag--judgment-${p.judgment}`}>Urteil {JUDGMENT_LABEL[p.judgment]}</span>}
-                              {p.delegated && <span className="tag">Associate</span>}
+                              {p.delegated && <span className="tag">Operating Partner</span>}
                             </>
                           )}
                         </span>

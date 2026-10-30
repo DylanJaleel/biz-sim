@@ -51,7 +51,7 @@ const longSeeds = Math.min(seeds, Number(process.argv[5] ?? 20));
 const years = [1, 2, 3, 5, 7, 10].filter((y) => y * 12 <= long);
 console.log(`\nLanges Spiel: ${longSeeds} Spiele à ${long} Monate, Vermögen (Median) nach Jahr ${years.join(" / ")}`);
 console.log("Spieler".padEnd(12) + years.map((y) => `J${y}`.padStart(10)).join("") + "   P25 / P75 am Ende        Insolvenz  Karriere  Mandate  Nachfolgen  Börsengänge");
-const STEPS = ["Angel", "Lead", "M&A-Berater", "Mehrheit", "Aufsichtsrat", "Family Office", "Mogul", "Plattform"];
+const STEPS = ["Angel", "Lead", "M&A-Berater", "Mehrheit", "Aufsichtsrat", "Immobilien", "Family Office", "Mogul", "Plattform", "Stifter", "Lebenswerk", "Fondsfamilie"];
 const longRuns: Record<string, BotRun[]> = {};
 for (const bot of [
   passiveBot("pendelwerk"),

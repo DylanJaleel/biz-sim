@@ -4,6 +4,7 @@ import { getDb } from "../db";
 import { applyAction, GameRuleError, newGame, planAgenda, upgradeState, type ActionResult } from "../game/engine";
 import { monthLabel } from "../game/config";
 import type { GameAction, GameState } from "../game/types";
+import { applyOnboardingPatch, type OnboardingPatch } from "../game/onboarding";
 import { budgetReached, flushIfDue } from "../usage";
 import { packState, unpackState } from "./codec";
 import { writeSave } from "./save-store";
@@ -91,5 +92,20 @@ export async function resetGame(userId: string): Promise<void> {
     const row = await tx.game.findUnique({ where: { userId } });
     if (row) await writeSave(tx, userId, "backup", "Vor dem Neustart", upgradeState(unpackState(row.state)));
     await tx.game.deleteMany({ where: { userId } });
+  });
+}
+
+/**
+ * Saves the progress of the introduction (finished or skipped, last step, hints acknowledged).
+ * Quiet like reading mail: it neither checks nor bumps the revision, so an open tab stays valid.
+ */
+export async function saveOnboarding(userId: string, patch: OnboardingPatch): Promise<void> {
+  await getDb().$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT "id" FROM "Game" WHERE "userId" = ${userId} FOR UPDATE`;
+    const row = await tx.game.findUnique({ where: { userId } });
+    if (!row) return;
+    const state = upgradeState(unpackState(row.state));
+    state.onboarding = applyOnboardingPatch(state.onboarding, patch);
+    await tx.game.update({ where: { id: row.id }, data: { state: packState(state) } });
   });
 }

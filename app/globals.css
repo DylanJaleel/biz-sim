@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @import "./boardroom.css";
 @import "./glass.css";
+@import "./team-holding.css";
+@import "./wealth.css";
 
 /* ---------------------------------------------------------------------------
    Tokens. Ruhig, hell, präzise; im Dunkeln wie ein abendlicher Sitzungssaal.
@@ -7737,6 +7739,388 @@ html:has(dialog.menu[open]) {
 
   .mbd__face--old {
     display: none !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Einführung für neue Spieler (components/shell/Onboarding.tsx): Tour mit
+   Hervorhebung und der einmalige Hinweis, wenn etwas freigeschaltet wird.
+   --------------------------------------------------------------------------- */
+
+.tour {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  background: transparent;
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.tour:focus {
+  outline: none;
+}
+
+.tour::backdrop {
+  background: transparent;
+}
+
+.tour__dim {
+  position: absolute;
+  inset: 0;
+  background: rgba(8, 10, 16, 0.64);
+}
+
+.tour__spot {
+  position: absolute;
+  border-radius: 14px;
+  pointer-events: none;
+  box-shadow:
+    0 0 0 2px var(--accent),
+    0 0 0 6px color-mix(in srgb, var(--accent) 28%, transparent),
+    0 0 0 100vmax rgba(8, 10, 16, 0.64);
+  transition:
+    left 0.25s ease,
+    top 0.25s ease,
+    width 0.25s ease,
+    height 0.25s ease;
+}
+
+.tour__card {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  width: min(360px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  border: 1px solid var(--line-strong);
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: var(--shadow-lift);
+  transition:
+    left 0.25s ease,
+    top 0.25s ease;
+}
+
+.tour__card--wide {
+  width: min(520px, calc(100vw - 24px));
+}
+
+.tour__scroll {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 18px 20px 6px;
+  overscroll-behavior: contain;
+}
+
+.tour__arrow {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  transform: rotate(45deg);
+}
+
+.tour__arrow[data-side="top"] {
+  top: -8px;
+  left: calc(var(--tour-arrow) - 7px);
+  border-right: 0;
+  border-bottom: 0;
+}
+
+.tour__arrow[data-side="bottom"] {
+  bottom: -8px;
+  left: calc(var(--tour-arrow) - 7px);
+  border-left: 0;
+  border-top: 0;
+}
+
+.tour__arrow[data-side="left"] {
+  left: -8px;
+  top: calc(var(--tour-arrow) - 7px);
+  border-right: 0;
+  border-top: 0;
+}
+
+.tour__arrow[data-side="right"] {
+  right: -8px;
+  top: calc(var(--tour-arrow) - 7px);
+  border-left: 0;
+  border-bottom: 0;
+}
+
+.tour__count {
+  margin: 0 0 4px;
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.tour__title {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.tour__text {
+  margin: 0 0 10px;
+  color: var(--ink-2);
+  line-height: 1.5;
+}
+
+.tour__facts {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  font-size: 13px;
+}
+
+.tour__facts div {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 8px;
+}
+
+.tour__facts dt {
+  font-weight: 650;
+}
+
+.tour__facts dd {
+  margin: 0;
+  color: var(--ink-2);
+}
+
+.tour__lamps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin: 0 0 10px;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+
+.tour__lamps li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tour__lamp {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.tour__lamp--green {
+  background: var(--agree);
+}
+
+.tour__lamp--yellow {
+  background: var(--maybe);
+}
+
+.tour__lamp--red {
+  background: var(--disagree);
+}
+
+.tour__ladder {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 12px;
+  margin: 0 0 10px;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+
+.tour__ladder li {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  line-height: 1.3;
+}
+
+.tour__ladder li b {
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.tour__ladder li.is-done {
+  background: var(--agree-soft);
+}
+
+.tour__ladder li.is-now {
+  background: var(--accent-soft);
+}
+
+.tour__ladder li.is-now b {
+  color: var(--accent);
+}
+
+.tour__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 20px 16px;
+}
+
+.tour__dots {
+  display: flex;
+  gap: 5px;
+}
+
+.tour__dots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--line-strong);
+}
+
+.tour__dots i.is-past {
+  background: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.tour__dots i.is-on {
+  background: var(--accent);
+  transform: scale(1.3);
+}
+
+.tour__buttons {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.unlock {
+  position: fixed;
+  z-index: 70;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(16px, env(safe-area-inset-bottom));
+  width: min(340px, calc(100vw - 32px));
+  padding: 14px 16px 12px;
+  border: 1px solid var(--line-strong);
+  border-left: 4px solid var(--accent);
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-lift);
+  font-size: 13.5px;
+  animation: unlock-in 0.3s ease both;
+}
+
+.unlock__eyebrow {
+  margin: 0 0 2px;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.unlock__title {
+  margin: 0 0 4px;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.unlock__text,
+.unlock__more {
+  margin: 0 0 6px;
+  color: var(--ink-2);
+  line-height: 1.45;
+}
+
+.unlock__more {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.unlock__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+@keyframes unlock-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+@media (max-height: 460px) {
+  .tour__scroll {
+    padding: 12px 16px 4px;
+  }
+
+  .tour__foot {
+    padding: 8px 16px 12px;
+  }
+
+  .tour__title {
+    font-size: 18px;
+  }
+
+  .tour__text {
+    margin-bottom: 8px;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  .tour__card--stats {
+    width: min(560px, calc(100vw - 24px));
+  }
+
+  .tour__facts {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px 12px;
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  .tour__facts div {
+    display: block;
+  }
+
+  .tour__ladder {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .tour__ladder li {
+    padding: 3px 8px;
+    font-size: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tour__spot,
+  .tour__card {
+    transition: none;
+  }
+
+  .unlock {
+    animation: none;
   }
 }
 
