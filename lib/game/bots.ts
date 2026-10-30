@@ -19,7 +19,7 @@ import { platformBlocker, platformOf } from "./platform";
 import { networkActions } from "./network-bots";
 import { ventureActions } from "./venture-bots";
 import { companyValue } from "./venture";
-import type { CovenantId, GameAction, GameState, Startup, Vote } from "./types";
+import type { CovenantId, GameAction, GameState, MandateLever, Startup, Vote } from "./types";
 
 // Skript-Spieler für die Balance: Sie spielen das Spiel über die echte Engine.
 
@@ -478,7 +478,15 @@ export function mnaActions(s: GameState, style: keyof typeof STYLE): GameAction[
     if (m.status === "offered" && activeMandates(s).length < mandateCapacity(s) && daysLeft(s) >= 6) out.push({ type: "mandate", mandateId: m.id, move: "accept" });
     if (m.status === "offered" || m.status === "prep") {
       if (!m.comps) out.push({ type: "mandate", mandateId: m.id, move: "comps" });
-      else {
+      else if (m.big && !m.big.teaser)
+        // Large mandate: an honest teaser with size, margin, plan and every known problem.
+        out.push({
+          type: "mandate",
+          mandateId: m.id,
+          move: "teaser",
+          facts: m.big.facts.filter((f) => f.finding || ["revenue", "ebitda", "plan"].includes(f.id)).map((f) => f.id),
+        });
+      if (m.comps) {
         const mid = (m.comps[0] + m.comps[1]) / 2;
         out.push(
           m.side === "sell"
@@ -487,7 +495,13 @@ export function mnaActions(s: GameState, style: keyof typeof STYLE): GameAction[
         );
       }
     }
-    if (m.status === "bids" && m.bids?.length) {
+    if (m.status === "bids" && m.bids?.length && m.big) {
+      // Three rounds on the best bidder: competition, best and final, competition again; then the award.
+      const top = [...m.bids].filter((b) => !b.out).sort((a, b) => b.ev - a.ev)[0];
+      const levers: MandateLever[] = ["batna", "bnf", "batna"];
+      for (const lever of levers.slice(m.big.rounds)) if (top) out.push({ type: "mandate", mandateId: m.id, move: "round", bidder: top.buyer, lever });
+      out.push({ type: "mandate", mandateId: m.id, move: "accept_bid" });
+    } else if (m.status === "bids" && m.bids?.length) {
       if (m.side === "sell" && m.process === "auction" && m.bids.length >= 2) out.push({ type: "mandate", mandateId: m.id, move: "final" });
       else if (m.side === "buy" && m.bids[0]!.ev > m.wish) out.push({ type: "mandate", mandateId: m.id, move: "negotiate" });
       else out.push({ type: "mandate", mandateId: m.id, move: "accept_bid" });
@@ -513,6 +527,13 @@ export function mnaActions(s: GameState, style: keyof typeof STYLE): GameAction[
     const ddTodo = st.dd.filter((m) => !(o.offer!.dd ?? []).includes(m));
     const ddMoney = ddTodo.reduce((sum, m) => sum + ddCost(m, o.offer!.ev!), 0);
     if (structure.equity + structure.fees + ddMoney > s.cash * st.cashShare) continue;
+    const duel = o.offer!.duel;
+    if (duel?.status === "open") {
+      // Bidding war: the concept first, then small raises up to a limit; above it, walk away.
+      const cap = o.offer!.ev! * (style === "pe" ? 1.1 : 1.06);
+      if (!duel.concept) out.push({ type: "duel", targetId: o.id, move: "concept" });
+      for (let i = 1; i <= 2 && duel.you + o.offer!.ev! * 0.04 * i <= cap; i++) out.push({ type: "duel", targetId: o.id, move: "raise", size: "small" });
+    }
     if (ddTodo.length > 0) out.push({ type: "examine", targetId: o.id, modules: ddTodo });
     out.push({ type: "acquire", targetId: o.id, bid: "ask", bank: st.bank, vendor: st.vendor, earnout: st.earnout });
   }

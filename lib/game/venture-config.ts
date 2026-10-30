@@ -110,7 +110,7 @@ export const VENTURE_ENTRY = { value: 6_000_000, growth: 0.04, age: 6 } as const
 /** Months between two tries for the next round. */
 export const VENTURE_GAP: [number, number] = [9, 14];
 /** Chance of the next round: base + span × fulfilment (0..1), then times the market mood. */
-export const VENTURE_CHANCE = { base: 0.13, span: 0.4, min: 0.05, max: 0.58 } as const;
+export const VENTURE_CHANCE = { base: 0.14, span: 0.4, min: 0.05, max: 0.58 } as const;
 export const VENTURE_MOOD: Record<"boom" | "normal" | "weak" | "crash", number> = { boom: 1.15, normal: 1, weak: 0.85, crash: 0.6 };
 /** A failed try is a down round: the paper value falls by this share; most of them end the path. */
 export const DOWN_ROUND_CUT = 0.35;

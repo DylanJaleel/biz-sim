@@ -7,6 +7,7 @@ import { eur } from "@/components/game/format";
 import { CloseMonth } from "./CloseMonth";
 import { NavLinks } from "./NavLinks";
 import { TopBarStats } from "./TopBarStats";
+import { monthOutlook } from "@/lib/game/month-view";
 import { networkTasks } from "@/lib/game/network-views";
 import type { NavState } from "@/lib/navigation";
 import { AwardPopup } from "@/components/vitrine/AwardPopup";
@@ -53,7 +54,7 @@ export async function TopBar() {
         <Link href="/konto#spielstand" className="topbar__saved" title={`Gespeichert am ${saved}`} aria-label={`Spielstand gespeichert am ${saved}`}>
           <span className="saves__dot" aria-hidden="true" />
         </Link>
-        <CloseMonth revision={revision} month={state.month} openItems={open} daysLeft={free} />
+        <CloseMonth revision={revision} month={state.month} openItems={open} daysLeft={free} outlook={monthOutlook(state)} />
       </header>
       {fresh.length > 0 && <AwardPopup ids={fresh.map((t) => t.id)} details={Object.fromEntries(fresh.map((t) => [t.id, t.detail]))} revision={revision} />}
     </>
