@@ -140,6 +140,34 @@ Größte Risiken: Umfang, Inhaltsaufwand, Grafik für das Büro in 3. Person.
 - **Generation 2**: Die Nachfolge entscheidet alle Beiratsvorlagen (wie ein Associate mit eigener Trefferquote, halber Ruf); operative Züge (Beteiligungen, Runden, Mandate, Übernahmen, Hebel, Aufträge, Team) sind gesperrt. Der Spieler verwaltet das Familienvermögen: Anlagestrategie des Family Office (Bewahren, Ausgewogen, Wachstum; schichtet jeden Monat das Geld über einer Reserve von 150.000 € plus sechs Monatskosten um), Immobilien, Stiftung, Familienrat. Zusammenhalt unter 40: jedes Jahr lässt sich ein Familienzweig mit 3 % des Vermögens auszahlen.
 - **Bots** (`wealth-bots.ts`): Experte kauft ab 3 Mio. € Mehrfamilienhäuser oder Wohnungen (70 %, 10 Jahre, bis 15 % des Vermögens), Mogul ein Penthouse und Mehrfamilienhäuser (60 %, 15 Jahre), Stiftung mit 1 Mio. € ab 8 Mio. € Vermögen und die Dynastie mit Übergabe; PE-Profi Gewerbe mit voller Beleihung und 5 Jahren Bindung. Vor einer angekündigten Zinswende nach oben schreiben alle 15 Jahre fest.
 
+## Neuigkeiten pflegen („Das ist neu“)
+
+Bestehende Spieler sehen beim ersten Öffnen nach einem Update ein Popup mit den Neuerungen; die ganze Geschichte steht unter Menü › Wissen › Neuigkeiten (`/neu`). Alles liegt in `lib/changelog.ts`.
+
+- **Bei jedem Release einen Eintrag OBEN in `RELEASES` ergänzen.** Die `id` ist das Datum (`JJJJ-MM-TT`, muss sich als Text sortieren lassen; zwei Releases am selben Tag: `2026-11-02b`). Ein Eintrag je Neuerung, kurz halten (höchstens etwa zehn je Release), Text ein bis zwei Sätze.
+- **Felder je Eintrag:** `title`, `text`, `where` (Weg, z. B. `Menü › Investieren › Portfolio`; ein Test prüft, dass Gruppe und Eintrag im Menü wirklich so heißen), `href` (Ziel des Knopfs „Ansehen“, optional, muss eine echte Seite sein), `isNew` (`true` = ganz neue Funktion, `false` = Verbesserung) und optional `unlock`: eine Funktion, die den Sperrhinweis liefert (`"ab Ruf 75"`), solange die Funktion noch zu ist, sonst `null`. Zahlen kommen immer aus den Konstanten (`config.ts`, `UNLOCKS` in `lib/game/onboarding.ts`), nie von Hand.
+- **Beispiel:**
+
+```ts
+{
+  id: "2026-11-20",
+  date: "2026-11-20",
+  title: "Kunstsammlung",
+  items: [
+    {
+      title: "Kunst im Tresorraum",
+      text: "Kaufe Bilder, die im Wert steigen, und versichere sie.",
+      href: "/sammlung",
+      where: "Menü › Besitz & Leben › Sammlung",
+      unlock: (state) => (state.reputation >= SAMMLUNG_REPUTATION ? null : `ab Ruf ${SAMMLUNG_REPUTATION}`),
+      isNew: true,
+    },
+  ],
+},
+```
+
+- **Regeln** (`pendingRelease`): neue Spiele sehen es nicht (das Beenden der Einführung markiert das neueste Release als gesehen); bestehende Spiele ohne Eintrag sehen nur das neueste Release; wer ältere Releases verpasst hat, sieht alle ungesehenen zusammen (neueste zuerst, höchstens drei); nie gleichzeitig mit der Einführung. Gespeichert wird beim Schließen genau einmal: `state.whatsNew.seen` (optional, keine Versionserhöhung), geschrieben von `saveNewsSeen` mit Zeilensperre.
+
 ## Später
 
 Vorgemerkt, nicht gebaut:

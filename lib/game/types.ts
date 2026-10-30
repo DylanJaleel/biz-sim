@@ -705,6 +705,13 @@ export interface GameState {
   rivals?: RivalState;
   /** Introduction for new players and the unlock hints already shown (missing in older games). */
   onboarding?: OnboardingState;
+  /** The "what's new" popup: the newest release the player has seen (missing in older games; see lib/changelog.ts). */
+  whatsNew?: WhatsNewState;
+}
+
+/** `seen` is the id of the newest release the player has acknowledged. */
+export interface WhatsNewState {
+  seen?: string;
 }
 
 /** Progress of the introduction. `seen` holds the ids of unlock hints already acknowledged. */

@@ -5,8 +5,9 @@ import { redirect } from "next/navigation";
 import type { ActionResult } from "@/lib/action-result";
 import type { ActionResult as GameResult } from "@/lib/game/engine";
 import { parseAction } from "@/lib/game/validate";
+import { parseNewsSeen } from "@/lib/changelog";
 import { parseOnboardingPatch } from "@/lib/game/onboarding";
-import { GameRuleError, performAction, resetGame, saveOnboarding } from "@/lib/repository/game";
+import { GameRuleError, performAction, resetGame, saveNewsSeen, saveOnboarding } from "@/lib/repository/game";
 import { requireUser } from "@/lib/session";
 
 export interface PlayResult {
@@ -50,5 +51,14 @@ export async function saveOnboardingAction(input: unknown): Promise<ActionResult
   const patch = parseOnboardingPatch(input);
   if (!patch) return { ok: false, error: "Ungültige Eingabe." };
   await saveOnboarding(user.id!, patch);
+  return { ok: true, data: null };
+}
+
+/** Remembers that the "what's new" popup was closed up to this release. No page refresh needed. */
+export async function saveNewsSeenAction(input: unknown): Promise<ActionResult> {
+  const user = await requireUser();
+  const id = parseNewsSeen(input);
+  if (!id) return { ok: false, error: "Ungültige Eingabe." };
+  await saveNewsSeen(user.id!, id);
   return { ok: true, data: null };
 }

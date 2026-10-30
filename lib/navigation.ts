@@ -147,6 +147,7 @@ export const NAV_ITEMS: NavItem[] = [
 
   { href: "/notizbuch", label: "Notizbuch", group: "knowledge", icon: "book", description: "Lernkarten zu Fachbegriffen und deine Notizen." },
   { href: "/einfuehrung", label: "Einführung", group: "knowledge", icon: "help", description: "Die kurze Tour: wo du was findest und wann was freigeschaltet wird." },
+  { href: "/neu", label: "Neuigkeiten", group: "knowledge", icon: "spark", description: "Das ist neu: alle Updates mit Weg dorthin und Freischaltung." },
   {
     href: "/rangliste",
     label: "Rangliste",

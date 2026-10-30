@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
-import { saveOnboardingAction } from "@/app/(app)/actions";
+import { saveNewsSeenAction, saveOnboardingAction } from "@/app/(app)/actions";
+import type { ReleaseView } from "@/lib/changelog";
 import { START_CASH, START_REPUTATION } from "@/lib/game/config";
 import { UNLOCKS, type Unlock } from "@/lib/game/onboarding";
+import { NewsPopup } from "./NewsPopup";
 import { placeCard, spotBox, type Box, type Placement } from "./tour-layout";
 
 // Die Einführung: acht kurze Schritte, jeweils mit hervorgehobenem Element. Sie liegt als
@@ -139,15 +141,18 @@ interface Props {
   reputation: number;
   /** Freischaltungen, die erreicht und noch nicht quittiert sind. */
   pending: string[];
+  /** „Das ist neu“ für bestehende Spieler (nie zusammen mit der Einführung), sonst null. */
+  news: { latest: string; releases: ReleaseView[] } | null;
 }
 
-export function Onboarding({ autoStart, reputation, pending }: Props) {
+export function Onboarding({ autoStart, reputation, pending, news }: Props) {
   const path = usePathname();
   const router = useRouter();
   const { open, step } = useSyncExternalStore(tour.subscribe, tour.get, tour.server);
   const [, save] = useTransition();
   const started = useRef(false);
   const [hidden, setHidden] = useState<string[]>([]);
+  const [newsClosed, setNewsClosed] = useState(false);
 
   const begin = useCallback((from: number) => tour.set({ open: true, step: from }), []);
 
@@ -187,10 +192,21 @@ export function Onboarding({ autoStart, reputation, pending }: Props) {
     });
   };
 
+  // Ein einziger Schreibzugriff, beim Schließen (Verstanden, Esc oder Ansehen).
+  const closeNews = () => {
+    if (!news) return;
+    setNewsClosed(true);
+    save(async () => {
+      await saveNewsSeenAction(news.latest);
+    });
+  };
+  const showNews = news !== null && !newsClosed && !open && path !== "/einfuehrung";
+
   return (
     <>
       {open && <Tour step={step} reputation={reputation} onFinish={finish} />}
-      {!open && unlocks.length > 0 && <UnlockHint unlocks={unlocks} onClose={dismissUnlocks} />}
+      {showNews && <NewsPopup releases={news.releases} onClose={closeNews} />}
+      {!open && !showNews && unlocks.length > 0 && <UnlockHint unlocks={unlocks} onClose={dismissUnlocks} />}
     </>
   );
 }

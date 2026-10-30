@@ -13,6 +13,7 @@ import type { NavState } from "@/lib/navigation";
 import { AwardPopup } from "@/components/vitrine/AwardPopup";
 import { Onboarding } from "./Onboarding";
 import { pendingUnlocks, shouldAutoStartTour } from "@/lib/game/onboarding";
+import { pendingRelease, releaseViews } from "@/lib/changelog";
 
 export async function TopBar() {
   const { state, revision, updatedAt } = await currentGame();
@@ -31,6 +32,8 @@ export async function TopBar() {
     networkTasks: networkTasks(state).filter((t) => t.hurry).length,
     familyOffice: state.familyOffice !== undefined,
   };
+  const pendingNews = pendingRelease(state);
+  const news = pendingNews ? { latest: pendingNews.latest, releases: releaseViews(pendingNews.releases, state) } : null;
   const fresh = state.trophies.filter((t) => !t.seen);
   return (
     <>
@@ -56,7 +59,7 @@ export async function TopBar() {
         </Link>
         <CloseMonth revision={revision} month={state.month} openItems={open} daysLeft={free} outlook={monthOutlook(state)} />
       </header>
-      <Onboarding autoStart={shouldAutoStartTour(state)} reputation={state.reputation} pending={pendingUnlocks(state).map((u) => u.id)} />
+      <Onboarding autoStart={shouldAutoStartTour(state)} reputation={state.reputation} pending={pendingUnlocks(state).map((u) => u.id)} news={news} />
       {fresh.length > 0 && <AwardPopup ids={fresh.map((t) => t.id)} details={Object.fromEntries(fresh.map((t) => [t.id, t.detail]))} revision={revision} />}
     </>
   );
