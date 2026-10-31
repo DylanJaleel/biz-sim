@@ -112,9 +112,9 @@ export function VenturePane({ state, s, revision }: { state: GameState; s: Start
         )
       )}
       {onPath && !unicorn && v.ended === undefined && !prep?.prep && (
-        <p className="small">
-          Chance auf die nächste Runde ohne Vorbereitung: <b>{Math.round(v.chance * 100)} %</b>
-          {v.next !== undefined ? `, nächster Versuch ab ${monthLabel(v.next)}` : ""}. Bis zum Unicorn mit diesen Werten:{" "}
+        <p className="small muted">
+          Ohne Vorbereitung kommen die Investoren von allein
+          {v.next !== undefined ? ` ab ${monthLabel(v.next)}` : ""}, Chance <b>{Math.round(v.chance * 100)} %</b>. Bis zum Unicorn mit diesen Werten:{" "}
           <b>{(v.odds * 100).toLocaleString("de-DE", { maximumFractionDigits: 1 })} %</b>.
         </p>
       )}

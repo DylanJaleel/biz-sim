@@ -18,7 +18,7 @@ export function TermSheet({ view, startupId, revision, lead }: { view: TermSheet
       </h2>
       <ul className="tsheet__terms">
         <li>
-          <small>Liquidationspräferenz</small>
+          <small>Präferenz</small>
           <b className={terms.pref > 1 ? "warn" : ""}>{terms.pref.toLocaleString("de-DE")}×</b>
         </li>
         <li>

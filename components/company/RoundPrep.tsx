@@ -142,7 +142,7 @@ function PrepRunning({ view, startupId, revision, month }: { view: RoundPrepView
   const full = prep.pitched.length >= view.investors.max;
   return (
     <div className="rprep__running">
-      <div className="kpis kpis--compact">
+      <div className="rprep__kpis">
         <span>
           <small>Geht an Investoren</small>
           <b>{monthLabel(prep.due)}</b>
@@ -167,9 +167,9 @@ function PrepRunning({ view, startupId, revision, month }: { view: RoundPrepView
           · {prep.pitched.length} von {view.investors.max}
         </small>
       </h3>
-      <ul className="list rprep__investors">
+      <ul className="rprep__investors">
         {view.investors.names.map((inv) => (
-          <li key={inv.name} className="list__row">
+          <li key={inv.name} className={inv.pitched ? "is-pitched" : ""}>
             <b>{inv.name}</b>
             {inv.pitched ? (
               <span className="tag tag--go">Gepitcht</span>
