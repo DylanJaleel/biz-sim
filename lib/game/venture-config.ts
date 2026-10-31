@@ -92,7 +92,7 @@ export interface VentureStage {
   post: number;
   /** Share of the company the round's new investors take. */
   dilution: number;
-  /** Monthly growth investors want to see before this round. */
+  /** Monthly growth investors want to see before this round (big companies grow slower). */
   growth: number;
 }
 
@@ -100,15 +100,15 @@ export const VENTURE_STAGES: VentureStage[] = [
   { label: "Seed", post: 5_000_000, dilution: 0.2, growth: 0.03 },
   { label: "Serie A", post: 22_000_000, dilution: 0.22, growth: 0.04 },
   { label: "Serie B", post: 70_000_000, dilution: 0.18, growth: 0.035 },
-  { label: "Serie C", post: 210_000_000, dilution: 0.15, growth: 0.03 },
-  { label: "Serie D", post: 520_000_000, dilution: 0.12, growth: 0.025 },
-  { label: "Unicorn", post: 1_050_000_000, dilution: 0.08, growth: 0.02 },
+  { label: "Serie C", post: 210_000_000, dilution: 0.15, growth: 0.024 },
+  { label: "Serie D", post: 520_000_000, dilution: 0.12, growth: 0.018 },
+  { label: "Unicorn", post: 1_050_000_000, dilution: 0.08, growth: 0.014 },
 ];
 export const UNICORN_STAGE = VENTURE_STAGES.length - 1;
 /** A venture company enters the path (Seed level) at this valuation and growth. */
 export const VENTURE_ENTRY = { value: 6_000_000, growth: 0.04, age: 6 } as const;
 /** Months between two tries for the next round. */
-export const VENTURE_GAP: [number, number] = [9, 14];
+export const VENTURE_GAP: [number, number] = [8, 13];
 /** Chance of the next round: base + span × fulfilment (0..1), then times the market mood. */
 export const VENTURE_CHANCE = { base: 0.16, span: 0.4, min: 0.05, max: 0.6 } as const;
 export const VENTURE_MOOD: Record<"boom" | "normal" | "weak" | "crash", number> = { boom: 1.15, normal: 1, weak: 0.85, crash: 0.6 };
