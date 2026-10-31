@@ -49,6 +49,44 @@ const percent = (factor: number) => `${Math.round(factor * 100)} %`;
 /** Neueste zuerst. */
 export const RELEASES: Release[] = [
   {
+    id: "2026-11-01-runden",
+    date: "2026-11-01",
+    title: "Finanzierungsrunden bis zum Börsengang",
+    items: [
+      {
+        title: "Ziele für jede Runde",
+        text: "Serie A will Product-Market-Fit sehen, Serie B wiederholbaren Vertrieb, Serie C Skalierung, danach zählt der Weg zum Gewinn. Die Firmenseite zeigt, wie nah die Firma jedem Ziel ist.",
+        href: "/portfolio",
+        where: "Menü › Investieren › Portfolio",
+        isNew: true,
+      },
+      {
+        title: "Runden selbst vorbereiten",
+        text: "Zeitplan und Bewertungsvorstellung setzen, Investoren pitchen, ein warmes Intro über das Netzwerk holen. Fehlt wenig, gibt es eine Bridge, fehlt viel, eine Down Round, jeweils mit Begründung.",
+        href: "/portfolio",
+        where: "Menü › Investieren › Portfolio",
+        unlock: reputationLock(unlockOf("rounds")),
+        isNew: true,
+      },
+      {
+        title: "Term Sheets verhandeln",
+        text: "Vor der Abstimmung verhandelst du Bewertung, Liquidationspräferenz und den Beiratssitz des Leads. Bis zur Serie A kannst du die Runde auch selbst anführen.",
+        href: "/portfolio",
+        where: "Menü › Investieren › Portfolio",
+        unlock: reputationLock(unlockOf("rounds")),
+        isNew: true,
+      },
+      {
+        title: "Späte Runden und Börsengang",
+        text: `Serie C, D und Pre-IPO führen Growth- und Crossover-Fonds. Ab der Serie D kann die Firma an die Börse; ab Ruf ${unlockOf("ipoPrep")} bereitest du den Börsengang selbst vor.`,
+        href: "/portfolio",
+        where: "Menü › Investieren › Portfolio",
+        unlock: reputationLock(unlockOf("lateRounds")),
+        isNew: true,
+      },
+    ],
+  },
+  {
     id: "2026-10-31-sitzung",
     date: "2026-10-31",
     title: "Bessere Beiratssitzungen",
