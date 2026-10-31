@@ -18,6 +18,7 @@ import {
   ROUND_INVESTORS,
   SALE_PAPER_SHARE,
   STAGE_GOALS,
+  UNICORN_ROUND_FACTOR,
   UNICORN_STAGE,
   VENTURE_CHANCE,
   VENTURE_ENTRY,
@@ -170,7 +171,8 @@ export function fulfilment(checks: VentureCheck[]): number {
 export function ventureChance(state: GameState, s: Startup): number {
   const f = fulfilment(ventureChecks(state, s));
   const mood = VENTURE_MOOD[state.market.regime];
-  return Math.max(VENTURE_CHANCE.min, Math.min(VENTURE_CHANCE.max, (VENTURE_CHANCE.base + VENTURE_CHANCE.span * f) * mood));
+  const rare = (s.venture?.stage ?? -1) + 1 >= UNICORN_STAGE ? UNICORN_ROUND_FACTOR : 1;
+  return Math.max(VENTURE_CHANCE.min, Math.min(VENTURE_CHANCE.max, (VENTURE_CHANCE.base + VENTURE_CHANCE.span * f) * mood * rare));
 }
 
 /** Chance of going all the way from today's stage to the unicorn, if the company keeps today's numbers. */
@@ -239,7 +241,8 @@ export function ventureMonth(ctx: Ctx, notes: string[]): void {
 export function preparedChance(state: GameState, s: Startup, prep: RoundPrep | undefined): number {
   const chance = ventureChance(state, s);
   if (!prep) return chance;
-  return Math.max(VENTURE_CHANCE.min, Math.min(PREP_CHANCE_MAX, chance + prepBonus(prep).total));
+  const rare = (s.venture?.stage ?? -1) + 1 >= UNICORN_STAGE ? UNICORN_ROUND_FACTOR : 1;
+  return Math.max(VENTURE_CHANCE.min, Math.min(PREP_CHANCE_MAX, chance + prepBonus(prep).total * rare));
 }
 
 function withoutPrep(path: VenturePath): VenturePath {
