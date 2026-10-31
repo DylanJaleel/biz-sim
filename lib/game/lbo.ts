@@ -364,6 +364,9 @@ export function acquireDeal(ctx: Ctx, s: Startup, terms: Terms): void {
   if (state.reputation < BUYOUT_REPUTATION) ctx.fail(`Eine Firma übernehmen kannst du ab ${BUYOUT_REPUTATION} Ruf.`);
   const offer = s.offer!;
   const findings = s.findings ?? [];
+  // Agreed at the table (takeover.ts): price, seller loan and earn-out are fixed, a guarantee was promised.
+  const agreed = s.takeover?.status === "agreed" ? s.takeover.agreed : undefined;
+  if (agreed) terms = { ...terms, bid: "ask", vendor: agreed.vendor, earnout: agreed.earnout };
   if (terms.bid === "low" && !lowBidAccepted(state, s.id, findings)) {
     ctx.spend("acquire", `Verhandlung ${s.name}`, 1);
     s.status = "declined";
@@ -376,7 +379,7 @@ export function acquireDeal(ctx: Ctx, s: Startup, terms: Terms): void {
     });
     return;
   }
-  const price = dealPrice(offer.ev!, findings, terms.bid);
+  const price = agreed ? agreed.price : dealPrice(offer.ev!, findings, terms.bid);
   // What the books hide but the buyer knows already: priced in, and it stays.
   let next = s;
   for (const f of findings.filter((x) => x.found)) next = applyDelta(next, findingDelta(f, false));
@@ -452,6 +455,8 @@ export function acquireDeal(ctx: Ctx, s: Startup, terms: Terms): void {
     history: [...next.history, { month: state.month, revenue: next.metrics.revenue, cash: next.metrics.cash, valuation: 0, stake }],
   });
   next.history[next.history.length - 1]!.valuation = valuation(next.metrics);
+  // A site and jobs guarantee: the staff trusts the new owner.
+  if (agreed?.pledge) next = applyDelta(next, { morale: 6, trust: 5 });
   ctx.replace(next);
   scheduleSurprises(ctx, next, findings, "deal");
   ctx.majority(next, 0);

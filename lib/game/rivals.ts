@@ -1,5 +1,6 @@
 import { mnaRandom } from "./lbo";
 import { between, eur, roundTo, type Ctx } from "./mna-core";
+import { duelOwnerMood, roundsFor } from "./negotiation";
 
 /** Bids differ by a few ten thousand euros: two decimals. */
 const mio = (n: number) => `${(n / 1_000_000).toLocaleString("de-DE", { maximumFractionDigits: 2 })} Mio. €`;
@@ -198,6 +199,12 @@ function rivalState(state: GameState): RivalState {
   return state.rivals;
 }
 
+/** Rounds of a bidding war: three, one more while the owner is pleased with the best offer overall (negotiation.ts). */
+export function duelRounds(d: Duel, ask: number): number {
+  const score = duelScores(d);
+  return roundsFor(DUEL_ROUNDS, duelOwnerMood(score.you, score.rival, ask));
+}
+
 /** How the owner rates an offer: the price plus what the terms are worth to him. */
 export function duelScore(bid: number, terms: number): number {
   return bid * (1 + terms);
@@ -273,7 +280,7 @@ export function playDuel(ctx: Ctx, targetId: string, move: DuelMove, size: "smal
     lose(ctx, s!, duel, "left");
     return;
   }
-  if (duel.round >= DUEL_ROUNDS) ctx.fail("Alle Runden sind gespielt. Der Inhaber entscheidet.");
+  if (duel.round >= duelRounds(duel, ask)) ctx.fail("Alle Runden sind gespielt. Der Inhaber entscheidet.");
   if (move === "concept") {
     if (duel.concept) ctx.fail("Dein Nachfolge-Konzept liegt schon vor.");
     ctx.spend("acquire", `Bietgefecht ${s!.name}: Nachfolge-Konzept`, DUEL_DAYS.concept);
@@ -290,17 +297,17 @@ export function playDuel(ctx: Ctx, targetId: string, move: DuelMove, size: "smal
   const score = duelScores(duel);
   if (score.you > score.rival) {
     const counter = roundTo((score.you / (1 + def.terms)) * (1 + COUNTER_MARGIN), 10_000);
-    if (duel.round < DUEL_ROUNDS && counter <= duel.max) {
+    if (duel.round < duelRounds(duel, ask) && counter <= duel.max) {
       duel.rival = counter;
       duel.log.push(`${def.name} kontert mit ${mio(counter)}.`);
       return;
     }
-    duel.log.push(duel.round < DUEL_ROUNDS ? `${def.name} geht nicht weiter mit und steigt aus.` : `Letzte Runde: ${def.name} kann nicht mehr nachlegen.`);
+    duel.log.push(duel.round < duelRounds(duel, ask) ? `${def.name} geht nicht weiter mit und steigt aus.` : `Letzte Runde: ${def.name} kann nicht mehr nachlegen.`);
     win(ctx, s!, duel);
     return;
   }
   duel.log.push(`Der Inhaber sieht ${def.name} weiter vorn.`);
-  if (duel.round >= DUEL_ROUNDS) lose(ctx, s!, duel, "lost");
+  if (duel.round >= duelRounds(duel, ask)) lose(ctx, s!, duel, "lost");
 }
 
 function record(state: GameState, id: string): { won: number; lost: number } {

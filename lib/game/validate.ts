@@ -127,6 +127,25 @@ export function parseAction(input: unknown): GameAction | null {
     }
     case "joinCorporate":
       return typeof a.accept === "boolean" ? { type: "joinCorporate", accept: a.accept } : null;
+    case "diligence": {
+      if (!id(a.startupId)) return null;
+      if (a.restart === true) return { type: "diligence", startupId: a.startupId, restart: true };
+      const picks = Array.isArray(a.picks) && a.picks.length <= 12 && a.picks.every((p) => typeof p === "string" && p.length <= 20) ? (a.picks as string[]) : null;
+      return picks ? { type: "diligence", startupId: a.startupId, picks } : null;
+    }
+    case "takeover": {
+      if (!id(a.startupId) || !["offer", "accept", "leave"].includes(a.move as string)) return null;
+      const num = (v: unknown, lo: number, hi: number) => (typeof v === "number" && Number.isFinite(v) && v >= lo && v <= hi ? v : undefined);
+      return {
+        type: "takeover",
+        startupId: a.startupId,
+        move: a.move as "offer" | "accept" | "leave",
+        price: num(a.price, 0, 10_000_000_000),
+        vendor: num(a.vendor, 0, 1),
+        earnout: num(a.earnout, 0, 1),
+        pledge: a.pledge === true,
+      };
+    }
     case "corporateResign":
       return id(a.startupId) ? { type: "corporateResign", startupId: a.startupId } : null;
     case "buyout":

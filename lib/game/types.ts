@@ -114,6 +114,38 @@ export interface StartupHistoryPoint {
   netDebt?: number;
 }
 
+/** A due diligence played with the CFO (diligence.ts). */
+export interface DiligenceRun {
+  step: number;
+  log: { step: number; picks: string[]; missed: boolean; cost: number }[];
+  started: number;
+  days: number;
+  cost: number;
+  done?: boolean;
+  priceBefore: number;
+  priceAfter?: number;
+  /** What the review revealed of the other side's limit. */
+  pain?: "range" | "exact";
+}
+
+export interface TakeoverTerms {
+  /** Enterprise value offered. */
+  price: number;
+  /** Shares of the price as seller loan and earn-out. */
+  vendor: number;
+  earnout: number;
+  /** Site and jobs guaranteed for five years. */
+  pledge: boolean;
+}
+
+/** Rounds at the table with the owner over price and terms (takeover.ts). */
+export interface TakeoverState {
+  mood: number;
+  rounds: { offer: TakeoverTerms; counter?: TakeoverTerms; mood: number; say: string }[];
+  status: "open" | "agreed" | "walked" | "left";
+  agreed?: TakeoverTerms;
+}
+
 /** Usual margins of a Konzern's trade and its strength when the player joined (corporate-books.ts). */
 export interface CorporateBase {
   grossMargin: number;
@@ -236,6 +268,10 @@ export interface Startup {
   advisorShares?: number;
   /** Hidden problems a due diligence can find (EBITDA deals). */
   findings?: Finding[];
+  /** The review with the CFO (diligence.ts): steps played, fees, what it revealed. */
+  diligence?: DiligenceRun;
+  /** Negotiation of a purchase at the table (takeover.ts). */
+  takeover?: TakeoverState;
   /** Bought with acquisition debt: terms, covenant, earn-outs. */
   lbo?: LboState;
   /** The company is the platform of a buy-and-build. */
@@ -939,6 +975,8 @@ export interface GameState {
   garage: string[];
   /** Month the corporate seat was turned down; it is offered again a year later. */
   corporateDeclined?: number;
+  /** Reviews played with the CFO so far (diligence.ts): the CFO hands over step by step. */
+  diligenceRuns?: number;
   /** Konzern mandates: pool, seats, terms, the open offer (corporates.ts; missing in older games). */
   corporates?: CorporatesState;
   /** One-time hints already sent (e.g. "familyOffice", "fund"). */
@@ -1085,6 +1123,8 @@ export type GameAction =
   | { type: "moveOffice"; level: number }
   | { type: "joinCorporate"; accept: boolean }
   | { type: "corporateResign"; startupId: string }
+  | { type: "diligence"; startupId: string; picks?: string[]; restart?: boolean }
+  | { type: "takeover"; startupId: string; move: "offer" | "accept" | "leave"; price?: number; vendor?: number; earnout?: number; pledge?: boolean }
   | { type: "foundFamilyOffice" }
   | { type: "hire"; role: TeamRole; profile?: string }
   | { type: "fire"; memberId: string }

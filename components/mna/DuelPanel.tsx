@@ -1,7 +1,6 @@
 import { ActionButton } from "@/components/game/ActionButton";
 import { eur } from "@/components/game/format";
 import { NegotiationDesk } from "@/components/scene/NegotiationDesk";
-import { duelMood } from "@/lib/game/negotiation";
 import type { DuelView } from "@/lib/game/rivals-views";
 
 // Das Bietgefecht um einen Familienbetrieb: du gegen einen Rivalen, höchstens
@@ -38,7 +37,7 @@ export function DuelPanel({ id, duel, revision, owner }: { id: string; duel: Due
         name={owner || "Der Inhaber"}
         role="Inhaber"
         look="senior"
-        mood={duelMood(duel.scoreYou, duel.scoreRival)}
+        mood={duel.mood}
         relieved={duel.status === "won"}
         gone={duel.status === "left"}
         played={duel.round}

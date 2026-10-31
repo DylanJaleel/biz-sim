@@ -95,6 +95,8 @@ import {
 } from "./captable";
 import { CORPORATE_ID } from "./corporate";
 import { answerOffer, corporateFee, corporatesMonth, resign as resignCorporate } from "./corporates";
+import { diligenceMonth, playDiligence, restartDiligence } from "./diligence";
+import { playTakeover } from "./takeover";
 import { CORPORATE_BOOKS, correctOldCorporate, ebitdaMargin } from "./corporate-books";
 import { CYCLE_REVENUE } from "./mna-config";
 import { NEWS, targetsOf } from "./news";
@@ -1001,6 +1003,15 @@ function playAction(current: GameState, action: GameAction): { state: GameState;
       answerOffer(ctxOf(state), action.accept);
       return { state, result: { kind: "none" } };
     }
+    case "diligence": {
+      if (action.restart) restartDiligence(ctxOf(state), action.startupId);
+      else playDiligence(ctxOf(state), action.startupId, action.picks ?? []);
+      return { state, result: { kind: "none" } };
+    }
+    case "takeover": {
+      playTakeover(ctxOf(state), action.startupId, action.move, { price: action.price, vendor: action.vendor, earnout: action.earnout, pledge: action.pledge });
+      return { state, result: { kind: "none" } };
+    }
     case "corporateResign": {
       resignCorporate(ctxOf(state), action.startupId);
       return { state, result: { kind: "none" } };
@@ -1841,6 +1852,7 @@ export function closeMonth(state: GameState): MonthReport {
   // Fame fades a little at the very top: a big name needs to keep delivering.
   if (state.reputation > REPUTATION_FADE_FROM && !(state.reputationMonth?.month === month && state.reputationMonth.gained > 0)) state.reputation -= 1;
   corporatesMonth(mna, notes);
+  diligenceMonth(mna, notes);
   announceNextStep(state);
   pruneDeals(state);
   planDeals(state);

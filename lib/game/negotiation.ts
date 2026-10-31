@@ -58,3 +58,13 @@ export function duelMood(scoreYou: number, scoreRival: number): number {
   if (!(scoreRival > 0) || !(scoreYou >= 0)) return 50;
   return clamp(Math.round(50 + (scoreYou / scoreRival - 1) * 300), 0, 100);
 }
+
+/**
+ * Die Stimmung eines Inhabers im Bietgefecht insgesamt: Er freut sich, wenn das beste Gebot (Preis plus
+ * Bedingungen) über seinem geforderten Preis liegt, egal von wem. So bekommt nicht automatisch der
+ * Führende eine Zusatzrunde, sondern beide, wenn das Gefecht den Inhaber zufrieden stimmt.
+ */
+export function duelOwnerMood(scoreYou: number, scoreRival: number, ask: number): number {
+  if (!(ask > 0)) return 50;
+  return clamp(Math.round(50 + (Math.max(scoreYou, scoreRival) / ask - 1) * 250), 0, 100);
+}
