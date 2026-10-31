@@ -237,18 +237,22 @@ export function waterfall(s: Startup, price: number): { payouts: Payout[]; carry
   return withCarry(payouts, parties);
 }
 
-/** The player earns a share of the gain of the syndicate and the fund (carry). */
+/**
+ * The player earns a share of the syndicate's gain on each deal (carry). The
+ * own funds pay carry over their whole-fund waterfall instead (see funds.ts).
+ */
 function withCarry(payouts: Payout[], parties: { id: string; cost: number }[]): { payouts: Payout[]; carry: number } {
   let carry = 0;
   for (const p of payouts) {
     const cost = parties.find((x) => x.id === p.id)?.cost ?? 0;
-    if ((p.kind === "syndicate" || p.kind === "fund") && p.amount > cost) carry += (p.amount - cost) * CARRY;
+    if (p.kind === "syndicate" && p.amount > cost) carry += (p.amount - cost) * CARRY;
   }
   return { payouts, carry };
 }
 
 function holderExitVote(h: Holder, offer: ExitOffer, s: Startup, payout: number): { vote: GvVote; reason: string } {
-  const value = valuation(s.metrics);
+  // On the venture path everyone measures an offer against the last round.
+  const value = Math.max(valuation(s.metrics), s.venture?.paper ?? 0);
   const runway = runwayMonths(s.metrics);
   const ratio = offer.price / Math.max(1, value);
   switch (h.kind) {

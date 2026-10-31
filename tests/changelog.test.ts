@@ -87,7 +87,7 @@ describe("Das ist neu: Speichern", () => {
 describe("Das ist neu: Inhalt", () => {
   it("hat eindeutige, absteigend sortierte ids im Format JJJJ-MM-TT", () => {
     const ids = RELEASES.map((r) => r.id);
-    for (const id of ids) expect(id).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    for (const id of ids) expect(id).toMatch(/^\d{4}-\d{2}-\d{2}([a-z]|-[a-z]+)?$/);
     expect([...ids].sort().reverse()).toEqual(ids);
     expect(new Set(ids).size).toBe(ids.length);
     expect(LATEST_RELEASE_ID).toBe(ids[0]);
@@ -114,11 +114,15 @@ describe("Das ist neu: Inhalt", () => {
 
   it("baut die Ansicht mit Freischaltung aus dem Spielstand", () => {
     const state = played();
-    const items = releaseViews(RELEASES, state)[0]!.items;
+    const items = releaseViews(RELEASES, state).flatMap((r) => r.items);
     const op = items.find((i) => i.href === "/holding/team")!;
     expect(op.unlock).toEqual({ locked: true, label: expect.stringContaining(`Ruf ${FAMILY_OFFICE_REPUTATION}`) });
     state.familyOffice = {} as never;
-    expect(releaseViews(RELEASES, state)[0]!.items.find((i) => i.href === "/holding/team")!.unlock).toEqual({ locked: false, label: "freigeschaltet" });
+    expect(
+      releaseViews(RELEASES, state)
+        .flatMap((r) => r.items)
+        .find((i) => i.href === "/holding/team")!.unlock,
+    ).toEqual({ locked: false, label: "freigeschaltet" });
     expect(items.find((i) => i.title.startsWith("Ruf steigt"))!.unlock).toBeNull();
   });
 

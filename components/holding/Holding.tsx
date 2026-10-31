@@ -135,14 +135,20 @@ export async function Holding() {
                 </div>
                 <p className="muted">
                   Seit {monthLabel(fund.raised)}. Bei jedem neuen Einstieg legt der Fonds das {FUND_MATCH}-Fache deines Tickets dazu, höchstens ein Viertel des Fonds pro Firma. Du
-                  bekommst {FUND_FEE * 100} % Verwaltungsgebühr im Jahr ({eur((fund.size * FUND_FEE) / 12)} im Monat) und 20 % Carry auf den Gewinn bei jedem Verkauf.
+                  bekommst {FUND_FEE * 100} % Verwaltungsgebühr im Jahr ({eur((fund.size * FUND_FEE) / 12)} im Monat) und 20 % Carry über den Wasserfall des ganzen Fonds: erst wenn
+                  die Investoren Kapital und 8 % Hurdle zurückhaben.
                 </p>
+                <div className="panel__actions">
+                  <Link href="/fonds" className="btn btn--sm btn--primary">
+                    Zur Fondsfamilie: Wasserfall, LPAC, Fonds II
+                  </Link>
+                </div>
               </>
             ) : (
               <>
                 <p>
                   Investoren würden dir heute etwa <b>{eur(view.fundSize)}</b> anvertrauen. Der Fonds investiert bei jedem neuen Einstieg das {FUND_MATCH}-Fache deines Tickets mit,
-                  stimmt wie du und zahlt dir {FUND_FEE * 100} % Gebühr im Jahr plus 20 % Carry.
+                  stimmt wie du und zahlt dir {FUND_FEE * 100} % Gebühr im Jahr plus 20 % Carry, sobald die Investoren ihr Geld und eine Mindestrendite zurückhaben.
                 </p>
                 {view.fundBlocker && <p className="notice notice--warn">{view.fundBlocker}</p>}
                 <ActionButton action={{ type: "raiseFund" }} revision={revision} days={ACTION_DAYS.raiseFund} variant="primary" disabled={Boolean(view.fundBlocker)}>

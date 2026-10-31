@@ -472,7 +472,8 @@ export function roundView(state: GameState, roundId: string): RoundView | null {
     const amount = playerAmount(round, stake, take);
     const after = stakeAfter(round, stake, take);
     let reason: string | undefined;
-    if (take === "lead" && state.reputation < LEAD_REPUTATION) reason = `Ab ${LEAD_REPUTATION} Ruf`;
+    if ((take === "lead" || take === "syndicate") && round.venture !== undefined) reason = "Wachstumsinvestor führt";
+    else if (take === "lead" && state.reputation < LEAD_REPUTATION) reason = `Ab ${LEAD_REPUTATION} Ruf`;
     else if (take === "syndicate" && syndicateBlocker(state)) reason = state.reputation < SYNDICATE_REPUTATION ? `Ab ${SYNDICATE_REPUTATION} Ruf` : "Angel-Club zu kühl";
     else if (amount > state.cash) reason = "Zu wenig Kapital";
     const syndicate = take === "syndicate" ? syndicateAmount(round, stake) : undefined;

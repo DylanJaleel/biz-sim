@@ -10,12 +10,13 @@ export type Light = "green" | "yellow" | "red";
 export type CockpitKind = "startup" | "buyout" | "platform" | "corporate";
 
 /** Unter welcher Überschrift die Beteiligung im Cockpit steht. */
-export type CockpitGroup = "direct" | "own" | "fund" | "mandate";
+export type CockpitGroup = "direct" | "studio" | "own" | "fund" | "mandate";
 
-export const GROUP_ORDER: CockpitGroup[] = ["direct", "own", "fund", "mandate"];
+export const GROUP_ORDER: CockpitGroup[] = ["direct", "studio", "own", "fund", "mandate"];
 
 export const GROUP_LABEL: Record<CockpitGroup, string> = {
   direct: "Direktbeteiligungen",
+  studio: "Venture Studio",
   own: "Eigene Firmen",
   fund: "Fonds",
   mandate: "Mandate im Aufsichtsrat",
@@ -23,6 +24,7 @@ export const GROUP_LABEL: Record<CockpitGroup, string> = {
 
 export const GROUP_HINT: Record<CockpitGroup, string> = {
   direct: "Minderheitsbeteiligungen mit Sitz im Beirat.",
+  studio: "Selbst gegründete Firmen aus deinem Venture Studio, auch wenn dein Fonds mit drin ist.",
   own: "Gekaufte Familienbetriebe und Plattformen, die du führst.",
   fund: "Beteiligungen, bei denen dein eigener Fonds mitinvestiert hat.",
   mandate: "Sitze im Aufsichtsrat eines Konzerns, ohne Anteile.",
@@ -95,8 +97,10 @@ export interface CockpitRow {
   facts: Facts;
   stake: number;
   fundPct: number;
-  /** Dein Anteil am Firmenwert; bei Mandaten 0. */
+  /** Dein Anteil am Firmenwert (bei Papierwerten der angerechnete Teil); bei Mandaten 0. */
   value: number;
+  /** Dein Anteil am Papierwert der letzten Wachstumsrunde, wenn er über dem Wert der Zahlen liegt. */
+  paper?: number;
   companyValue: number;
   /** Veränderung des Werts zum Vormonat (0.05 = +5 %); null ohne Vormonat. */
   change: number | null;

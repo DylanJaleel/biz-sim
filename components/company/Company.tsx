@@ -21,6 +21,8 @@ import { helpersForCompany, hintsFor } from "@/lib/game/network-views";
 import { ForecastTool } from "./ForecastTool";
 import { LEANING_LABEL, PACE_LABEL, PHASE_LABEL } from "./labels";
 import { Sparkline } from "./Sparkline";
+import { VenturePane } from "./VenturePane";
+import { ventureEligible } from "@/lib/game/venture";
 
 const JUDGMENT_LABEL = {
   strong: "stark",
@@ -54,6 +56,7 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
     ...(view.agenda.length > 0 || active ? [{ id: "agenda", label: "Tagesordnung" }] : []),
     { id: "zahlen", label: "Zahlen" },
     ...(!corporate ? [{ id: "anteile", label: "Gesellschafter" }] : []),
+    ...(ventureEligible(s) && (active || s.venture) ? [{ id: "wachstum", label: "Wachstum" }] : []),
     ...(view.agenda.length > 0 || view.followUps.length > 0 ? [{ id: "auflagen", label: "Auflagen" }] : []),
     ...(active && !corporate ? [{ id: "rechner", label: "Rechner" }] : []),
     ...(view.past.length > 0 ? [{ id: "entscheidungen", label: "Entscheidungen" }] : []),
@@ -379,6 +382,8 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
               </div>
               <Sparkline history={s.history} current={m.revenue} />
             </section>
+
+            {ventureEligible(s) && (active || s.venture) && <VenturePane state={state} s={s} />}
 
             {!corporate && (
               <section className="panel" id="anteile" aria-labelledby="shares-title" data-pane="anteile">

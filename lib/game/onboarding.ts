@@ -14,6 +14,7 @@ import {
 } from "./config";
 import { MANDATE_REPUTATION, PLATFORM_REPUTATION } from "./mna-config";
 import type { GameState, OnboardingState } from "./types";
+import { FUND_NEXT_INVESTED, STUDIO_EXITS, STUDIO_REPUTATION } from "./venture-config";
 
 // Einführung für neue Spieler: wann sie von selbst startet und welche Freischaltungen
 // einen einmaligen Hinweis bekommen. Nur reine Funktionen und Konstanten aus der
@@ -99,6 +100,20 @@ export const UNLOCKS: Unlock[] = [
     title: "Eigener Fonds",
     text: `Du brauchst noch ${FUND_EXITS} erfolgreiche Verkäufe und ein Family Office, das ${FUND_OFFICE_MONTHS} Monate läuft.`,
     href: "/holding",
+  },
+  {
+    id: "fund2",
+    reputation: FUND_REPUTATION,
+    title: "Fonds II und III",
+    text: `Ist Fonds I zu ${Math.round(FUND_NEXT_INVESTED * 100)} % investiert, gehst du auf Roadshow: Investoren prüfen DPI und TVPI, der LPAC entscheidet Konflikte.`,
+    href: "/fonds",
+  },
+  {
+    id: "studio",
+    reputation: STUDIO_REPUTATION,
+    title: "Venture Studio",
+    text: `Mit ${STUDIO_EXITS} erfolgreichen Verkäufen gründest du eigene Firmen: Idee, CEO, Geld in Tranchen. Jede Firma im Aufbau kostet Tage.`,
+    href: "/studio",
   },
 ].sort((a, b) => a.reputation - b.reputation);
 

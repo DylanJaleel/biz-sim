@@ -17,6 +17,8 @@ import { activeSearch, searchBlocker, searchCandidates, structureDeal } from "./
 import { annualEbitda, sizeMultiple } from "./ebitda";
 import { platformBlocker, platformOf } from "./platform";
 import { networkActions } from "./network-bots";
+import { ventureActions } from "./venture-bots";
+import { companyValue } from "./venture";
 import { currentMandates, hireFee, integrationCapacity, leadOf, OP_PROFILES, opTypeOf, profileOf } from "./team";
 import { addonFit, fitKnown, HOLDCO } from "./holdco";
 import { wealthActions } from "./wealth-bots";
@@ -303,7 +305,8 @@ export const expertBot = (style: ExpertStyle = {}, name = "Experte"): Bot => {
       // Sales: keep what still grows fast, sell what stalls.
       for (const e of s.exits.filter((x) => x.status === "open")) {
         const c = startupOf(s, e.startupId);
-        const value = valuation(c.metrics);
+        // On the venture path the last round's price is the yardstick.
+        const value = companyValue(c);
         const grows = hold && c.metrics.growth > 0.025;
         if (e.ipo || e.price >= value * (grows ? 1.6 : 1.1)) actions.push({ type: "exit", exitId: e.id, choice: "accept" });
         else if (!grows && e.price >= value * 0.9 && e.choice !== "negotiate")
@@ -389,7 +392,14 @@ export const expertBot = (style: ExpertStyle = {}, name = "Experte"): Bot => {
       }
       // A fast car saves the travel day on far jobs.
       if (!s.garage.includes("elektro") && s.reputation >= 40 && s.cash > 400_000) actions.push({ type: "buyVehicle", vehicleId: "elektro" });
-      return [...networkActions(s, "expert"), ...actions, ...wealthActions(s, "expert"), ...mnaActions(s, "mogul"), ...expertBoard(s, analyst, random)];
+      return [
+        ...networkActions(s, "expert"),
+        ...actions,
+        ...ventureActions(s, free()),
+        ...wealthActions(s, "expert"),
+        ...mnaActions(s, "mogul"),
+        ...expertBoard(s, analyst, random),
+      ];
     },
     end: (s) => {
       if (!depot) return [];
@@ -608,6 +618,8 @@ export interface BotRun {
   /** Net worth at the end of each game year. */
   curve: number[];
   mna: ReturnType<typeof mnaRead>["record"];
+  /** Fund family, studio and venture path at the end (for the balance report). */
+  venture?: { unicorn: boolean; paths: string[]; funds: number; studio: number; trust?: number; votes: string[]; fund?: string };
 }
 
 export function runBot(bot: Bot, seed: number, months: number): BotRun {
@@ -659,5 +671,18 @@ export function runBot(bot: Bot, seed: number, months: number): BotRun {
     income,
     curve,
     mna: mnaRead(state).record,
+    venture: {
+      unicorn: state.startups.some((s) => s.venture?.unicorn !== undefined && (s.venture.unicornStake ?? 0) > 0),
+      paths: state.startups
+        .filter((s) => s.venture)
+        .map((s) => `${s.venture!.stage}${s.venture!.unicorn ? "U" : ""}${s.venture!.ended ? "x" : ""}${s.status === "exited" ? "e" : ""}`),
+      funds: (state.fund ? 1 : 0) + (state.funds?.later.length ?? 0),
+      studio: state.studio?.founded ?? 0,
+      trust: state.funds?.trust,
+      votes: (state.funds?.votes ?? []).map((v) => `${v.kind}:${v.status}`),
+      fund: [state.fund, ...(state.funds?.later ?? [])]
+        .map((f) => (f ? `${f.name}@${f.raised} ${Math.round((f.invested / f.size) * 100)}% of ${Math.round(f.size / 1e6)}M` : ""))
+        .join(" | "),
+    },
   };
 }

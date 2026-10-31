@@ -34,7 +34,8 @@ export interface ManagedAssets {
  */
 export function managedAssets(state: GameState, worth: number): ManagedAssets {
   const familyOffice = state.familyOffice !== undefined ? Math.max(0, worth) : 0;
-  const funds = state.fund?.size ?? 0;
+  // All funds of the family that are not wound up (Fund I to III).
+  const funds = [state.fund, ...(state.funds?.later ?? [])].reduce((sum, f) => sum + (f && f.closed === undefined ? f.size : 0), 0);
   const foundation = state.wealth?.foundation?.capital ?? 0;
   return { familyOffice, funds, foundation, total: familyOffice + funds + foundation };
 }

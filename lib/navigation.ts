@@ -1,4 +1,5 @@
-import { BUYOUT_REPUTATION, FAMILY_OFFICE_REPUTATION } from "./game/config";
+import { BUYOUT_REPUTATION, FAMILY_OFFICE_REPUTATION, FUND_REPUTATION } from "./game/config";
+import { STUDIO_EXITS, STUDIO_REPUTATION } from "./game/venture-config";
 import { MANDATE_REPUTATION } from "./game/mna-config";
 
 // Die Navigation des Spiels an einer Stelle. Kopfleiste und Menü lesen nur diese Datei.
@@ -25,6 +26,10 @@ export interface NavState {
   /** Offene Bitten, Einladungen und abkühlende Kontakte im Netzwerk. */
   networkTasks: number;
   familyOffice: boolean;
+  /** Funds raised so far (Fund I to III). */
+  funds?: number;
+  /** Successful sales so far. */
+  exits?: number;
 }
 
 export type NavGroupId = "start" | "invest" | "company" | "network" | "life" | "knowledge" | "account";
@@ -74,8 +79,22 @@ export const NAV_ITEMS: NavItem[] = [
     badgeTone: "accent",
   },
   { href: "/boerse", label: "Börse", group: "invest", icon: "candles", description: "Aktien kaufen und verkaufen, Sperrfristen im Blick." },
-  // { href: "/fonds", label: "Fonds", group: "invest", icon: "layers", description: "Dein Fonds, Investoren und Ausschüttungen." },
-  // { href: "/studio", label: "Venture Studio", group: "invest", icon: "spark", description: "Eigene Firmen gründen und mit Geld und Tagen aufbauen." },
+  {
+    href: "/fonds",
+    label: "Fonds",
+    group: "invest",
+    icon: "layers",
+    description: "Fonds I bis III, Investoren, Wasserfall und LPAC.",
+    locked: (s) => (!s.funds && s.reputation < FUND_REPUTATION ? `ab Ruf ${FUND_REPUTATION}` : null),
+  },
+  {
+    href: "/studio",
+    label: "Venture Studio",
+    group: "invest",
+    icon: "spark",
+    description: "Eigene Firmen gründen und mit Geld und Tagen aufbauen.",
+    locked: (s) => (s.reputation >= STUDIO_REPUTATION && (s.exits ?? 0) >= STUDIO_EXITS ? null : `ab Ruf ${STUDIO_REPUTATION} und ${STUDIO_EXITS} Verkäufen`),
+  },
 
   {
     href: "/holding",

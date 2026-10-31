@@ -4,6 +4,7 @@ import { annualEbitda } from "./ebitda";
 import { netLeverage } from "./lbo";
 import { COVENANT, VENDOR_RATE } from "./mna-config";
 import { runwayMonths, valuation } from "./sim";
+import { stakeValues } from "./venture";
 import { COCKPIT_RULES, RANK, type CockpitKind, type CockpitGroup, type CockpitRow, type Facts, type Light, type NextDate } from "./cockpit-view";
 import type { GameState, Startup, StartupPhase } from "./types";
 
@@ -47,6 +48,7 @@ export function heldByFund(s: Startup): boolean {
 
 export function groupOf(s: Startup): CockpitGroup {
   if (s.corporate) return "mandate";
+  if (s.studio) return "studio";
   if (heldByFund(s)) return "fund";
   const kind = cockpitKind(s);
   return kind === "buyout" || kind === "platform" ? "own" : "direct";
@@ -210,7 +212,8 @@ export function cockpitRow(state: GameState, s: Startup): CockpitRow {
   const a = assess(s, kind, facts);
   const companyValue = valuation(s.metrics);
   const share = s.corporate ? 1 : s.stake / 100;
-  const value = s.corporate ? 0 : share * companyValue;
+  const values = stakeValues(s);
+  const value = s.corporate ? 0 : s.venture ? values.credited : share * companyValue;
   const shown = s.corporate ? companyValue : value;
   const past = s.history.filter((h) => h.month < state.month);
   const prev = past[past.length - 1];
@@ -244,6 +247,7 @@ export function cockpitRow(state: GameState, s: Startup): CockpitRow {
     stake: s.stake,
     fundPct: fundPercent(s),
     value,
+    ...(s.venture && values.paper > values.fundamental * 1.01 ? { paper: values.paper } : {}),
     companyValue,
     change,
     trend,
