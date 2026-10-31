@@ -1,6 +1,6 @@
 import { daysLeft } from "./engine";
 import { leagueRank, leagueTable, LEAGUE_TOP, monthsPlayed, yearOf, type LeagueRow } from "./league";
-import { BIG_DAYS, BIG_ROUNDS, bidValue, bigFee, bigPower, LEVER_TEXT } from "./mandate-big";
+import { BIG_DAYS, BIG_ROUNDS, bidValue, bigFee, bigPower, bigRoundsFor, bigTableMood, LEVER_TEXT } from "./mandate-big";
 import { mnaRead } from "./mna-core";
 import {
   CONCEPT_COST,
@@ -163,6 +163,10 @@ export interface BigMandateView {
   effect?: { interest: number; price: number; conf: number; cred: number };
   rounds: number;
   maxRounds: number;
+  /** Gute Stimmung am Tisch: eine Runde mehr als sonst. */
+  bonusRound: boolean;
+  /** Mittlere Stimmung der Bieter, die noch dabei sind (0 bis 100). */
+  tableMood: number;
   log: string[];
   exclusive?: string;
   power: number;
@@ -182,7 +186,9 @@ export function bigMandateView(state: GameState, id: string): BigMandateView | n
     teaser: big.teaser,
     effect: big.effect,
     rounds: big.rounds,
-    maxRounds: BIG_ROUNDS,
+    maxRounds: bigRoundsFor(md),
+    bonusRound: bigRoundsFor(md) > BIG_ROUNDS,
+    tableMood: bigTableMood(md),
     log: big.log,
     exclusive: big.exclusive,
     power: bigPower(md),
