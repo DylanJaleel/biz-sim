@@ -1,6 +1,6 @@
 import { daysLeft } from "./engine";
 import { leagueRank, leagueTable, LEAGUE_TOP, monthsPlayed, yearOf, type LeagueRow } from "./league";
-import { BIG_DAYS, BIG_ROUNDS, bidValue, bigFee, bigPower, LEVER_TEXT } from "./mandate-big";
+import { BIG_DAYS, BIG_ROUNDS, bidValue, bigFee, bigPower, bigRoundsFor, bigTableMood, LEVER_TEXT } from "./mandate-big";
 import { mnaRead } from "./mna-core";
 import {
   CONCEPT_COST,
@@ -101,6 +101,8 @@ export interface DuelView {
   rival: { name: string; head: string; city: string; kind: string; style: string; terms: string };
   you: number;
   rivalBid: number;
+  /** Wie weit der Rivale gegangen wäre; erst nach der Entscheidung bekannt, vorher null. */
+  rivalMax: number | null;
   /** The owner's rating: price plus what the terms are worth to him. */
   scoreYou: number;
   scoreRival: number;
@@ -128,6 +130,7 @@ export function duelView(state: GameState, targetId: string): DuelView | null {
     rival: { name: def.name, head: def.head, city: def.city, kind: RIVAL_KIND_LABEL[def.kind], style: def.style, terms: def.termsText },
     you: d.you,
     rivalBid: d.rival,
+    rivalMax: d.status === "open" ? null : d.max,
     scoreYou: score.you,
     scoreRival: score.rival,
     ahead: score.you > score.rival,
@@ -163,6 +166,10 @@ export interface BigMandateView {
   effect?: { interest: number; price: number; conf: number; cred: number };
   rounds: number;
   maxRounds: number;
+  /** Gute Stimmung am Tisch: eine Runde mehr als sonst. */
+  bonusRound: boolean;
+  /** Mittlere Stimmung der Bieter, die noch dabei sind (0 bis 100). */
+  tableMood: number;
   log: string[];
   exclusive?: string;
   power: number;
@@ -182,7 +189,9 @@ export function bigMandateView(state: GameState, id: string): BigMandateView | n
     teaser: big.teaser,
     effect: big.effect,
     rounds: big.rounds,
-    maxRounds: BIG_ROUNDS,
+    maxRounds: bigRoundsFor(md),
+    bonusRound: bigRoundsFor(md) > BIG_ROUNDS,
+    tableMood: bigTableMood(md),
     log: big.log,
     exclusive: big.exclusive,
     power: bigPower(md),

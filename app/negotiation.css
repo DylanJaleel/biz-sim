@@ -1,0 +1,450 @@
+/* ---------------------------------------------------------------------------
+   Verhandlungstisch (components/scene/NegotiationDesk.tsx): Blick über den
+   eigenen Schreibtisch, gegenüber die Gegenseite als gezeichnete Figur.
+   --------------------------------------------------------------------------- */
+
+.nd {
+  --nd-ink: #f5f5f7;
+  --nd-muted: rgba(245, 245, 247, 0.74);
+  --nd-glass: rgba(30, 25, 22, 0.58);
+  --nd-shade: 0.55;
+  --nd-bright: 0.86;
+  --nd-wood-1: #6a4a31;
+  --nd-wood-2: #3f2a1b;
+  --nd-paper: #fbfaf6;
+  --nd-paper-ink: #1d1b18;
+  --nd-paper-muted: #6f6a60;
+  --nd-ring: #30d158;
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  container-type: inline-size;
+  min-height: 340px;
+  border-radius: 24px;
+  overflow: hidden;
+  background: #120d0a;
+  color: var(--nd-ink);
+  box-shadow: var(--shadow);
+}
+
+@media (prefers-color-scheme: dark) {
+  .nd {
+    --nd-shade: 0.7;
+    --nd-bright: 0.62;
+    --nd-paper: #ece8de;
+    --nd-glass: rgba(18, 14, 12, 0.66);
+  }
+}
+
+.nd[data-mood="pleased"],
+.nd[data-mood="relieved"] {
+  --nd-ring: #30d158;
+}
+.nd[data-mood="neutral"] {
+  --nd-ring: #8fb4ff;
+}
+.nd[data-mood="skeptical"] {
+  --nd-ring: #ffb340;
+}
+.nd[data-mood="angry"] {
+  --nd-ring: #ff7b72;
+}
+
+.nd__bg {
+  position: absolute;
+  inset: -20px;
+  z-index: -2;
+  background: url(/boardroom/buero-stufe3.webp) center 88% / cover no-repeat;
+  filter: blur(3px) saturate(1.05) brightness(var(--nd-bright));
+}
+.nd::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(180deg, rgba(10, 8, 6, var(--nd-shade)) 0%, rgba(10, 8, 6, 0.18) 48%, rgba(10, 8, 6, 0.05) 68%, rgba(10, 8, 6, 0.3) 100%);
+}
+
+.nd__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 14px 22px;
+  padding: 20px 24px 8px;
+}
+.nd__who {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  flex: none;
+}
+.nd__face {
+  width: 104px;
+  height: 104px;
+  flex: none;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 3px var(--nd-ring),
+    0 12px 30px rgba(0, 0, 0, 0.4);
+  transition:
+    box-shadow 0.5s ease,
+    opacity 0.6s ease,
+    transform 0.6s ease;
+}
+.nd.is-gone .nd__face {
+  opacity: 0.25;
+  transform: translateY(-8px);
+}
+.nd__mimic {
+  animation: nd-mimic 0.35s ease-out;
+}
+@keyframes nd-mimic {
+  from {
+    opacity: 0;
+    transform: translateY(1.5px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.nd__id {
+  display: grid;
+  gap: 3px;
+  padding-top: 8px;
+  min-width: 0;
+}
+.nd__id b {
+  font-size: 17px;
+  line-height: 1.2;
+}
+.nd__id > span:not(.nd__mood) {
+  color: var(--nd-muted);
+  font-size: 13px;
+}
+.nd__mood {
+  display: grid;
+  gap: 5px;
+  width: 176px;
+  margin-top: 6px;
+}
+.nd__mood em {
+  font-style: normal;
+  font-size: 12px;
+  color: var(--nd-muted);
+}
+.nd__bar {
+  display: block;
+  height: 6px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.16);
+  overflow: hidden;
+}
+.nd__bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--nd-ring);
+  transition:
+    width 0.6s ease,
+    background 0.5s ease;
+}
+
+.nd__bubble {
+  flex: 1 1 260px;
+  max-width: 440px;
+  margin: 4px 0 0;
+  padding: 12px 16px;
+  border-radius: 20px 20px 20px 6px;
+  background: var(--nd-glass);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  backdrop-filter: blur(22px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  font-size: 14.5px;
+  line-height: 1.45;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.3);
+}
+
+.nd__rounds {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 0 auto;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--nd-glass);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  font-size: 12px;
+  color: var(--nd-muted);
+}
+.nd__rounds i {
+  font-style: normal;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid rgba(255, 255, 255, 0.34);
+  font-weight: 700;
+  font-size: 11px;
+}
+.nd__rounds i.is-done {
+  background: var(--nd-ink);
+  color: #15120f;
+  border-color: var(--nd-ink);
+}
+.nd__rounds i.is-now {
+  border-color: #6fb0ff;
+  color: var(--nd-ink);
+  box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.34);
+}
+.nd__rounds i[data-bonus] {
+  border-style: dashed;
+}
+.nd__rounds small {
+  flex-basis: 100%;
+  font-size: 11.5px;
+  color: #9ee6b4;
+}
+
+/* Der Tisch: Holz, darauf die Papiere. */
+.nd__desk {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 18px 34px;
+  padding: 22px 24px 20px;
+  perspective: 900px;
+  background: linear-gradient(180deg, var(--nd-wood-1) 0%, var(--nd-wood-2) 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 14px 22px -14px rgba(0, 0, 0, 0.5);
+}
+.nd__paper {
+  --rz: 0deg;
+  position: relative;
+  width: 236px;
+  padding: 12px 14px 12px;
+  border-radius: 5px;
+  background: var(--nd-paper);
+  color: var(--nd-paper-ink);
+  font-size: 12.5px;
+  display: grid;
+  gap: 3px;
+  align-content: start;
+  transform: rotateX(14deg) rotateZ(var(--rz));
+  transform-origin: 50% 100%;
+  box-shadow: 0 18px 22px -10px rgba(0, 0, 0, 0.55);
+  transition:
+    transform 0.6s cubic-bezier(0.3, 0.8, 0.3, 1),
+    opacity 0.4s ease;
+}
+.nd__paper--his {
+  --rz: -2.5deg;
+}
+.nd__paper--mine {
+  --rz: 2deg;
+}
+.nd__paper h4 {
+  margin: 0 0 4px;
+  font: 500 15px/1.15 var(--font-display);
+}
+.nd__paper p {
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-variant-numeric: tabular-nums;
+  color: var(--nd-paper-muted);
+}
+.nd__paper p b {
+  color: var(--nd-paper-ink);
+  font-weight: 600;
+  text-align: right;
+}
+.nd__paper small {
+  margin-top: 4px;
+  color: var(--nd-paper-muted);
+  font-size: 11.5px;
+  line-height: 1.35;
+}
+
+.nd__pain {
+  display: grid;
+  gap: 2px;
+  align-content: center;
+  width: 176px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(10, 8, 6, 0.55);
+  border: 1px dashed rgba(255, 255, 255, 0.34);
+  color: var(--nd-ink);
+}
+.nd__pain small {
+  font-size: 11.5px;
+  color: var(--nd-muted);
+}
+.nd__pain b {
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+}
+.nd__pain span {
+  font-size: 11.5px;
+  line-height: 1.35;
+  color: var(--nd-muted);
+}
+.nd__pain.is-known {
+  border-style: solid;
+  border-color: #ffb340;
+}
+.nd__veil {
+  letter-spacing: 0.06em;
+  filter: blur(3px);
+  user-select: none;
+}
+.nd__pen {
+  position: absolute;
+  right: 28px;
+  bottom: 10px;
+  width: 96px;
+  height: 8px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #111 0 70%, #c7a55a 70% 74%, #111 74% 96%, #c7a55a 96%);
+  transform: rotate(-20deg);
+  box-shadow: 0 8px 10px rgba(0, 0, 0, 0.5);
+}
+
+/* Schmale Tische (Handy quer, kleine Spalten). */
+@container (max-width: 640px) {
+  .nd__top {
+    padding: 14px 16px 6px;
+    gap: 10px 14px;
+  }
+  .nd__rounds {
+    margin-left: 0;
+  }
+  .nd__desk {
+    gap: 12px 18px;
+    padding: 16px 16px 16px;
+  }
+  .nd__paper {
+    width: min(236px, 46%);
+  }
+  .nd__pain {
+    width: min(176px, 46%);
+  }
+  .nd__pen {
+    display: none;
+  }
+}
+
+/* Handy quer (z. B. 844 × 390): alles flacher, nur das Wesentliche. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .nd {
+    min-height: 0;
+    border-radius: 18px;
+  }
+  .nd__top {
+    flex-wrap: nowrap;
+    padding: 10px 14px 4px;
+    gap: 12px;
+  }
+  .nd__face {
+    width: 64px;
+    height: 64px;
+  }
+  .nd__who {
+    gap: 10px;
+  }
+  .nd__id {
+    padding-top: 2px;
+  }
+  .nd__id b {
+    font-size: 15px;
+  }
+  .nd__id > span:not(.nd__mood) {
+    font-size: 12px;
+  }
+  .nd__mood {
+    width: 132px;
+    margin-top: 2px;
+  }
+  .nd__bubble {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: none;
+    margin: 0;
+    padding: 8px 12px;
+    font-size: 12.5px;
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .nd__rounds {
+    flex: none;
+    margin: 0;
+    padding: 4px 8px;
+    gap: 4px;
+  }
+  .nd__roundlabel {
+    display: none;
+  }
+  .nd__rounds i {
+    width: 19px;
+    height: 19px;
+    font-size: 10px;
+  }
+  .nd__rounds small {
+    display: none;
+  }
+  .nd__desk {
+    flex-wrap: nowrap;
+    gap: 12px;
+    padding: 10px 14px 10px;
+  }
+  .nd__paper {
+    width: auto;
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 8px 10px;
+    font-size: 11px;
+    transform: rotateX(8deg) rotateZ(var(--rz));
+  }
+  .nd__paper h4 {
+    font-size: 13px;
+    margin-bottom: 2px;
+  }
+  .nd__paper small {
+    display: none;
+  }
+  .nd__pain {
+    width: 124px;
+    flex: none;
+    padding: 6px 10px;
+  }
+  .nd__pain b {
+    font-size: 14px;
+  }
+  .nd__pain span,
+  .nd__pen {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nd__mimic {
+    animation: none;
+  }
+  .nd__face,
+  .nd__bar i,
+  .nd__paper {
+    transition: none;
+  }
+}

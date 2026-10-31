@@ -1,6 +1,7 @@
 import { LAST, SECTORS } from "./dealgen";
 import { sizeMultiple } from "./ebitda";
 import { mnaRandom, solveEbitda } from "./lbo";
+import { roundsFor, tableMood } from "./negotiation";
 import { between, eur, generateFindings, mio, pickOf, roundTo, type Ctx } from "./mna-core";
 import { teaserBidders, teaserEffect, teaserLeak } from "./teaser";
 import type { BigMandate, Mandate, MandateBid, MandateLever, TeaserFact } from "./types";
@@ -25,6 +26,16 @@ export const BIG_SUCCESS_FEE = 0.0035;
 export const EARNOUT_WEIGHT = 0.5;
 export const BIG_DAYS = { accept: 2, teaser: 2, round: 1 } as const;
 export const BIG_ROUNDS = 3;
+
+/** Die Stimmung am Tisch: Mittelwert der Bieter, die noch dabei sind. */
+export function bigTableMood(md: Mandate): number {
+  return tableMood((md.bids ?? []).filter((b) => !b.out).map((b) => b.mood));
+}
+
+/** Wie viele Verhandlungsrunden es gibt: drei, bei guter Stimmung am Tisch eine mehr. */
+export function bigRoundsFor(md: Mandate): number {
+  return roundsFor(BIG_ROUNDS, bigTableMood(md));
+}
 
 const GROUPS = ["Weidmann AG", "Kühlmann Group", "Hartwig Industrie AG", "Lindner Technologie SE", "Rauscher Holding AG", "Bergmann Werke AG", "Stellmacher Gruppe"];
 const BIG_STRATEGICS = ["Kühnert Industries", "Valtra Group", "Seeberg Technologie", "Arnhold Konzern", "Ostwind Industrie", "Bauer & Lindqvist"];
@@ -185,7 +196,8 @@ export function bigPower(md: Mandate): number {
 export function playRound(ctx: Ctx, md: Mandate, bidder: string | undefined, lever: MandateLever | undefined): void {
   const big = md.big!;
   if (md.status !== "bids" || !md.bids?.length) ctx.fail("Es liegt kein Angebot vor.");
-  if (big.rounds >= BIG_ROUNDS) ctx.fail("Drei Runden sind gespielt. Erteile jetzt den Zuschlag.");
+  const maxRounds = bigRoundsFor(md);
+  if (big.rounds >= maxRounds) ctx.fail(`${maxRounds === BIG_ROUNDS ? "Drei" : "Vier"} Runden sind gespielt. Erteile jetzt den Zuschlag.`);
   const b = md.bids!.find((x) => x.buyer === bidder && !x.out);
   if (!b || !lever) ctx.fail("Wähle einen Bieter, der noch dabei ist, und einen Hebel.");
   if (big.exclusive && big.exclusive !== b!.buyer) ctx.fail(`Du verhandelst exklusiv mit ${big.exclusive}.`);

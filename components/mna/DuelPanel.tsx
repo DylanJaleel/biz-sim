@@ -1,14 +1,26 @@
 import { ActionButton } from "@/components/game/ActionButton";
 import { eur } from "@/components/game/format";
+import { NegotiationDesk } from "@/components/scene/NegotiationDesk";
+import { duelMood } from "@/lib/game/negotiation";
 import type { DuelView } from "@/lib/game/rivals-views";
 
 // Das Bietgefecht um einen Familienbetrieb: du gegen einen Rivalen, höchstens
 // drei Runden. Der Inhaber wertet Preis und Bedingungen.
 
-export function DuelPanel({ id, duel, revision }: { id: string; duel: DuelView; revision: number }) {
+export function DuelPanel({ id, duel, revision, owner }: { id: string; duel: DuelView; revision: number; owner?: string }) {
   const open = duel.status === "open";
   const left = duel.rounds - duel.round;
   const max = Math.max(duel.scoreYou, duel.scoreRival, 1);
+  const quote =
+    duel.status === "won"
+      ? "„Sie haben meinen Betrieb verdient. Machen wir es fest.“"
+      : duel.status === "lost"
+        ? `„Es tut mir leid, ich habe mich für ${duel.rival.name} entschieden.“`
+        : duel.status === "left"
+          ? "„Schade, dass Sie gehen.“"
+          : duel.ahead
+            ? "„Ihr Angebot liegt vorn. Bis zum Monatsende ist aber noch Zeit.“"
+            : `„${duel.rival.name} bietet mir mehr, und nicht nur beim Preis. Was können Sie noch tun?“`;
   return (
     <section className={`panel duel${open ? " is-open" : ""}`} aria-labelledby="duel-title">
       <div className="panel__row">
@@ -22,6 +34,22 @@ export function DuelPanel({ id, duel, revision }: { id: string; duel: DuelView; 
           </p>
         </div>
       </div>
+      <NegotiationDesk
+        name={owner || "Der Inhaber"}
+        role="Inhaber"
+        look="senior"
+        mood={duelMood(duel.scoreYou, duel.scoreRival)}
+        relieved={duel.status === "won"}
+        gone={duel.status === "left"}
+        played={duel.round}
+        rounds={duel.rounds}
+        bubble={quote}
+        offer={{ title: `Gebot von ${duel.rival.name}`, lines: [{ label: "Preis", value: eur(duel.rivalBid) }], note: duel.rival.terms }}
+        counter={{ title: "Dein Gebot", lines: [{ label: "Preis", value: eur(duel.you) }], note: duel.concept ? "mit Nachfolge-Konzept" : "keine Zusagen" }}
+        painThreshold={duel.rivalMax}
+        painLabel={`Grenze von ${duel.rival.name}`}
+        painHint="verdeckt: Due Diligence oder ein Kontakt verrät sie"
+      />
       <div className="duel__vs" role="group" aria-label="Wertung des Inhabers">
         <div className={duel.ahead ? "is-ahead" : undefined}>
           <small>Dein Gebot</small>

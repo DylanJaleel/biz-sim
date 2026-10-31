@@ -119,7 +119,7 @@ export async function Acquisition({ params }: { params: Promise<{ id: string }> 
         </p>
       )}
 
-      {duel && <DuelPanel id={id} duel={duel} revision={revision} />}
+      {duel && <DuelPanel id={id} duel={duel} revision={revision} owner={v.owner} />}
 
       <HelpersPanel
         helpers={specialistsFor(state, id)}

@@ -126,12 +126,15 @@ describe("large mandates", () => {
     let view = bigMandateView(state, md.id)!;
     expect(mnaOf(state).mandates.find((m) => m.id === md.id)!.status).toBe("bids");
     expect(view.bids.length).toBeGreaterThan(0);
-    for (let i = 0; i < BIG_ROUNDS; i++) {
+    // Gute Stimmung am Tisch gibt eine Runde mehr; die Stimmung ändert sich mit jeder Runde.
+    expect(view.maxRounds).toBeGreaterThanOrEqual(BIG_ROUNDS);
+    for (let i = 0; i < BIG_ROUNDS + 1 && bigMandateView(state, md.id)!.rounds < bigMandateView(state, md.id)!.maxRounds; i++) {
       const top = bigMandateView(state, md.id)!.bids.find((b) => !b.out)!;
       state = act(state, { type: "mandate", mandateId: md.id, move: "round", bidder: top.buyer, lever: i === 1 ? "bnf" : "batna" });
     }
     view = bigMandateView(state, md.id)!;
-    expect(view.rounds).toBe(BIG_ROUNDS);
+    expect(view.rounds).toBe(view.maxRounds);
+    expect(view.maxRounds).toBeLessThanOrEqual(BIG_ROUNDS + 1);
     expect(() => act(state, { type: "mandate", mandateId: md.id, move: "round", bidder: view.bids[0]!.buyer, lever: "batna" })).toThrow(GameRuleError);
     state = act(state, { type: "mandate", mandateId: md.id, move: "accept_bid" });
     state = close(state);
