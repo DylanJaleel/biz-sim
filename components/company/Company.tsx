@@ -385,7 +385,7 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
               <Sparkline history={s.history} current={m.revenue} />
             </section>
 
-            {ventureEligible(s) && (active || s.venture) && <VenturePane state={state} s={s} />}
+            {ventureEligible(s) && (active || s.venture) && <VenturePane state={state} s={s} revision={revision} />}
 
             {!corporate && (
               <section className="panel" id="anteile" aria-labelledby="shares-title" data-pane="anteile">

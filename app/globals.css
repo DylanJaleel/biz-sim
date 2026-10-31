@@ -8762,3 +8762,132 @@ html:has(dialog.menu[open]) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* Finanzierungsrunden: Runde vorbereiten, Ziele, Term Sheet */
+.ladder--full {
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+}
+
+.ladder__step--ipo {
+  border-style: dashed;
+}
+
+.rprep {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.rprep__title {
+  margin: 0;
+  font-size: 16px;
+}
+
+.rprep__goals .venture__sub {
+  margin-top: 6px;
+}
+
+.rprep__goals li.is-done b {
+  color: var(--agree);
+}
+
+.rprep__form,
+.rprep__running {
+  display: grid;
+  gap: 10px;
+}
+
+.rprep__field {
+  display: grid;
+  gap: 4px;
+}
+
+.rprep__blocker {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--accent-soft);
+}
+
+.rprep__kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.rprep__kpis > span {
+  display: grid;
+  gap: 2px;
+}
+
+.rprep__investors {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rprep__investors li {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 6px 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font-size: 13.5px;
+}
+
+.rprep__investors li.is-pitched {
+  border-color: transparent;
+  background: var(--agree-soft);
+}
+
+.rprep__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: center;
+}
+
+.tsheet__terms {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 6px 0 10px;
+  padding: 0;
+  list-style: none;
+}
+
+.tsheet__terms li {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.tsheet__terms .warn {
+  color: var(--maybe);
+}
+
+.tsheet__levers .list__row {
+  align-items: center;
+  gap: 10px;
+}
+
+.tsheet__log {
+  display: grid;
+  gap: 4px;
+  margin: 8px 0;
+  padding-left: 18px;
+}
+
+@media (max-width: 900px) {
+  .ladder--full {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}

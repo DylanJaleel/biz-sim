@@ -362,6 +362,7 @@ const HEIR_MOVES = new Set<GameAction["type"]>([
   "followUp",
   "founderCall",
   "round",
+  "ventureRound",
   "buyShares",
   "askShares",
   "introContact",

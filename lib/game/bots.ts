@@ -17,7 +17,7 @@ import { activeSearch, searchBlocker, searchCandidates, structureDeal } from "./
 import { annualEbitda, sizeMultiple } from "./ebitda";
 import { platformBlocker, platformOf } from "./platform";
 import { networkActions } from "./network-bots";
-import { ventureActions } from "./venture-bots";
+import { roundActions, ventureActions } from "./venture-bots";
 import { companyValue } from "./venture";
 import { currentMandates, hireFee, integrationCapacity, leadOf, OP_PROFILES, opTypeOf, profileOf } from "./team";
 import { addonFit, fitKnown, HOLDCO } from "./holdco";
@@ -208,7 +208,7 @@ export const proBot = (prefer?: string): Bot => {
       const club = s.contacts.find((c) => c.id === "angels");
       if (s.reputation >= 35 && club && club.warmth < 60) actions.push({ type: "meetContact", contactId: "angels" });
       for (const round of s.rounds.filter((r) => r.status === "open")) actions.push({ type: "round", roundId: round.id, take: "syndicate", vote: "go" });
-      return [...actions, ...base.month(s, random)];
+      return [...roundActions(s), ...actions, ...base.month(s, random)];
     },
   };
 };

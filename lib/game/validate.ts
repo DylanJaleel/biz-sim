@@ -16,6 +16,8 @@ import type {
   RoundTake,
   SeatId,
   StudioMove,
+  VentureRoundMove,
+  RoundAmbition,
   TeamRole,
   Vote,
 } from "./types";
@@ -258,6 +260,26 @@ export function parseAction(input: unknown): GameAction | null {
       return { type: "fund", move: a.move as FundMove, ...(a.lpId !== undefined ? { lpId: a.lpId as string } : {}) };
     case "lpac":
       return id(a.voteId) && id(a.choice) ? { type: "lpac", voteId: a.voteId, choice: a.choice } : null;
+    case "ventureRound": {
+      if (!id(a.startupId) || !["prepare", "pitch", "intro", "cancel", "negotiate"].includes(a.move as string)) return null;
+      const months = a.months === undefined ? undefined : Number(a.months);
+      const investor = a.investor === undefined ? undefined : Number(a.investor);
+      if (months !== undefined && ![3, 6, 9].includes(months)) return null;
+      if (investor !== undefined && !(Number.isInteger(investor) && investor >= 0 && investor < 10)) return null;
+      if (a.ambition !== undefined && !["cautious", "market", "bold"].includes(a.ambition as string)) return null;
+      if (a.lever !== undefined && !["price", "pref", "seat"].includes(a.lever as string)) return null;
+      if (a.ipo !== undefined && typeof a.ipo !== "boolean") return null;
+      return {
+        type: "ventureRound",
+        startupId: a.startupId as string,
+        move: a.move as VentureRoundMove,
+        ...(months !== undefined ? { months } : {}),
+        ...(investor !== undefined ? { investor } : {}),
+        ...(a.ambition !== undefined ? { ambition: a.ambition as RoundAmbition } : {}),
+        ...(a.lever !== undefined ? { lever: a.lever as "price" | "pref" | "seat" } : {}),
+        ...(a.ipo === true ? { ipo: true } : {}),
+      };
+    }
     case "studio": {
       if (!["found", "tranche", "fundAsk"].includes(a.move as string)) return null;
       if (a.ideaId !== undefined && !id(a.ideaId)) return null;

@@ -9,6 +9,7 @@ import { eur } from "@/components/game/format";
 import { usePlay } from "@/components/game/usePlay";
 import { BallotSpeech, GvStage, useReveal, type Seat } from "./GvStage";
 import { fmtPct } from "./holders";
+import { TermSheet } from "./TermSheet";
 
 // Die Gesellschafterversammlung: Hier zählt nicht jede Person, sondern jedes
 // Prozent. Das Halbrund hat hundert Plätze, einen pro Prozent der Firma.
@@ -74,6 +75,8 @@ export function ShareholderMeeting({ view, revision }: { view: RoundView; revisi
             <b>{fmtPct((round.amount / view.postMoney) * 100)}</b>
           </span>
           {round.down && <span className="tag tag--no">Down Round</span>}
+          {round.terms && round.terms.pref > 1 && <span className="tag tag--conditions">Präferenz {round.terms.pref.toLocaleString("de-DE")}×</span>}
+          {round.terms?.seat && <span className="tag">Beiratssitz für {round.lead}</span>}
         </div>
       </header>
 
@@ -93,6 +96,8 @@ export function ShareholderMeeting({ view, revision }: { view: RoundView; revisi
 
         <aside className="room__side">
           {current && current.reason && !finished && <BallotSpeech ballot={current} />}
+
+          {open && !voting && view.termSheet && <TermSheet view={view.termSheet} startupId={view.startupId} revision={revision} lead={round.lead} />}
 
           {open && !voting && (
             <section className="panel choice" aria-labelledby="gv-choice">

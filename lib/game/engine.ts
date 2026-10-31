@@ -145,7 +145,8 @@ import { acquire, makePlatform, planAddons, platformMonth, recordSale, startSale
 import { fundFollowOn, fundId, fundProceeds, fundsFees, fundsMonth, fundsOf, fundDistribute, investingFund, playFund, playLpac } from "./funds";
 import { fixedDays, playStudio, studioMonth } from "./studio";
 import { companyValue, creditedValue, saleValue, ventureMonth, ventureRoundClosed, ventureRoundFailed } from "./venture";
-import { VENTURE_IPO_STAGE } from "./venture-config";
+import { VENTURE_IPO_STAGE, VENTURE_LEAD_MAX_STAGE } from "./venture-config";
+import { playVentureRound } from "./round-prep";
 import { assignOp, delegateFor, fireOp, hireOp, migrateTeam, teamCarry, teamDealFlow, teamMonth } from "./team";
 import { dragAlong, foundHoldco, guaranteeClaim, guaranteeText } from "./holdco";
 import { estateEquity, officeRent } from "./estate";
@@ -521,6 +522,10 @@ function playAction(current: GameState, action: GameAction): { state: GameState;
       playStudio(ctxOf(state), action);
       return { state, result: { kind: "none" } };
     }
+    case "ventureRound": {
+      playVentureRound(ctxOf(state), action);
+      return { state, result: { kind: "none" } };
+    }
     case "dd": {
       const s = startupOf(state, action.startupId);
       if (s.status !== "offered" || !s.offer) throw new GameRuleError("Dieses Angebot liegt nicht mehr vor.");
@@ -674,7 +679,7 @@ function playAction(current: GameState, action: GameAction): { state: GameState;
       if (!round || round.status !== "open") throw new GameRuleError("Über diese Runde wurde schon entschieden.");
       const s = startupOf(state, round.startupId);
       if (s.status !== "active") throw new GameRuleError("Die Firma ist nicht mehr aktiv.");
-      if (round.venture !== undefined && (action.take === "lead" || action.take === "syndicate"))
+      if (round.venture !== undefined && (action.take === "syndicate" || (action.take === "lead" && round.venture > VENTURE_LEAD_MAX_STAGE)))
         throw new GameRuleError("Eine Wachstumsrunde führt der Wachstumsinvestor. Du kannst anteilig mitziehen.");
       if (action.take === "lead" && state.reputation < LEAD_REPUTATION) {
         throw new GameRuleError(`Eine Runde anführen kannst du ab ${LEAD_REPUTATION} Ruf.`);
@@ -1270,7 +1275,7 @@ const FUNDING_TEMPLATES = ["bridge", "seed_round"];
 function settleRound(state: GameState, round: Round, take: RoundTake, vote: GvVote | "abstain", notes: string[]): void {
   let s = startupOf(state, round.startupId);
   // Growth rounds are led by the growth investor: the player can only follow pro rata.
-  if (round.venture !== undefined && (take === "lead" || take === "syndicate"))
+  if (round.venture !== undefined && (take === "syndicate" || (take === "lead" && round.venture > VENTURE_LEAD_MAX_STAGE)))
     throw new GameRuleError("Eine Wachstumsrunde führt der Wachstumsinvestor. Du kannst anteilig mitziehen.");
   const { ballots, approved } = shareholderVote(round, s, vote);
   round.ballots = ballots;
@@ -2061,8 +2066,9 @@ function planExits(state: GameState): void {
 /** Big, growing companies can list on the stock exchange instead of being sold. */
 function planIpo(state: GameState, s: Startup, value: number, mood: number): boolean {
   if (value < IPO_MIN_VALUE || state.month - s.joined < 12 || s.metrics.growth < 0.012) return false;
-  // On the venture path the company lists only from Serie D on (or once the path is over).
-  if (s.venture && s.venture.ended === undefined && s.venture.stage < VENTURE_IPO_STAGE) return false;
+  // On the venture path the banks come by themselves only for a unicorn (or once the path is over);
+  // from Serie D on the player can prepare the listing (round-prep.ts).
+  if (s.venture && s.venture.ended === undefined && s.venture.stage < VENTURE_IPO_STAGE + 1) return false;
   const random = randomFor(state.seed, `ipo|${s.id}|${state.month}`);
   if (random() > IPO_CHANCE * (1 + mood)) return false;
   const price = Math.round((value * (1 + random() * 0.35 + mood * 0.15)) / 100_000) * 100_000;

@@ -3,13 +3,16 @@ import { committed, familyRead, investingFundRead, nextFundBlocker } from "./fun
 import { building, milestone, nextTranche, studioBlocker, studioCompanies, studioNeed, studioRead, trancheAmount } from "./studio";
 import { FUND_FIRST_CLOSE, STUDIO_MAX, STUDIO_TRANCHES } from "./venture-config";
 import type { GameAction, GameState } from "./types";
+import { prepBlocker } from "./round-prep";
+import { leverOpen } from "./rounds";
+import { fulfilment, ipoChance, ventureChecks } from "./venture";
 
 // Skript-Spieler für Fondsfamilie, LPAC und Venture Studio: so, wie ein
 // umsichtiger Mensch es spielen würde (faire Vorschläge an den LPAC,
 // Zugeständnisse, die nicht zu teuer sind, Tranchen erst am Meilenstein).
 
 export function ventureActions(s: GameState, money: number): GameAction[] {
-  const out: GameAction[] = [];
+  const out: GameAction[] = roundActions(s);
   const family = familyRead(s);
   for (const v of family.votes.filter((x) => x.status === "open")) {
     const choice = v.kind === "extension" ? "waive" : v.kind === "fee" ? "stepdown" : "fair";
@@ -39,6 +42,40 @@ export function ventureActions(s: GameState, money: number): GameAction[] {
       const i = nextTranche(c);
       if (i > 0 && milestone(c, i).done && trancheAmount(c, i) <= money * 0.5) out.push({ type: "studio", move: "tranche", startupId: c.id, size: "plan" });
       if (!c.studio!.fundVote && investingFundRead(s)) out.push({ type: "studio", move: "fundAsk", startupId: c.id });
+    }
+  }
+  return out;
+}
+
+/**
+ * Growth rounds the way a careful board member plays them: prepare the round
+ * half a year ahead (cautious price if the milestones are not all met), pitch
+ * two investors, take the warm intro, push the price only with a second term
+ * sheet in hand, prepare the listing once the banks are likely to say yes.
+ */
+export function roundActions(s: GameState): GameAction[] {
+  const out: GameAction[] = [];
+  for (const c of s.startups.filter((x) => x.status === "active" && x.venture && x.stake > 0)) {
+    const path = c.venture!;
+    const open = s.rounds.find((r) => r.startupId === c.id && r.status === "open");
+    if (open?.terms) {
+      if (open.terms.rivals > 0 && leverOpen(open.terms, "price")) out.push({ type: "ventureRound", startupId: c.id, move: "negotiate", lever: "price" });
+      if (leverOpen(open.terms, "pref")) out.push({ type: "ventureRound", startupId: c.id, move: "negotiate", lever: "pref" });
+      continue;
+    }
+    if (path.prep) {
+      if (path.prep.pitched.length < 2) out.push({ type: "ventureRound", startupId: c.id, move: "pitch", investor: path.prep.pitched.length });
+      if (!path.prep.intro) out.push({ type: "ventureRound", startupId: c.id, move: "intro" });
+      continue;
+    }
+    // The listing once the private path is done: unicorn, or no further round in sight.
+    if ((path.unicorn !== undefined || path.ended !== undefined) && prepBlocker(s, c, true) === null && ipoChance(s, c) >= 0.3) {
+      out.push({ type: "ventureRound", startupId: c.id, move: "prepare", ipo: true, months: 3, ambition: "market" });
+      continue;
+    }
+    if (prepBlocker(s, c, false) === null && path.next - s.month <= 6) {
+      const f = fulfilment(ventureChecks(s, c));
+      out.push({ type: "ventureRound", startupId: c.id, move: "prepare", months: f >= 0.9 ? 3 : 6, ambition: f >= 0.95 ? "market" : "cautious" });
     }
   }
   return out;
