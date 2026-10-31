@@ -826,7 +826,8 @@ export const LESSONS: Lesson[] = [
       "Eine Due Diligence (DD) ist die gründliche Prüfung vor einem Kauf oder Einstieg. Sie folgt fast immer denselben Schritten: Vertraulichkeitsvereinbarung, Datenraum und Fragenliste, Finanzen, Steuern, Recht, Markt, Technik, dann der Bericht und der Vertrag beim Notar. Für jeden Schritt braucht es die richtigen Fachleute.",
     rule: "Jeder rote Punkt im Bericht hat drei Auswege: Preis senken, eine Garantie verlangen oder eine Bedingung vor dem Abschluss.",
     example: "Der Wirtschaftsprüfer findet 140.000 € Einmalumsatz. Statt 8,0 Mio. € bietest du 7,2 Mio. € und verlangst, dass die Code-Rechte vor dem Abschluss übertragen werden.",
-    inGame: "Bei Startup-Angeboten und Übernahmen gehst du die Prüfung mit deiner CFO Marie Lenz durch. Wer fehlt, übersieht etwas, das nach dem Kauf teuer wird. Eine gründliche Prüfung verrät auch die Schmerzgrenze des Verkäufers.",
+    inGame:
+      "Bei Startup-Angeboten und Übernahmen gehst du die Prüfung mit deiner CFO Marie Lenz durch. Wer fehlt, übersieht etwas, das nach dem Kauf teuer wird. Eine gründliche Prüfung verrät auch die Schmerzgrenze des Verkäufers.",
   },
   {
     id: "verhandlung_uebernahme",
@@ -834,8 +835,10 @@ export const LESSONS: Lesson[] = [
     summary:
       "Bei einer Übernahme verhandeln Käufer und Inhaber nicht nur den Preis, sondern auch, wann und wie er gezahlt wird: sofort in bar, als Verkäuferdarlehen (der Inhaber leiht dir einen Teil) oder als Earn-out (ein Teil fließt nur, wenn die Firma ihre Ziele erreicht). Jeder Verkäufer hat eine Schmerzgrenze, unter der er nie verkauft.",
     rule: "Bargeld heute ist dem Verkäufer mehr wert als ein Versprechen für morgen. Wer mehr Earn-out will, muss beim Preis drauflegen. Zusagen wie eine Standortgarantie kosten wenig und sind dem Inhaber viel wert.",
-    example: "Der Inhaber fordert 29,4 Mio. €. Du bietest 27,1 Mio. € mit 10 % Verkäuferdarlehen und Standortgarantie, er kontert mit 28,4 Mio. €. Ihr einigt euch bei 27,9 Mio. €.",
-    inGame: "Am Verhandlungstisch legst du in Runden Angebote hin. Jede Runde kostet einen Tag. Gute Laune bringt eine Runde mehr, ein zu tiefes Angebot verärgert den Inhaber, bis er aufsteht.",
+    example:
+      "Der Inhaber fordert 29,4 Mio. €. Du bietest 27,1 Mio. € mit 10 % Verkäuferdarlehen und Standortgarantie, er kontert mit 28,4 Mio. €. Ihr einigt euch bei 27,9 Mio. €.",
+    inGame:
+      "Am Verhandlungstisch legst du in Runden Angebote hin. Jede Runde kostet einen Tag. Gute Laune bringt eine Runde mehr, ein zu tiefes Angebot verärgert den Inhaber, bis er aufsteht.",
   },
 ];
 

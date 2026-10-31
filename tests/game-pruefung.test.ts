@@ -130,3 +130,100 @@ describe("Konzerne", () => {
     expect(c.seats[0]!.termStart).toBe(loaded.month);
   });
 });
+
+import { ctxOf } from "../lib/game/engine";
+import { targetDeal } from "../lib/game/lbo";
+import { stepsFor } from "../lib/game/diligence";
+import { askNow, ownerAnswer, painKnown, painOf, TAKEOVER } from "../lib/game/takeover";
+import { BUYOUT_REPUTATION } from "../lib/game/config";
+
+function withTarget(seed = 7) {
+  const state: GameState = { ...newGame(seed), cash: 20_000_000, reputation: Math.max(BUYOUT_REPUTATION, 70) };
+  const s = targetDeal(ctxOf(state), () => 0.5, { ev: 3_000_000, source: "market" });
+  return { state, id: s.id };
+}
+
+function review(state: GameState, id: string, perfect: boolean): GameState {
+  for (const step of stepsFor("deal")) {
+    const picks = perfect || step.key !== "finance" ? step.need : ["analyst"];
+    state = act(state, { type: "diligence", startupId: id, picks });
+  }
+  return state;
+}
+
+describe("Due Diligence mit der CFO", () => {
+  it("a complete review finds the problems, lowers the price and reveals the owner's limit", () => {
+    const t0 = withTarget();
+    const id = t0.id;
+    let state = t0.state;
+    const before = askNow(state.startups.find((s) => s.id === id)!);
+    state = review(state, id, true);
+    const s = state.startups.find((x) => x.id === id)!;
+    expect(s.diligence?.done).toBe(true);
+    expect(s.diligence?.pain).toBe("exact");
+    expect((s.findings ?? []).every((f) => f.found)).toBe(true);
+    expect(askNow(s)).toBeLessThanOrEqual(before);
+    expect(painKnown(state, s).exact).toBe(painOf(state, s));
+    expect(state.diligenceRuns).toBe(1);
+  });
+
+  it("a missed finance step leaves its findings hidden and the limit covered", () => {
+    const t0 = withTarget(9);
+    const id = t0.id;
+    let state = t0.state;
+    state = review(state, id, false);
+    const s = state.startups.find((x) => x.id === id)!;
+    expect(s.diligence?.pain).toBeUndefined();
+    expect((s.findings ?? []).filter((f) => f.module === "financial").every((f) => !f.found)).toBe(true);
+    expect(painKnown(state, s).exact).toBeUndefined();
+  });
+});
+
+describe("Übernahme am Tisch", () => {
+  const base = { ask: 10_000_000, pain: 8_800_000, mood: 60, counter: { price: 10_000_000, vendor: 0.1, earnout: 0, pledge: false }, last: false, pledged: false };
+
+  it("accepts an offer at the counter, counters one in between, walks after insults", () => {
+    expect(ownerAnswer({ ...base, offer: { price: 10_000_000, vendor: 0.1, earnout: 0, pledge: false } }).accept).toBe(true);
+    const mid = ownerAnswer({ ...base, offer: { price: 9_300_000, vendor: 0.1, earnout: 0, pledge: true } });
+    expect(mid.accept).toBe(false);
+    expect(mid.counter!.price).toBeLessThan(10_000_000);
+    expect(mid.counter!.price).toBeGreaterThanOrEqual(8_800_000 * 0.98);
+    expect(mid.mood).toBeGreaterThan(60);
+    const low = ownerAnswer({ ...base, mood: 35, offer: { price: 6_500_000, vendor: 0, earnout: 0, pledge: false } });
+    expect(low.walk).toBe(true);
+  });
+
+  it("never sells below the limit and a good mood gives one more round", () => {
+    const t0 = withTarget(11);
+    const id = t0.id;
+    let state = t0.state;
+    const s0 = state.startups.find((x) => x.id === id)!;
+    const pain = painOf(state, s0);
+    for (let i = 0; i < 6; i++) {
+      const t = state.startups.find((x) => x.id === id)!.takeover;
+      if (t && (t.status !== "open" || t.rounds.length >= TAKEOVER.rounds + (t.mood >= 70 ? 1 : 0))) break;
+      state = act(state, { type: "takeover", startupId: id, move: "offer", price: Math.round(pain * 0.95), vendor: 0.1, earnout: 0, pledge: true });
+    }
+    const t = state.startups.find((x) => x.id === id)!.takeover!;
+    expect(t.status === "agreed").toBe(false);
+    for (const r of t.rounds) if (r.counter) expect(r.counter.price).toBeGreaterThanOrEqual(Math.round(pain * 0.98) - 10_000);
+  });
+
+  it("buys at the agreed price", () => {
+    const t0 = withTarget(12);
+    const id = t0.id;
+    let state = t0.state;
+    const ask = askNow(state.startups.find((x) => x.id === id)!);
+    state = act(state, { type: "takeover", startupId: id, move: "offer", price: Math.round(ask * 0.95), vendor: 0.1, earnout: 0, pledge: true });
+    let s = state.startups.find((x) => x.id === id)!;
+    if (s.takeover!.status === "open") state = act(state, { type: "takeover", startupId: id, move: "accept" });
+    s = state.startups.find((x) => x.id === id)!;
+    expect(s.takeover!.status).toBe("agreed");
+    const price = s.takeover!.agreed!.price;
+    state = act(state, { type: "acquire", targetId: id, bid: "ask", bank: 0.4, vendor: 0, earnout: 0 });
+    s = state.startups.find((x) => x.id === id)!;
+    expect(s.status).toBe("active");
+    expect(s.lbo!.entryEv).toBe(price);
+    expect(s.lbo!.vendors.length).toBe(1);
+  });
+});

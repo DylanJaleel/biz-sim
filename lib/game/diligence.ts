@@ -252,13 +252,21 @@ function finish(ctx: Ctx, s: Startup, run: DiligenceRun, steps: DiligenceStep[])
     run.priceAfter = s.offer.stake > 0 ? (s.offer.ticket * 100) / s.offer.stake : run.priceBefore;
   } else {
     const found = (s.findings ?? []).filter((f) => f.found);
-    run.priceAfter = roundTo(found.reduce((p, f) => p * (1 - f.priceCut), s.offer!.ev!), 10_000);
+    run.priceAfter = roundTo(
+      found.reduce((p, f) => p * (1 - f.priceCut), s.offer!.ev!),
+      10_000,
+    );
   }
   ctx.lesson("due_diligence");
 }
 
 /** What the review found at a step, for the table and the list of findings. */
-export function stepFinding(s: Startup, step: DiligenceStep, missed: boolean, facts: { label: string; text: string; tone: string }[] = []): { sev: "high" | "mid" | "low" | "miss"; text: string } {
+export function stepFinding(
+  s: Startup,
+  step: DiligenceStep,
+  missed: boolean,
+  facts: { label: string; text: string; tone: string }[] = [],
+): { sev: "high" | "mid" | "low" | "miss"; text: string } {
   if (missed) return { sev: "miss", text: step.missed };
   const kind = kindOf(s);
   if (kind === "deal" && step.module) {
@@ -316,9 +324,11 @@ const GAPS: Partial<Record<StepKey, { text: string; delta: (s: Startup) => Param
   finance: { text: "Ein Teil des Umsatzes war ein Einmalprojekt und fehlt jetzt.", delta: () => ({ revenuePct: -0.12, trust: -5 }) },
   tax: { text: "Das Finanzamt fordert Lohnsteuer auf Mitarbeiteranteile nach.", delta: (s) => ({ cash: -Math.max(10_000, roundTo(s.metrics.revenue * 0.6, 1000)), trust: -3 }) },
   legal: { text: "Ein großer Kunde kündigt wegen des Eigentümerwechsels.", delta: (s) => ({ revenuePct: -Math.min(0.3, s.metrics.topCustomer), trust: -5 }) },
-  tech: { text: "Ein Freiberufler verlangt Geld für Code, dessen Rechte nie übertragen wurden.", delta: (s) => ({ cash: -Math.max(15_000, roundTo(s.metrics.revenue * 0.5, 1000)), trust: -3 }) },
+  tech: {
+    text: "Ein Freiberufler verlangt Geld für Code, dessen Rechte nie übertragen wurden.",
+    delta: (s) => ({ cash: -Math.max(15_000, roundTo(s.metrics.revenue * 0.5, 1000)), trust: -3 }),
+  },
 };
-
 
 export interface DiligenceView {
   id: string;
@@ -384,15 +394,14 @@ export function diligenceView(state: GameState, s: Startup, facts: { label: stri
           finding: stepFinding(s, lastStep, lastEntry.missed, facts),
         }
       : undefined;
-  const findings = log
-    .map((l) => ({ ...stepFinding(s, steps[l.step]!, l.missed, facts), step: steps[l.step]!.name }))
-    .reverse();
+  const findings = log.map((l) => ({ ...stepFinding(s, steps[l.step]!, l.missed, facts), step: steps[l.step]!.name })).reverse();
   const ask = cur?.key === "report" ? "Wer schreibt den Bericht, wer formuliert die Bedingungen?" : "Wen holst du für diesen Schritt dazu?";
   return {
     id: s.id,
     name: s.name,
     kind,
-    lead: kind === "deal" ? `Übernahme · ${s.sector} · gefordert ${eur(s.offer?.ev ?? 0)}` : `${s.stage ?? "Beteiligung"} · ${eur(s.offer?.ticket ?? 0)} für ${s.offer?.stake ?? 0} %`,
+    lead:
+      kind === "deal" ? `Übernahme · ${s.sector} · gefordert ${eur(s.offer?.ev ?? 0)}` : `${s.stage ?? "Beteiligung"} · ${eur(s.offer?.ticket ?? 0)} für ${s.offer?.stake ?? 0} %`,
     mastery,
     masteryLabel: MASTERY_LABEL[mastery]!,
     rail,

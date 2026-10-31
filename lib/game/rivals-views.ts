@@ -3,20 +3,7 @@ import { leagueRank, leagueTable, LEAGUE_TOP, monthsPlayed, yearOf, type LeagueR
 import { BIG_DAYS, BIG_ROUNDS, bidValue, bigFee, bigPower, bigRoundsFor, bigTableMood, LEVER_TEXT } from "./mandate-big";
 import { mnaRead } from "./mna-core";
 import { duelOwnerMood } from "./negotiation";
-import {
-  CONCEPT_COST,
-  CONCEPT_VALUE,
-  DUEL_DAYS,
-  DUEL_RAISE,
-  duelRounds,
-  duelRecord,
-  duelScores,
-  RIVAL_KIND_LABEL,
-  RIVAL_REPUTATION,
-  rivalDef,
-  rivalsIn,
-  rivalsOf,
-} from "./rivals";
+import { CONCEPT_COST, CONCEPT_VALUE, DUEL_DAYS, DUEL_RAISE, duelRounds, duelRecord, duelScores, RIVAL_KIND_LABEL, RIVAL_REPUTATION, rivalDef, rivalsIn, rivalsOf } from "./rivals";
 import type { GameState, MandateLever, TeaserFact } from "./types";
 
 // Was die Seiten von Rangliste, Rivalen, Bietgefecht und großen Mandaten

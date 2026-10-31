@@ -108,7 +108,13 @@ export function DiligenceTable({ v, revision, back }: { v: DiligenceView; revisi
               <p className="ddc__ask">{v.current.ask}</p>
               <div className="ddc__chips">
                 {v.chips.map((c) => (
-                  <button key={c.id} type="button" className={`ddc-who${picked.includes(c.id) ? " ddc-who--on" : ""}`} aria-pressed={picked.includes(c.id)} onClick={() => toggle(c.id)}>
+                  <button
+                    key={c.id}
+                    type="button"
+                    className={`ddc-who${picked.includes(c.id) ? " ddc-who--on" : ""}`}
+                    aria-pressed={picked.includes(c.id)}
+                    onClick={() => toggle(c.id)}
+                  >
                     {c.name}
                     <small>{k(c.cost)}</small>
                   </button>

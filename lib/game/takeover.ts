@@ -88,7 +88,16 @@ export interface OwnerAnswer {
 const pctText = (n: number) => `${Math.round(n * 100)} %`;
 
 /** The owner's answer to an offer: pure, the same rule for engine and tests. */
-export function ownerAnswer(input: { ask: number; pain: number; mood: number; offer: TakeoverTerms; counter: TakeoverTerms; previous?: TakeoverTerms; last: boolean; pledged: boolean }): OwnerAnswer {
+export function ownerAnswer(input: {
+  ask: number;
+  pain: number;
+  mood: number;
+  offer: TakeoverTerms;
+  counter: TakeoverTerms;
+  previous?: TakeoverTerms;
+  last: boolean;
+  pledged: boolean;
+}): OwnerAnswer {
   const { ask, pain, offer, counter } = input;
   const v = ownerValue(offer, ask);
   const target = ownerValue(counter, ask);
@@ -103,8 +112,7 @@ export function ownerAnswer(input: { ask: number; pain: number; mood: number; of
   if (offer.pledge && !input.pledged) mood += 6;
   if (offer.earnout > TAKEOVER.maxEarnout) mood -= 4;
   mood = Math.round(Math.max(0, Math.min(100, mood)));
-  if (mood < TAKEOVER.walkMood)
-    return { accept: false, walk: true, mood, say: "„Das ist nicht ernst gemeint. Ich habe vierzig Jahre in diese Firma gesteckt. Wir sind fertig.“" };
+  if (mood < TAKEOVER.walkMood) return { accept: false, walk: true, mood, say: "„Das ist nicht ernst gemeint. Ich habe vierzig Jahre in diese Firma gesteckt. Wir sind fertig.“" };
   const give = (target - Math.max(v, pain)) * (0.3 + mood / 250);
   const floor = input.last ? Math.max(pain, target - 2 * give) : pain;
   const value = Math.max(floor, target - give);
@@ -197,3 +205,60 @@ export function agreedTerms(s: Startup): TakeoverTerms | null {
   return s.takeover?.status === "agreed" && s.takeover.agreed ? s.takeover.agreed : null;
 }
 
+export interface TakeoverView {
+  id: string;
+  owner: string;
+  ownerTitle: string;
+  ask: number;
+  askBefore: number;
+  mood: number;
+  played: number;
+  rounds: number;
+  bonus: boolean;
+  status: TakeoverState["status"];
+  counter: TakeoverTerms;
+  lastOffer?: TakeoverTerms;
+  say: string;
+  sayNote?: string;
+  agreed?: TakeoverTerms;
+  pain: { exact?: number; range?: [number, number]; by?: string };
+  history: { offer: TakeoverTerms; counter?: TakeoverTerms; say: string }[];
+  blocked: string | null;
+  maxVendor: number;
+  maxEarnout: number;
+  days: number;
+}
+
+export function takeoverView(state: GameState, s: Startup): TakeoverView | null {
+  if (!s.offer?.ev) return null;
+  const t = takeoverOf(s);
+  const owner = s.board.find((b) => b.seat === "ceo");
+  const last = t.rounds[t.rounds.length - 1];
+  const duel = s.offer.duel;
+  const rounds = roundsOf(t);
+  return {
+    id: s.id,
+    owner: owner?.name ?? "Der Inhaber",
+    ownerTitle: owner?.title ?? "Inhaber",
+    ask: askNow(s),
+    askBefore: s.offer.ev,
+    mood: t.mood,
+    played: t.rounds.length,
+    rounds,
+    bonus: rounds > TAKEOVER.rounds,
+    status: t.status,
+    counter: lastCounter(s),
+    lastOffer: last?.offer,
+    say: last
+      ? last.say
+      : `„Ich verlange ${mio(askNow(s))} mit ${Math.round(TAKEOVER.openVendor * 100)} % Verkäuferdarlehen. Für weniger muss mich jemand mit guten Argumenten überzeugen.“`,
+    sayNote: last ? `Gegenangebot aus Runde ${t.rounds.length}` : "Seine Forderung",
+    agreed: t.agreed,
+    pain: painKnown(state, s),
+    history: t.rounds.map((r) => ({ offer: r.offer, counter: r.counter, say: r.say })),
+    blocked: duel?.status === "open" ? "Erst das Bietgefecht entscheiden." : duel?.status === "won" ? "Den Preis hat das Bietgefecht entschieden." : null,
+    maxVendor: TAKEOVER.maxVendor,
+    maxEarnout: TAKEOVER.maxEarnout,
+    days: TAKEOVER.days,
+  };
+}

@@ -173,7 +173,7 @@ export function Inbox({
   );
 }
 
-function Deal({ deal, revision, cash, ddDays }: { deal: DealView; revision: number; cash: number; ddDays: number }) {
+function Deal({ deal, revision, cash }: { deal: DealView; revision: number; cash: number; ddDays: number }) {
   if (deal.status !== "offered") {
     const text: Record<StartupStatus, string> = {
       offered: "",
@@ -261,9 +261,9 @@ function Deal({ deal, revision, cash, ddDays }: { deal: DealView; revision: numb
 
       <div className="deal__actions">
         {!deal.ddDone && !deal.structured && (
-          <ActionButton action={{ type: "dd", startupId: deal.id }} revision={revision} days={ddDays}>
-            Prüfen
-          </ActionButton>
+          <Link href={`/pruefung/${deal.id}`} className="btn">
+            Due Diligence mit der CFO
+          </Link>
         )}
         {deal.structured ? (
           <Link href={`/uebernahme/${deal.id}`} className="btn btn--primary">

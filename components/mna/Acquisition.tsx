@@ -10,6 +10,8 @@ import { HelpersPanel } from "@/components/network/HelpersPanel";
 import { rivalFor, specialistsFor } from "@/lib/game/network-views";
 import { duelView } from "@/lib/game/rivals-views";
 import { DuelPanel } from "./DuelPanel";
+import { TakeoverTable } from "./TakeoverTable";
+import { takeoverView } from "@/lib/game/takeover";
 
 // Übernahme strukturieren: ein Familienbetrieb aus der Post, von der
 // Suchenden, oder ein Zukauf für die Plattform.
@@ -35,6 +37,8 @@ export async function Acquisition({ params }: { params: Promise<{ id: string }> 
   }
   const addon = v.kind === "addon";
   const duel = addon ? null : duelView(state, id);
+  const deal = addon ? undefined : state.startups.find((x) => x.id === id);
+  const tko = deal && duel?.status !== "won" ? takeoverView(state, deal) : null;
   return (
     <div className="page mna mna--acq">
       <header className="page__head">
@@ -145,22 +149,56 @@ export async function Acquisition({ params }: { params: Promise<{ id: string }> 
         </section>
       )}
 
-      <DealDesk
-        id={v.id}
-        kind={v.kind}
-        revision={revision}
-        dd={v.dd}
-        preview={v.preview}
-        limits={v.limits}
-        lowBid={v.lowBid}
-        found={v.found.length}
-        cash={v.cash}
-        daysLeft={v.daysLeft}
-        acquireDays={v.acquireDays}
-        blocker={duel?.status === "open" ? "Erst das Bietgefecht entscheiden: erhöhen, Konzept vorlegen oder aussteigen." : v.blocker}
-        integration={addon ? v.integration : undefined}
-        group={addon ? { bank: v.platform!.bank, ebitda: v.platform!.ebitda } : undefined}
-      />
+      {!addon && deal && (
+        <section className="panel ddc-teaser" aria-labelledby="dd-cfo-title">
+          <p className="eyebrow">Schritt 1 · Due Diligence mit der CFO</p>
+          <h2 id="dd-cfo-title" className="panel__title">
+            {deal.diligence?.done ? "Prüfung abgeschlossen" : deal.diligence ? "Prüfung läuft" : "Bevor du verhandelst: prüfen"}
+          </h2>
+          <p className="muted">
+            {deal.diligence?.done
+              ? `${deal.diligence.log.filter((l) => l.missed).length === 0 ? "Nichts übersehen." : `${deal.diligence.log.filter((l) => l.missed).length} Punkte übersehen.`} Berater ${eur(deal.diligence.cost)}. ${deal.diligence.pain === "exact" ? "Die Schmerzgrenze des Inhabers liegt offen." : deal.diligence.pain === "range" ? "Die Schmerzgrenze ist eingegrenzt." : "Die Schmerzgrenze bleibt verdeckt."}`
+              : "Mit Marie Lenz gehst du die neun Schritte durch und holst für jeden die richtigen Leute an den Tisch. Befunde senken den Preis, eine gründliche Prüfung verrät die Schmerzgrenze des Inhabers."}
+          </p>
+          <Link className={`btn${deal.diligence?.done ? "" : " btn--primary"}`} href={`/pruefung/${v.id}`}>
+            {deal.diligence?.done ? "Prüfung ansehen" : deal.diligence ? "Prüfung fortsetzen" : "Prüfung starten"}
+          </Link>
+        </section>
+      )}
+
+      {!addon && tko && (
+        <TakeoverTable
+          name={v.name}
+          t={tko}
+          preview={v.preview}
+          limits={v.limits}
+          rule={v.rule}
+          cash={v.cash}
+          daysLeft={v.daysLeft}
+          acquireDays={v.acquireDays}
+          revision={revision}
+          blocker={v.blocker}
+        />
+      )}
+
+      {(addon || !tko) && (
+        <DealDesk
+          id={v.id}
+          kind={v.kind}
+          revision={revision}
+          dd={v.dd}
+          preview={v.preview}
+          limits={v.limits}
+          lowBid={v.lowBid}
+          found={v.found.length}
+          cash={v.cash}
+          daysLeft={v.daysLeft}
+          acquireDays={v.acquireDays}
+          blocker={duel?.status === "open" ? "Erst das Bietgefecht entscheiden: erhöhen, Konzept vorlegen oder aussteigen." : v.blocker}
+          integration={addon ? v.integration : undefined}
+          group={addon ? { bank: v.platform!.bank, ebitda: v.platform!.ebitda } : undefined}
+        />
+      )}
 
       {!addon && (
         <div className="panel__actions">

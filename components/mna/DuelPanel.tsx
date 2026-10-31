@@ -34,6 +34,7 @@ export function DuelPanel({ id, duel, revision, owner }: { id: string; duel: Due
         </div>
       </div>
       <NegotiationDesk
+        scene
         name={owner || "Der Inhaber"}
         role="Inhaber"
         look="senior"
