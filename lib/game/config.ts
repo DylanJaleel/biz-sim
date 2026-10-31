@@ -171,6 +171,10 @@ export const STRONG_GAP = 0.12;
 export const FAIR_GAP = 0.35;
 /** Spread of a decision relative to the best value: below `min` the choice moves no reputation, from `full` on all of it. */
 export const JUDGMENT_STAKES = { min: 0.01, full: 0.2 } as const;
+/** A choice this close to the best option (share of its value, or euros) is a close call: neutral note, little reputation or trust at stake. */
+export const CLOSE_GAP = { relative: 0.03, absolute: 2_000 } as const;
+/** Share of the trust lost for overruling the management that still counts in a close call. */
+export const CLOSE_TRUST_SHARE = 0.25;
 
 // Conditions ("Auflagen"): the player picks which one; one of three fits.
 /** Conditions start this many months later than a plain yes. */

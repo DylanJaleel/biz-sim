@@ -14,8 +14,36 @@ export type SeatId = "ceo" | "cto" | "vc" | "indep" | "angel";
 export type SpeakerId = SeatId | "you";
 
 export type Vote = "go" | "conditions" | "no";
+/** The six kinds of risk a condition can guard against; also the conditions of older games. */
+export type CovenantRisk = "budget" | "stagegate" | "pilot" | "second" | "kpi" | "veto";
+/** Conditions offered per topic area (covenants.ts): three per area. */
+export type ThemedCovenantId =
+  | "kreditdeckel"
+  | "tranchen"
+  | "geldgeberkennzahl"
+  | "stellenplan"
+  | "testphase"
+  | "vertretung"
+  | "testmarkt"
+  | "meilenstein"
+  | "projektdeckel"
+  | "mindestkasse"
+  | "haelfte"
+  | "quartal"
+  | "stufen"
+  | "garantien"
+  | "schluesselkunden"
+  | "testkunden"
+  | "zweiterweg"
+  | "margenboden"
+  | "zustimmungskatalog"
+  | "zielstufen"
+  | "monatsbericht"
+  | "krisenbudget"
+  | "ersatzquelle"
+  | "krisenstab";
 /** Kinds of conditions ("Auflagen") the player can attach to an approval. */
-export type CovenantId = "budget" | "stagegate" | "pilot" | "second" | "kpi" | "veto";
+export type CovenantId = CovenantRisk | ThemedCovenantId;
 
 /** The three conditions offered for a board item; exactly one fits the situation. */
 export interface CovenantSetup {
@@ -255,6 +283,8 @@ export interface MeetingDecision {
   bestOption?: string;
   /** How much the decision mattered for the reputation (0..1). */
   weight?: number;
+  /** A close call: the chosen option lay only a little below the best (neutral note, little reputation or trust at stake). */
+  close?: boolean;
 }
 
 export type Judgment = "strong" | "fair" | "weak";

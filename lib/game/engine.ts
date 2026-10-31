@@ -12,6 +12,7 @@ import {
   LAPSED_REPUTATION,
   LAPSED_TRUST,
   OVERRULED_TRUST,
+  CLOSE_TRUST_SHARE,
   RESULT_REPUTATION,
   START_CASH,
   START_REPUTATION,
@@ -106,7 +107,7 @@ import { awardTrophies } from "./trophies";
 import { cityOf, ensureGigLog, garageUpkeep, garageValue, RESALE, resolveTrip, travelOptions, vehicleBlocker, vehicleOf } from "./travel";
 import { assetOf, holdingsValue, initialMarket, sentimentOf, stepMarket } from "./market";
 import { templateOf, TEMPLATES } from "./content";
-import { judge, bestOf, bestVote, judgmentWeight, outlook, resolveVote, VOTES } from "./judge";
+import { judge, bestOf, bestVote, isClose, judgmentWeight, outlook, resolveVote, VOTES } from "./judge";
 import { COVENANTS, covenantOutlook, covenantSetup, optionValues, RISK_QUESTION, type CovenantOutlook } from "./covenants";
 import { CURRICULUM } from "./lessons";
 import { baseStances, buildMeeting, type MeetingPlayback } from "./meeting";
@@ -1373,14 +1374,18 @@ function decide(
   const options = optionValues(co);
   const choice = vote === "conditions" ? (covenant ?? "standard") : vote;
   const judged = choice === "standard" ? { ...options, standard: co.standard.value } : options;
-  const judgment = judge(judged, choice, co.floor);
+  const strict = judge(judged, choice, co.floor);
+  // A close call (the options lay near the best) gets a neutral note and moves little.
+  const close = strict !== "strong" && isClose(judged, choice);
+  const judgment = close ? "fair" : strict;
   const weight = judgmentWeight(judged, co.floor);
   const bestOption = bestOf(options);
   const best: Vote = bestOption === "go" || bestOption === "no" ? bestOption : "conditions";
   const values: Record<Vote, number> = { go: co.go.value, conditions: vote === "conditions" ? judged[choice]! : co.standard.value, no: co.no.value };
   const ceoVote = voteFromStance(ceoStance);
-  const trustDelta = outcome === ceoVote ? 2 : outcome === "no" ? OVERRULED_TRUST.no : OVERRULED_TRUST.conditions;
-  const reputationDelta = reputationGain(state, Math.round(JUDGMENT_REPUTATION[judgment] * weight));
+  const overruled = outcome === "no" ? OVERRULED_TRUST.no : OVERRULED_TRUST.conditions;
+  const trustDelta = outcome === ceoVote ? 2 : close ? Math.round(overruled * CLOSE_TRUST_SHARE) : overruled;
+  const reputationDelta = close ? 0 : reputationGain(state, Math.round(JUDGMENT_REPUTATION[judgment] * weight));
   state.reputation = Math.min(100, Math.max(0, state.reputation + reputationDelta));
   s = applyDelta(s, { trust: trustDelta });
   const applied: CovenantId | "standard" | undefined = outcome === "conditions" ? (vote === "conditions" && covenant ? covenant : "standard") : undefined;
@@ -1407,6 +1412,7 @@ function decide(
     covenantValues,
     bestOption,
     weight: Math.round(weight * 100) / 100,
+    ...(close ? { close: true } : {}),
   };
   // A chosen condition needs one follow-up meeting to work in full; the board's standard condition runs by itself.
   if (applied && applied !== "standard") item.followUp = { until: state.month + FOLLOW_UP_MONTHS, done: delegated };

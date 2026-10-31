@@ -27,11 +27,15 @@ import {
   covenantPrep,
   covenantReview,
   followUpsOf,
+  meetingRecommendation,
   type CovenantOptionView,
   type CovenantPrepView,
   type CovenantReviewView,
   type FollowUpView,
+  type RecommendationView,
 } from "./covenant-views";
+import { THEMES, themeOf } from "./covenants";
+import { positionBasis } from "./judge";
 import { annualEbitda } from "./ebitda";
 import { PLATFORM_MIN_EBITDA, PLATFORM_REPUTATION } from "./mna-config";
 import { platformOf } from "./platform";
@@ -105,6 +109,12 @@ export interface MeetingView {
   covenantReview?: CovenantReviewView;
   /** Month name until which the chosen condition needs its follow-up meeting. */
   followUp?: string;
+  /** Topic area of the item (its conditions belong to it). */
+  theme: string;
+  /** What the player's preparation recommends (only after a CFO talk or the risk question). */
+  recommendation?: RecommendationView;
+  /** Planned values on screen: multiply by `scale`; `label` says what they mean (stake or company value). */
+  basis: { scale: number; label: string };
 }
 
 export function meetingView(state: GameState, itemId: string): MeetingView {
@@ -115,6 +125,7 @@ export function meetingView(state: GameState, itemId: string): MeetingView {
   const outcomes = {} as MeetingView["outcomes"];
   for (const v of ["go", "conditions", "no"] as const) outcomes[v] = { label: fill(t.outcomes[v].label, s), summary: fill(t.outcomes[v].summary, s) };
 
+  const recommendation = meetingRecommendation(state, item);
   // This month's agenda: what is still open and what was decided this month.
   const agendaItems = state.items.filter((i) => i.startupId === s.id && (i.status === "open" || (i.decision && !i.decision.lapsed && i.decision.month === state.month)));
   let opening: MeetingEvent[] = [];
@@ -154,6 +165,9 @@ export function meetingView(state: GameState, itemId: string): MeetingView {
     covenants: covenantOptions(state, item),
     ...(item.decision ? { covenantReview: covenantReview(state, item, item.decision) } : {}),
     ...(item.followUp && !item.followUp.done && !item.followUp.missed ? { followUp: monthName(item.followUp.until) } : {}),
+    theme: THEMES[themeOf(item.templateId)].label,
+    ...(recommendation ? { recommendation } : {}),
+    basis: positionBasis(s),
   };
 }
 
@@ -325,6 +339,8 @@ export interface CompanyView {
     outcome?: Vote;
     vote?: Vote;
     judgment?: MeetingDecision["judgment"];
+    /** A close call (neutral note). */
+    close?: boolean;
     outcomeLabel?: string;
     result?: BoardItem["result"];
     delegated?: boolean;
@@ -342,6 +358,8 @@ export interface CompanyView {
   analyst: boolean;
   /** Conditions decided earlier that still need their follow-up meeting. */
   followUps: FollowUpView[];
+  /** Planned values on screen: multiply by `scale`; `short` says what they mean (stake or company value). */
+  basis: { scale: number; short: string };
 }
 
 function leaningOf(stance: number): Vote | "open" {
@@ -394,6 +412,7 @@ export function companyView(state: GameState, startupId: string): CompanyView {
         outcome: i.decision?.outcome,
         vote: i.decision?.lapsed ? undefined : i.decision?.vote,
         judgment: i.decision?.lapsed ? undefined : i.decision?.judgment,
+        ...(i.decision?.close ? { close: true } : {}),
         outcomeLabel: i.decision ? fill(t.outcomes[i.decision.outcome].label, s) : undefined,
         result: i.result,
         delegated: i.decision?.delegated,
@@ -405,6 +424,7 @@ export function companyView(state: GameState, startupId: string): CompanyView {
     stakeValue: (s.stake / 100) * valuationOf(s),
     cashFlow: monthlyCashFlow(s.metrics),
     runway: runwayMonths(s.metrics),
+    basis: positionBasis(s),
     board,
     item,
     agenda,

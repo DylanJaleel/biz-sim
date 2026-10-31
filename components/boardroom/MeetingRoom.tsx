@@ -25,6 +25,32 @@ const JUDGMENT = {
   weak: { label: "Schwach begründet", text: "Nach Planrechnung gab es eine deutlich bessere Option." },
 } as const;
 
+const CLOSE = { label: "Knapp", text: "Alle Optionen lagen nah beieinander. Dein Votum lag nur wenig unter der besten, das bewegt Ruf und Vertrauen kaum." } as const;
+
+/** What the player's own preparation found: shown in the meeting so nobody has to remember it. */
+function Recommendation({ rec }: { rec: NonNullable<MeetingView["recommendation"]> }) {
+  return (
+    <p className="recommend" role="note">
+      {rec.source === "cfo" ? (
+        <>
+          <span className="recommend__eyebrow">Deine Prüfung empfiehlt</span> <b>{rec.label}</b>
+          {rec.value !== undefined && (
+            <small>
+              {rec.basis}: {eur(rec.value)}
+              {rec.runnerUp ? ` · danach ${rec.runnerUp.label} mit ${eur(rec.runnerUp.value)}` : ""}
+            </small>
+          )}
+        </>
+      ) : (
+        <>
+          <span className="recommend__eyebrow">Deine Rückfrage zum Risiko spricht für</span> <b>{rec.label}</b>
+          <small>Wie viel jede Option bringt, rechnet erst der CFO.</small>
+        </>
+      )}
+    </p>
+  );
+}
+
 /** The meeting as it can be shown again afterwards: everyone's vote, then the verdict. */
 function replayOf(view: MeetingView): MeetingEvent[] {
   const ballots = view.decision?.ballots ?? [];
@@ -151,6 +177,7 @@ export function MeetingRoom({ view, revision }: { view: MeetingView; revision: n
               <h2 id="argue-title" className="panel__title">
                 Was bringst du ein?
               </h2>
+              {view.recommendation && <Recommendation rec={view.recommendation} />}
               <div className="choice__list">
                 {view.args.map((a) => (
                   <button key={a.id} type="button" className="choice__option" onClick={() => setArgument(a.id)}>
@@ -179,11 +206,15 @@ export function MeetingRoom({ view, revision }: { view: MeetingView; revision: n
               <h2 id="vote-title" className="panel__title">
                 Wie stimmst du?
               </h2>
+              {view.recommendation && <Recommendation rec={view.recommendation} />}
               <p className="choice__hint">Du hast 20 Stimmanteile, alle auf dein Votum. Die anderen verteilen ihre nach Überzeugung.</p>
               <div className="choice__list">
                 {PLAIN.map((v) => (
                   <button key={v} type="button" className={`choice__option choice__option--${v}`} onClick={() => castVote(v)} disabled={pending}>
-                    <span className="choice__vote">{VOTE_LABEL[v]}</span>
+                    <span className="choice__vote">
+                      {VOTE_LABEL[v]}
+                      {view.recommendation?.option === v && <span className="tag tag--rec">empfohlen</span>}
+                    </span>
                     <span className="choice__text">{view.outcomes[v].label}</span>
                     <span className="choice__sub">{view.outcomes[v].summary}</span>
                   </button>
@@ -192,11 +223,21 @@ export function MeetingRoom({ view, revision }: { view: MeetingView; revision: n
                   <span className="choice__vote" id="covenant-title">
                     Ja mit Auflage: welche?
                   </span>
-                  <span className="choice__sub">Eine passt zur Lage, die anderen sind schlechter als ein klares Ja oder Nein.</span>
+                  <span className="choice__sub">Themenfeld {view.theme}: Eine passt zur Lage, die anderen sind schlechter als ein klares Ja oder Nein.</span>
                   <div className="covenant-chips">
                     {view.covenants.map((c) => (
-                      <button key={c.id} type="button" className="covenant-chip" title={c.short} onClick={() => castVote("conditions", c.id)} disabled={pending}>
-                        <b>{c.name}</b>
+                      <button
+                        key={c.id}
+                        type="button"
+                        className={`covenant-chip${view.recommendation?.option === c.id ? " is-recommended" : ""}`}
+                        title={c.short}
+                        onClick={() => castVote("conditions", c.id)}
+                        disabled={pending}
+                      >
+                        <b>
+                          {c.name}
+                          {view.recommendation?.option === c.id && <span className="tag tag--rec">empfohlen</span>}
+                        </b>
                         <small>{c.term}</small>
                       </button>
                     ))}
@@ -281,7 +322,8 @@ function CovenantNote({ review, followUp }: { review: NonNullable<MeetingView["c
 function Verdict({ view }: { view: MeetingView }) {
   const d = view.decision!;
   const people = peopleOf(view.board, view.corporate, view.family);
-  const judgment = JUDGMENT[d.judgment];
+  const judgment = d.close ? CLOSE : JUDGMENT[d.judgment];
+  const scale = view.basis.scale;
   const max = Math.max(...VOTES.map((v) => Math.abs(d.values[v])), 1);
   const review = view.covenantReview;
   const reviewMax = Math.max(...(review?.options.map((o) => Math.abs(o.value)) ?? []), 1);
@@ -296,12 +338,12 @@ function Verdict({ view }: { view: MeetingView }) {
             <h2 id="verdict-title" className="panel__title">
               {OUTCOME_LABEL[d.outcome]}: {d.outcome === "conditions" && review?.appliedName && review.chosenName === review.appliedName ? review.appliedName : view.outcomes[d.outcome].label}
             </h2>
-            <p className={`judgment judgment--${d.judgment}`}>
+            <p className={`judgment judgment--${d.close ? "close" : d.judgment}`}>
               <b>{judgment.label}.</b> {judgment.text}
             </p>
             <p className="verdict__note">Bewertet wird, was du wissen konntest, nicht ob du Glück hattest.</p>
             {review ? (
-              <ul className="outlook" aria-label="Erwarteter Wert deines Anteils in 12 Monaten">
+              <ul className="outlook" aria-label={view.basis.label}>
                 {review.options.map((o) => (
                   <li key={o.key} className={`outlook__row${o.best ? " is-best" : ""}${o.mine ? " is-mine" : ""}${o.fit ? " is-fit" : ""}`}>
                     <span className="outlook__label">
@@ -312,12 +354,12 @@ function Verdict({ view }: { view: MeetingView }) {
                     <span className="outlook__bar">
                       <i style={{ width: `${Math.max(4, (Math.abs(o.value) / reviewMax) * 100)}%` }} />
                     </span>
-                    <span className="outlook__value">{eur(o.value)}</span>
+                    <span className="outlook__value">{eur(o.value * scale)}</span>
                   </li>
                 ))}
               </ul>
             ) : (
-              <ul className="outlook" aria-label="Erwarteter Wert deines Anteils in 12 Monaten">
+              <ul className="outlook" aria-label={view.basis.label}>
                 {VOTES.map((v) => (
                   <li key={v} className={`outlook__row${v === d.best ? " is-best" : ""}${v === d.vote ? " is-mine" : ""}`}>
                     <span className="outlook__label">
@@ -328,12 +370,12 @@ function Verdict({ view }: { view: MeetingView }) {
                     <span className="outlook__bar">
                       <i style={{ width: `${Math.max(4, (Math.abs(d.values[v]) / max) * 100)}%` }} />
                     </span>
-                    <span className="outlook__value">{eur(d.values[v])}</span>
+                    <span className="outlook__value">{eur(d.values[v] * scale)}</span>
                   </li>
                 ))}
               </ul>
             )}
-            <p className="verdict__note">Erwarteter Wert deiner Position in 12 Monaten, halb im Basisfall, halb in einem schwächeren Markt.</p>
+            <p className="verdict__note">{view.basis.label}, halb im Basisfall, halb in einem schwächeren Markt.</p>
             {review && <CovenantNote review={review} followUp={view.followUp} />}
             <div className="deltas">
               <span>

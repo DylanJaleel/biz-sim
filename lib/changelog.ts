@@ -49,6 +49,38 @@ const percent = (factor: number) => `${Math.round(factor * 100)} %`;
 /** Neueste zuerst. */
 export const RELEASES: Release[] = [
   {
+    id: "2026-10-31-sitzung",
+    date: "2026-10-31",
+    title: "Bessere Beiratssitzungen",
+    items: [
+      {
+        title: "Deine Prüfung in der Sitzung",
+        text: "Hast du eine Vorlage vom CFO durchrechnen lassen, zeigt die Sitzung, welche Option am meisten bringt und mit welchem Wert. Ohne Prüfung verrät sie nichts.",
+        where: "Menü › Investieren › Portfolio › Firma › Beiratssitzung",
+        isNew: true,
+      },
+      {
+        title: "Auflagen passend zum Thema",
+        text: "Jede Vorlage gehört zu einem Themenfeld wie Finanzierung, Team oder Ausschüttung, mit drei eigenen Auflagen: etwa „Kreditrahmen mit Deckel“ oder „Mindestkasse halten“. Welche passt, folgt aus dem Risiko der Lage.",
+        where: "Menü › Investieren › Portfolio › Firma › Auflagen",
+        isNew: false,
+      },
+      {
+        title: "Faire Note bei knappen Entscheidungen",
+        text: "Liegen alle Optionen nah beieinander, gibt es die Note „Knapp“ statt „Schwach begründet“. Ruf und Vertrauen bewegen sich dann kaum. Der erwartete Wert zeigt nicht mehr bei allen Optionen 0 €.",
+        where: "Menü › Investieren › Portfolio › Firma › Beiratssitzung",
+        isNew: false,
+      },
+      {
+        title: "Wachstum im Mittelstand als Jahreswert",
+        text: "Nachfolge-Angebote und Familienbetriebe zeigen das Wachstum im Jahr. Die meisten wachsen leicht, einige stagnieren, wenige schrumpfen, mit dem Grund im Angebot.",
+        href: "/post",
+        where: "Menü › Unternehmen › Nachfolge & Übernahmen",
+        isNew: false,
+      },
+    ],
+  },
+  {
     id: "2026-10-31-fonds",
     date: "2026-10-31",
     title: "Fonds II und III, Venture Studio, Unicorn",

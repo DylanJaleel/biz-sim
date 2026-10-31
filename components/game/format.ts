@@ -19,6 +19,11 @@ export function pct(value: number, digits = 1): string {
   return `${(value * 100).toLocaleString("de-DE", { maximumFractionDigits: digits })} %`;
 }
 
+/** Monthly growth as growth over a year (compounded): family businesses are judged by the year. */
+export function annualGrowth(monthly: number): number {
+  return (1 + monthly) ** 12 - 1;
+}
+
 export function signed(value: number, unit = ""): string {
   const text = `${Math.abs(value).toLocaleString("de-DE", { maximumFractionDigits: 1 })}${unit}`;
   return value > 0 ? `+${text}` : value < 0 ? `−${text}` : `±${text}`;

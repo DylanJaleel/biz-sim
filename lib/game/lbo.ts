@@ -1,4 +1,4 @@
-import { generateDeal, LAST } from "./dealgen";
+import { familyTrend, generateDeal, LAST } from "./dealgen";
 import { annualEbitda, enterpriseValue, fairMultiple, familyGrowth, nextLtm, sizeMultiple, valueEbitda } from "./ebitda";
 import {
   ACQUIRE_DAYS,
@@ -106,7 +106,7 @@ export function targetDeal(ctx: Ctx, r: () => number, opts: { ev: number; source
   const ev = roundTo(ebitda * multiple, 10_000);
   const stake = 100 - rollover;
   const keep = rollover > 0 ? ` Ich behalte ${rollover} % und bleibe ein Jahr an Bord.` : " Ich verkaufe alles und begleite die Übergabe ein Jahr lang.";
-  const deal = `Kaufpreis für das ganze Unternehmen (ohne Kasse und Schulden): ${mio(ev)}, das sind ${times(multiple)} des EBITDA von ${eur(ebitda)}.`;
+  const deal = `Kaufpreis für das ganze Unternehmen (ohne Kasse und Schulden): ${mio(ev)}, das sind ${times(multiple)} des EBITDA von ${eur(ebitda)}. Der Umsatz ${familyTrend(metrics.growth).mail}`;
   const mail =
     opts.source === "search"
       ? {

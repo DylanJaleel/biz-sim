@@ -114,15 +114,12 @@ describe("Das ist neu: Inhalt", () => {
 
   it("baut die Ansicht mit Freischaltung aus dem Spielstand", () => {
     const state = played();
-    const items = releaseViews(RELEASES, state).flatMap((r) => r.items);
+    const of = (views: ReturnType<typeof releaseViews>) => views.find((r) => r.id === "2026-10-30")!;
+    const items = of(releaseViews(RELEASES, state)).items;
     const op = items.find((i) => i.href === "/holding/team")!;
     expect(op.unlock).toEqual({ locked: true, label: expect.stringContaining(`Ruf ${FAMILY_OFFICE_REPUTATION}`) });
     state.familyOffice = {} as never;
-    expect(
-      releaseViews(RELEASES, state)
-        .flatMap((r) => r.items)
-        .find((i) => i.href === "/holding/team")!.unlock,
-    ).toEqual({ locked: false, label: "freigeschaltet" });
+    expect(of(releaseViews(RELEASES, state)).items.find((i) => i.href === "/holding/team")!.unlock).toEqual({ locked: false, label: "freigeschaltet" });
     expect(items.find((i) => i.title.startsWith("Ruf steigt"))!.unlock).toBeNull();
   });
 

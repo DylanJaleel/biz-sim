@@ -19,13 +19,14 @@ export function CovenantPrep({ view, revision, hints = [] }: { view: CompanyView
         Ja, aber welches Aber?
       </h2>
       <p className="muted small">
-        Zu jedem Punkt stehen drei Auflagen zur Wahl, eine passt zur Lage. Die passende ist oft besser als ein klares Ja oder Nein, die anderen kosten Zeit und Vertrauen. Eine
-        Auflage wirkt einen Monat später und nur ganz, wenn du sie im Folgetermin nachprüfst.
+        Zu jedem Punkt stehen die drei Auflagen seines Themenfelds zur Wahl, eine passt zur Lage. Die passende ist oft besser als ein klares Ja oder Nein, die anderen kosten Zeit
+        und Vertrauen. Eine Auflage wirkt einen Monat später und nur ganz, wenn du sie im Folgetermin nachprüfst.
       </p>
 
       {view.agenda.map((item) => (
         <div key={item.id} className="covenant-prep__item">
           <h3 className="item__h">{item.title}</h3>
+          <p className="muted small">Themenfeld: {item.covenants.theme}</p>
           <ul className="covenant-list">
             {item.covenants.options.map((c) => (
               <li key={c.id}>
@@ -116,7 +117,7 @@ function NetworkHint({ hint, revision }: { hint?: HintView; revision: number }) 
               <span className="covenant-hint__who">
                 <b>{o.name}</b>
                 <small className="muted">
-                  {o.role} · kennt {o.knows.join(" und ")} · Wärme {o.warmth}
+                  {o.role} · Gebiet: {o.knows.join(" sowie ")} · Wärme {o.warmth}
                 </small>
               </span>
               <ActionButton action={{ type: "contactHint", contactId: o.id, itemId: hint.itemId }} revision={revision} size="sm" variant="primary">

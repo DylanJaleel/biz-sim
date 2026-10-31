@@ -249,6 +249,47 @@ const AXIS_FACT: Record<keyof Axes, { label: string; good: string; bad: string }
 };
 
 /**
+ * Growth of a family business looking for a successor, from one random draw:
+ * most grow slowly (1 to 5 % a year), some stand still, a few shrink. Real
+ * Mittelstand firms grow like this, not like startups.
+ */
+export function familyOfferGrowth(u: number): number {
+  const annual = u < 0.68 ? 0.01 + (u / 0.68) * 0.04 : u < 0.88 ? -0.005 + ((u - 0.68) / 0.2) * 0.01 : -0.01 - ((u - 0.88) / 0.12) * 0.03;
+  return Math.round(((1 + annual) ** (1 / 12) - 1) * 100_000) / 100_000;
+}
+
+const TREND_REASONS = {
+  good: [
+    "Treue Stammkunden und volle Auftragsbücher, der Umsatz wächst ruhig.",
+    "Ein neuer Großkunde aus der Region bringt seit dem letzten Jahr zusätzliche Aufträge.",
+    "Die Preise ließen sich zuletzt gut durchsetzen, die Kunden sind geblieben.",
+  ],
+  warn: ["Nachfolge ungeklärt, Kunden warten ab.", "Der Inhaber investiert seit Jahren kaum noch, neue Produkte fehlen.", "Der Markt ist gesättigt, neue Kunden kommen kaum dazu."],
+  bad: [
+    "Der größte Kunde hat seine Aufträge zurückgefahren.",
+    "Seit der Inhaber kürzertritt, fehlt der Vertrieb, und Stammkunden wandern ab.",
+    "Ein günstiger Wettbewerber nimmt Marktanteile.",
+  ],
+} as const;
+
+/** The yearly trend of a family business and the reason behind it, for mail and due diligence. */
+export function familyTrend(monthly: number): { annual: number; annualText: string; reason: string; tone: "good" | "warn" | "bad"; mail: string } {
+  const annual = (1 + monthly) ** 12 - 1;
+  const tone = annual >= 0.0075 ? "good" : annual > -0.0075 ? "warn" : "bad";
+  const reasons = TREND_REASONS[tone];
+  const reason = reasons[Math.abs(Math.round(annual * 10_000)) % reasons.length]!;
+  const pctText = `${(Math.round(annual * 1000) / 10).toLocaleString("de-DE", { minimumFractionDigits: 1 })} %`;
+  const annualText = annual >= 0.0005 ? `+${pctText}` : annual <= -0.0005 ? pctText.replace("-", "−") : "±0,0 %";
+  const mail =
+    tone === "good"
+      ? `wächst um ${pctText} im Jahr. ${reason}`
+      : tone === "warn"
+        ? `tritt auf der Stelle (${annualText} im Jahr). ${reason}`
+        : `schrumpft (${annualText} im Jahr). ${reason}`;
+  return { annual, annualText, reason, tone, mail };
+}
+
+/**
  * One new company. The stage follows what the player can afford; sectors,
  * people and numbers come from the seed, so a game replays identically.
  */
@@ -267,7 +308,9 @@ export function generateDeal(r: () => number, stage: DealStage, id: string, mont
   const city = pick(r, CITIES);
 
   const revenue = round(between(r, s.revenue), 100);
-  const growth = Math.round(between(r, s.growth) * 1000) / 1000;
+  // One draw either way, so the rest of the deal stays the same for a seed.
+  const growthDraw = r();
+  const growth = buyout ? familyOfferGrowth(growthDraw) : Math.round((s.growth[0] + growthDraw * (s.growth[1] - s.growth[0])) * 1000) / 1000;
   const grossMargin = Math.round(between(r, sec.margin) * 100) / 100;
   const team = Math.round(between(r, s.team));
   let opex: number;
@@ -343,12 +386,14 @@ export function generateDeal(r: () => number, stage: DealStage, id: string, mont
     { label: AXIS_FACT[worst].label, text: AXIS_FACT[worst].bad, tone: "bad" },
   ];
   if (topCustomer > 0.35) diligence.push({ label: "Kunden", text: `${Math.round(topCustomer * 100)} % des Umsatzes kommen von einem einzigen Kunden.`, tone: "bad" });
+  const trend = buyout ? familyTrend(growth) : null;
+  if (trend) diligence.splice(1, 0, { label: "Wachstum", text: `${trend.annualText} im Jahr. ${trend.reason}`, tone: trend.tone });
 
   const mail = buyout
     ? {
         from: `${founder.name}, ${name}`,
         subject: `Nachfolge gesucht: ${idea.tagline}`,
-        body: `Guten Tag, ich führe ${name} in ${city}. ${idea.pitch} Ich biete ${stake} % der Firma zum Kauf an und bleibe ein Jahr an Bord. Mit der Mehrheit bekommen Sie auch die Gewinne. Wenn Sie wollen, finanziert die Hausbank einen Teil des Kaufpreises.`,
+        body: `Guten Tag, ich führe ${name} in ${city}. ${idea.pitch} Der Umsatz ${trend!.mail} Ich biete ${stake} % der Firma zum Kauf an und bleibe ein Jahr an Bord. Mit der Mehrheit bekommen Sie auch die Gewinne. Wenn Sie wollen, finanziert die Hausbank einen Teil des Kaufpreises.`,
       }
     : {
         from: `${founder.name}, ${name}`,
