@@ -68,7 +68,8 @@ export function roundActions(s: GameState): GameAction[] {
       if (!path.prep.intro) out.push({ type: "ventureRound", startupId: c.id, move: "intro" });
       continue;
     }
-    if (prepBlocker(s, c, true) === null && ipoChance(s, c) >= 0.3) {
+    // The listing once the private path is done: unicorn, or no further round in sight.
+    if ((path.unicorn !== undefined || path.ended !== undefined) && prepBlocker(s, c, true) === null && ipoChance(s, c) >= 0.3) {
       out.push({ type: "ventureRound", startupId: c.id, move: "prepare", ipo: true, months: 3, ambition: "market" });
       continue;
     }

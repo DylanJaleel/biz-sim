@@ -2066,8 +2066,9 @@ function planExits(state: GameState): void {
 /** Big, growing companies can list on the stock exchange instead of being sold. */
 function planIpo(state: GameState, s: Startup, value: number, mood: number): boolean {
   if (value < IPO_MIN_VALUE || state.month - s.joined < 12 || s.metrics.growth < 0.012) return false;
-  // On the venture path the company lists only from Serie D on (or once the path is over).
-  if (s.venture && s.venture.ended === undefined && s.venture.stage < VENTURE_IPO_STAGE) return false;
+  // On the venture path the banks come by themselves only for a unicorn (or once the path is over);
+  // from Serie D on the player can prepare the listing (round-prep.ts).
+  if (s.venture && s.venture.ended === undefined && s.venture.stage < VENTURE_IPO_STAGE + 1) return false;
   const random = randomFor(state.seed, `ipo|${s.id}|${state.month}`);
   if (random() > IPO_CHANCE * (1 + mood)) return false;
   const price = Math.round((value * (1 + random() * 0.35 + mood * 0.15)) / 100_000) * 100_000;
