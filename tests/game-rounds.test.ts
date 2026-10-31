@@ -50,7 +50,10 @@ describe("milestones per round", () => {
     expect(ventureChecks(state, s, 2).some((c) => c.id === "margin")).toBe(true);
     expect(ventureChecks(state, s, 4).some((c) => c.id === "burn")).toBe(true);
     expect(ventureChecks(state, s, "ipo").length).toBe(STAGE_GOALS.at(-1)!.goals.length);
-    for (const c of ventureChecks(state, s, 3)) (expect(c.score).toBeGreaterThanOrEqual(0), expect(c.score).toBeLessThanOrEqual(1));
+    for (const c of ventureChecks(state, s, 3)) {
+      expect(c.score).toBeGreaterThanOrEqual(0);
+      expect(c.score).toBeLessThanOrEqual(1);
+    }
   });
 });
 
