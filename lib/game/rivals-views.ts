@@ -101,6 +101,8 @@ export interface DuelView {
   rival: { name: string; head: string; city: string; kind: string; style: string; terms: string };
   you: number;
   rivalBid: number;
+  /** Wie weit der Rivale gegangen wäre; erst nach der Entscheidung bekannt, vorher null. */
+  rivalMax: number | null;
   /** The owner's rating: price plus what the terms are worth to him. */
   scoreYou: number;
   scoreRival: number;
@@ -128,6 +130,7 @@ export function duelView(state: GameState, targetId: string): DuelView | null {
     rival: { name: def.name, head: def.head, city: def.city, kind: RIVAL_KIND_LABEL[def.kind], style: def.style, terms: def.termsText },
     you: d.you,
     rivalBid: d.rival,
+    rivalMax: d.status === "open" ? null : d.max,
     scoreYou: score.you,
     scoreRival: score.rival,
     ahead: score.you > score.rival,

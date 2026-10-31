@@ -49,6 +49,34 @@ const percent = (factor: number) => `${Math.round(factor * 100)} %`;
 /** Neueste zuerst. */
 export const RELEASES: Release[] = [
   {
+    id: "2026-11-01-tisch",
+    date: "2026-11-01",
+    title: "Der Verhandlungstisch",
+    items: [
+      {
+        title: "Verhandlungen am Schreibtisch",
+        text: "Bei Großmandaten und im Bietgefecht sitzt du an deinem Schreibtisch, ohne Monitor. Gegenüber sitzt die Gegenseite als gezeichnete Figur, auf dem Tisch liegen Angebot und Gegenangebot.",
+        href: "/nachfolge",
+        where: "Menü › Unternehmen › Nachfolge & Übernahmen",
+                isNew: true,
+      },
+      {
+        title: "Mimik zeigt die Stimmung",
+        text: "Die Gegenseite ist erfreut, sachlich, skeptisch, verärgert oder erleichtert. Wer gute Laune hat, gibt dir bei großen Mandaten eine Verhandlungsrunde mehr.",
+        href: "/nachfolge",
+        where: "Menü › Unternehmen › Nachfolge & Übernahmen",
+        unlock: reputationLock(BIG_MANDATE_REPUTATION),
+        isNew: false,
+      },
+      {
+        title: "Schmerzgrenze nur, wenn sie bekannt ist",
+        text: "Wie weit die Gegenseite höchstens geht, steht auf einem Schild am Tisch. Solange du es nicht weißt, bleibt es verdeckt.",
+        where: "Menü › Unternehmen › Nachfolge & Übernahmen",
+        isNew: false,
+      },
+    ],
+  },
+  {
     id: "2026-10-31-sitzung",
     date: "2026-10-31",
     title: "Bessere Beiratssitzungen",

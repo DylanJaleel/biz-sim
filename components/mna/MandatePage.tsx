@@ -199,6 +199,7 @@ export async function MandatePage({ params }: { params: Promise<{ id: string }> 
             levers={big.levers}
             rounds={big.rounds}
             maxRounds={big.maxRounds}
+            bonusRound={big.bonusRound}
             power={big.power}
             exclusive={big.exclusive}
             revision={revision}

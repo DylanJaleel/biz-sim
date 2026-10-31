@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { ActionButton } from "@/components/game/ActionButton";
 import { eur } from "@/components/game/format";
+import { MOOD_LINE, NegotiationDesk } from "@/components/scene/NegotiationDesk";
+import { moodKey } from "@/lib/game/negotiation";
 import type { BigBidView } from "@/lib/game/rivals-views";
 import type { MandateLever } from "@/lib/game/types";
 
@@ -15,6 +17,8 @@ export interface BigRoundsProps {
   levers: { id: MandateLever; title: string; text: string }[];
   rounds: number;
   maxRounds: number;
+  /** Gute Stimmung am Tisch: eine Runde mehr. */
+  bonusRound?: boolean;
   power: number;
   exclusive?: string;
   revision: number;
@@ -27,8 +31,32 @@ export function BigRounds(props: BigRoundsProps) {
   const [lever, setLever] = useState<MandateLever>("batna");
   const chosen = active.find((b) => b.buyer === bidder) ?? active[0];
   const done = props.rounds >= props.maxRounds;
+  const leverTitle = props.levers.find((l) => l.id === lever)?.title;
   return (
     <div className="rounds">
+      {chosen && (
+        <NegotiationDesk
+          name={chosen.buyer}
+          role={chosen.kind === "strategic" ? "Stratege" : "Finanzinvestor"}
+          look="exec"
+          mood={chosen.mood}
+          gone={chosen.out}
+          played={props.rounds}
+          rounds={props.maxRounds}
+          bonusRound={props.bonusRound}
+          bubble={MOOD_LINE[moodKey(chosen.mood)]}
+          offer={{
+            title: `Angebot von ${chosen.buyer}`,
+            lines: [{ label: "Preis", value: eur(chosen.ev + chosen.earnout) }, ...(chosen.earnout > 0 ? [{ label: "davon Earn-out", value: eur(chosen.earnout) }] : [])],
+            note: `Dein Honorar bei Zuschlag: ${eur(chosen.fee)}`,
+          }}
+          counter={{
+            title: done ? "Runden gespielt" : `Runde ${props.rounds + 1}: dein Hebel`,
+            lines: [{ label: "Hebel", value: done ? "Zuschlag" : (leverTitle ?? "–") }],
+            note: done ? "Erteile jetzt den Zuschlag." : `Verhandlungsmacht ${props.power} von 100`,
+          }}
+        />
+      )}
       <ul className="rounds__bids" aria-label="Bieter">
         {props.bids.map((b) => (
           <li key={b.buyer}>
