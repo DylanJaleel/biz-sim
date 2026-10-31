@@ -1,6 +1,6 @@
 import { BUYOUT_REPUTATION, FAMILY_OFFICE_REPUTATION, FUND_REPUTATION } from "./game/config";
 import { STUDIO_EXITS, STUDIO_REPUTATION } from "./game/venture-config";
-import { MANDATE_REPUTATION } from "./game/mna-config";
+import { MANDATE_REPUTATION, PLATFORM_REPUTATION } from "./game/mna-config";
 
 // Die Navigation des Spiels an einer Stelle. Kopfleiste und Menü lesen nur diese Datei.
 //
@@ -126,7 +126,7 @@ export const NAV_ITEMS: NavItem[] = [
     group: "company",
     icon: "handshake",
     match: ["/mandat", "/uebernahme", "/plattform"],
-    description: "M&A-Mandate, Firmen übernehmen, Plattformen mit Zukäufen.",
+    description: `M&A-Mandate, Firmen übernehmen, Plattformen mit Zukäufen (Plattform-Investor ab Ruf ${PLATFORM_REPUTATION}, mit Family Office).`,
     locked: (s) => (s.reputation < Math.min(MANDATE_REPUTATION, BUYOUT_REPUTATION) ? `ab Ruf ${Math.min(MANDATE_REPUTATION, BUYOUT_REPUTATION)}` : null),
   },
 

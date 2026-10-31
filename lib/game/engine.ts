@@ -34,8 +34,6 @@ import {
   WARMTH_MEET,
   WARMTH_MEET_FIRST,
   DAYS_PER_MONTH,
-  CORPORATE_FEE,
-  CORPORATE_REPUTATION,
   EXIT_CHANCE,
   EXIT_MIN_AGE,
   EXIT_MIN_VALUE,
@@ -95,7 +93,8 @@ import {
   transferToPlayer,
   waterfall,
 } from "./captable";
-import { CORPORATE_ID, corporateStartup } from "./corporate";
+import { CORPORATE_ID } from "./corporate";
+import { answerOffer, corporateFee, corporatesMonth, resign as resignCorporate } from "./corporates";
 import { CORPORATE_BOOKS, correctOldCorporate, ebitdaMargin } from "./corporate-books";
 import { CYCLE_REVENUE } from "./mna-config";
 import { NEWS, targetsOf } from "./news";
@@ -999,23 +998,11 @@ function playAction(current: GameState, action: GameAction): { state: GameState;
       return { state, result: { kind: "none" } };
     }
     case "joinCorporate": {
-      if (state.corporateSeat !== "offered") throw new GameRuleError("Dieses Mandat liegt nicht vor.");
-      if (!action.accept) {
-        state.corporateSeat = "declined";
-        state.corporateDeclined = state.month;
-        return { state, result: { kind: "none" } };
-      }
-      spendDays(state, "joinCorporate", "Antrittsbesuch Nordhafen AG");
-      state.corporateSeat = "joined";
-      state.startups.push(corporateStartup(state.month));
-      unlockLesson(state, "aufsichtsrat");
-      mail(state, {
-        kind: "founder",
-        from: "Dr. Klaus Reinhardt, Nordhafen AG",
-        subject: "Willkommen im Aufsichtsrat",
-        body: `Der Aufsichtsrat tagt einmal im Quartal. Sie bekommen ${CORPORATE_FEE.toLocaleString("de-DE")} € im Monat und keine Anteile. Wir erwarten einen kritischen Blick, auch auf mich.`,
-        startupId: CORPORATE_ID,
-      });
+      answerOffer(ctxOf(state), action.accept);
+      return { state, result: { kind: "none" } };
+    }
+    case "corporateResign": {
+      resignCorporate(ctxOf(state), action.startupId);
       return { state, result: { kind: "none" } };
     }
   }
@@ -1773,7 +1760,7 @@ export function closeMonth(state: GameState): MonthReport {
       state.cash -= claim;
       notes.push(`${s.name} ist insolvent. Dein Anteil ist verloren.${next.lbo ? guaranteeText(state, claim) : ""}`);
     } else {
-      const fee = next.corporate ? CORPORATE_FEE : boardFee(next.metrics);
+      const fee = next.corporate ? corporateFee(state, next).mine : boardFee(next.metrics);
       state.cash += fee;
       income.boardFees += fee;
     }
@@ -1853,7 +1840,7 @@ export function closeMonth(state: GameState): MonthReport {
   planExits(state);
   // Fame fades a little at the very top: a big name needs to keep delivering.
   if (state.reputation > REPUTATION_FADE_FROM && !(state.reputationMonth?.month === month && state.reputationMonth.gained > 0)) state.reputation -= 1;
-  offerCorporateSeat(state);
+  corporatesMonth(mna, notes);
   announceNextStep(state);
   pruneDeals(state);
   planDeals(state);
@@ -2314,22 +2301,6 @@ function announceNextStep(state: GameState): void {
   if (fundBlocker(state) === null) {
     notice("fund", "Investoren warten auf deinen Fonds", "Dein Ruf und dein erster Verkauf überzeugen Geldgeber. In der Holding kannst du jetzt einen eigenen Fonds auflegen.");
   }
-}
-
-function offerCorporateSeat(state: GameState): void {
-  // A seat turned down is offered again a year later.
-  if (state.corporateSeat === "declined" && state.month >= (state.corporateDeclined ?? 0) + 12) state.corporateSeat = "none";
-  if (state.corporateSeat !== "none" || state.reputation < CORPORATE_REPUTATION) return;
-  const record = state.ledRounds > 0 || state.startups.some((s) => s.stake > 50) || state.exits.some((e) => e.status === "accepted");
-  if (!record) return;
-  state.corporateSeat = "offered";
-  mail(state, {
-    kind: "system",
-    from: "Prof. Elif Kaya, Nordhafen AG",
-    subject: "Anfrage: Mandat im Aufsichtsrat",
-    body: `Die Nordhafen AG, 2.400 Beschäftigte, sucht ein Aufsichtsratsmitglied mit Erfahrung in jungen Firmen. Vergütung ${CORPORATE_FEE.toLocaleString("de-DE")} € im Monat, eine Sitzung pro Quartal, keine Anteile. Hätten Sie Interesse?`,
-    action: "corporate",
-  });
 }
 
 export function describeMonth(state: GameState): string {

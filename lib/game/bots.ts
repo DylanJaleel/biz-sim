@@ -4,6 +4,7 @@ import { covenantOutlook, optionValues } from "./covenants";
 import { holdingsValue } from "./market";
 import { OFFICES, officeOf } from "./office";
 import { careerOf } from "./career";
+import { activeSeats, CORP, corporatesRead } from "./corporates";
 import { potentialGrowth, valuation } from "./sim";
 import { bestOf, VOTES } from "./judge";
 import { boldChance, garageUpkeep, travelOptions } from "./travel";
@@ -202,7 +203,7 @@ export const proBot = (prefer?: string): Bot => {
         else if (e.price >= value && e.choice !== "negotiate") actions.push({ type: "exit", exitId: e.id, choice: "negotiate" }, { type: "exit", exitId: e.id, choice: "accept" });
         else actions.push({ type: "exit", exitId: e.id, choice: "reject" });
       }
-      if (s.corporateSeat === "offered") actions.push({ type: "joinCorporate", accept: true });
+      if (corporatesRead(s).offer && activeSeats(s).length < CORP.maxSeats) actions.push({ type: "joinCorporate", accept: true });
       const next = OFFICES[s.office + 1];
       if (next && s.reputation >= next.reputation && netWorth(s) >= next.worth && s.cash > next.rent * 12) actions.push({ type: "moveOffice", level: next.level });
       const club = s.contacts.find((c) => c.id === "angels");
@@ -313,7 +314,7 @@ export const expertBot = (style: ExpertStyle = {}, name = "Experte"): Bot => {
           actions.push({ type: "exit", exitId: e.id, choice: "negotiate" }, { type: "exit", exitId: e.id, choice: "accept" });
         else actions.push({ type: "exit", exitId: e.id, choice: "reject" });
       }
-      if (s.corporateSeat === "offered") actions.push({ type: "joinCorporate", accept: true });
+      if (corporatesRead(s).offer && activeSeats(s).length < CORP.maxSeats) actions.push({ type: "joinCorporate", accept: true });
       const next = OFFICES[s.office + 1];
       if (next && s.reputation >= next.reputation && netWorth(s) >= next.worth && s.cash + holdingsValue(s.market) > next.rent * 8)
         actions.push({ type: "moveOffice", level: next.level });

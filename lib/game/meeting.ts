@@ -9,7 +9,8 @@ import { SEAT_ORDER } from "./startups";
 import { fill, type Argument, type Reason, type Template } from "./templates";
 import { COVENANTS } from "./covenants";
 import type { BoardItem, BoardMember, CovenantId, Personality, SeatId, Shares, SpeakerId, Startup, Vote } from "./types";
-import { outcomeFromShares, playerShares, sharesFromStance, sumShares, voteFromStance, type Ballot } from "./votes";
+import { outcomeFromShares, playerShares, scaleShares, sharesFromStance, sumShares, voteFromStance, type Ballot } from "./votes";
+import { CHAIR_WEIGHT } from "./config";
 
 export type Phase = "opening" | "statements" | "debate" | "vote" | "verdict";
 
@@ -252,7 +253,8 @@ export function buildMeeting(input: MeetingInput): MeetingPlayback {
     ballots.push({ member: seat, vote, shares });
     events.push({ kind: "vote", speaker: seat, vote, reason: voteReason(t, vote, s), shares });
   }
-  const mine = playerShares(input.vote);
+  // As chair of a Konzern's supervisory board your vote weighs more (corporates.ts).
+  const mine = s.corporateChair ? scaleShares(playerShares(input.vote), CHAIR_WEIGHT) : playerShares(input.vote);
   ballots.push({ member: "you", vote: input.vote, shares: mine });
   events.push({ kind: "vote", speaker: "you", vote: input.vote, reason: voteReason(t, input.vote, s, input.covenant), shares: mine });
   events.push({ kind: "phase", phase: "verdict" });

@@ -127,6 +127,8 @@ export function parseAction(input: unknown): GameAction | null {
     }
     case "joinCorporate":
       return typeof a.accept === "boolean" ? { type: "joinCorporate", accept: a.accept } : null;
+    case "corporateResign":
+      return id(a.startupId) ? { type: "corporateResign", startupId: a.startupId } : null;
     case "buyout":
       return id(a.startupId) && typeof a.leverage === "boolean" ? { type: "buyout", startupId: a.startupId, leverage: a.leverage } : null;
     case "hire":

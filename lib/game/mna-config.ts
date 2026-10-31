@@ -153,7 +153,10 @@ export const HANDOVER_RISK = { patriarch: 0.035, customer: 0.04, keyPerson: 0.02
 // ---------------------------------------------------------------------------
 
 /** Above the family office (which the platform needs), so it is a step of its own. */
-export const PLATFORM_REPUTATION = 78;
+export const PLATFORM_REPUTATION = 70;
+/** Plattform-Investor ohne Verkauf: Wert deines Anteils an einer Plattform mit mindestens zwei Zukäufen ÷ eingesetztes Eigenkapital. */
+export const PLATFORM_VALUE_MULTIPLE = 2;
+export const PLATFORM_VALUE_ADDONS = 2;
 export const PLATFORM_MIN_EBITDA = 400_000;
 export const PLATFORM_COST = 30_000;
 export const PLATFORM_DAYS = 2;

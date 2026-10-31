@@ -114,6 +114,44 @@ export interface StartupHistoryPoint {
   netDebt?: number;
 }
 
+/** Usual margins of a Konzern's trade and its strength when the player joined (corporate-books.ts). */
+export interface CorporateBase {
+  grossMargin: number;
+  margin: number;
+  strength: number;
+}
+
+/** A seat on the supervisory board of a Konzern (see corporates.ts). */
+export interface CorporateSeat {
+  /** Id of the Konzern = id of its Startup. */
+  id: string;
+  /** Month the player first joined. */
+  since: number;
+  /** Current term: start, end (annual general meeting with the re-election) and number. */
+  termStart: number;
+  termEnd: number;
+  terms: number;
+  /** Revenue and trust at the start of the term: the board measures the term against them. */
+  startRevenue: number;
+  startTrust: number;
+  ended?: { month: number; reason: "resigned" | "voted_out" };
+}
+
+export interface CorporateOffer {
+  id: string;
+  month: number;
+  expires: number;
+}
+
+/** Konzern mandates over the career: pool of this game, seats, the open offer (missing in older games). */
+export interface CorporatesState {
+  pool: string[];
+  seats: CorporateSeat[];
+  offer?: CorporateOffer;
+  declined: { id: string; month: number }[];
+  lastOffer?: number;
+}
+
 export type StartupStatus = "offered" | "declined" | "active" | "dead" | "exited" | "sold";
 
 export type HolderKind = "founder" | "cofounder" | "vc" | "angel" | "esop" | "investor" | "advisor" | "syndicate" | "fund";
@@ -150,6 +188,10 @@ export interface Startup {
   corporate?: boolean;
   /** Konzern only: version of its books (see corporate-books.ts); missing = old startup path. */
   corporateModel?: number;
+  /** Konzern only: the trade's usual margins and the strength at the start (missing = Nordhafen AG, see corporate-books.ts). */
+  corporateBase?: CorporateBase;
+  /** Konzern only: the player chairs the supervisory board (more pay, more weight in votes). */
+  corporateChair?: boolean;
   /** Month the player joined; 0 while only offered. */
   joined: number;
   offer?: {
@@ -337,6 +379,8 @@ export interface Mail {
   action?: "corporate" | "favor" | "event";
   favorId?: string;
   eventId?: string;
+  /** Konzern offer this mail carries (corporates.ts). */
+  corporateOfferId?: string;
   read: boolean;
 }
 
@@ -895,6 +939,8 @@ export interface GameState {
   garage: string[];
   /** Month the corporate seat was turned down; it is offered again a year later. */
   corporateDeclined?: number;
+  /** Konzern mandates: pool, seats, terms, the open offer (corporates.ts; missing in older games). */
+  corporates?: CorporatesState;
   /** One-time hints already sent (e.g. "familyOffice", "fund"). */
   notices?: string[];
   /** M&A mandates, succession programme, buy-and-build (missing in older games). */
@@ -1038,6 +1084,7 @@ export type GameAction =
   | { type: "exit"; exitId: string; choice: ExitChoice }
   | { type: "moveOffice"; level: number }
   | { type: "joinCorporate"; accept: boolean }
+  | { type: "corporateResign"; startupId: string }
   | { type: "foundFamilyOffice" }
   | { type: "hire"; role: TeamRole; profile?: string }
   | { type: "fire"; memberId: string }
@@ -1332,6 +1379,8 @@ export interface MnaRecord {
   auctionWins?: number;
   /** Covenant breaches that ended without a forced sale: back under the limit, or cured with fresh equity. */
   covenantRecovered?: number;
+  /** Month in which a platform with two add-ons was first worth twice the equity put in (career step, missing in older games). */
+  platformDoubled?: number;
 }
 
 export interface MnaState {

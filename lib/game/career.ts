@@ -9,7 +9,7 @@ import {
   FUND_REPUTATION,
   LEAD_REPUTATION,
 } from "./config";
-import { MANDATE_REPUTATION, PLATFORM_REPUTATION } from "./mna-config";
+import { MANDATE_REPUTATION, PLATFORM_REPUTATION, PLATFORM_VALUE_ADDONS, PLATFORM_VALUE_MULTIPLE } from "./mna-config";
 import type { GameState } from "./types";
 import { MAGNATE_TIERS, magnateTier } from "./estate";
 import { FOUNDATION, FUND_FAMILY_AUM } from "./legacy";
@@ -35,9 +35,25 @@ export interface Career {
   steps: CareerStep[];
 }
 
-/** A buy-and-build platform with at least two add-ons was sold for more than the player put in. */
+/** A buy-and-build platform with at least two add-ons was sold for more than the player put in (trophy). */
 export function platformBuilt(state: GameState): boolean {
   return (state.mna?.record.platformExits ?? []).some((e) => !e.forced && e.addons >= 2 && e.moic > 1);
+}
+
+/**
+ * Career step Plattform-Investor: a platform sold with a profit, or a platform with at least two
+ * add-ons once worth twice the equity put in (recorded at a month end, see platform.ts).
+ */
+export function platformInvestor(state: GameState): boolean {
+  const rec = state.mna?.record;
+  return (rec?.platformExits ?? []).some((e) => !e.forced && e.moic > 1) || rec?.platformDoubled !== undefined;
+}
+
+/** Tier of the Konzern step: chair, several seats, or none. */
+function corporateTier(state: GameState): string | undefined {
+  const seats = state.corporates?.seats ?? [];
+  if (state.startups.some((s) => s.corporate && s.status === "active" && s.corporateChair)) return "Vorsitz";
+  return seats.length >= 2 ? `${seats.length} Konzerne` : undefined;
 }
 
 /** Assets under management of at least 1 billion euros at a month end, with an own fund. */
@@ -67,7 +83,8 @@ export function careerOf(state: GameState): Career {
     {
       title: "Konzern-Aufsichtsrat",
       requirement: `Ein Mandat im Aufsichtsrat eines Konzerns (ab ${CORPORATE_REPUTATION} Ruf, mit angeführter Runde oder Mehrheit)`,
-      done: state.corporateSeat === "joined",
+      done: state.corporateSeat === "joined" || (state.corporates?.seats.length ?? 0) > 0,
+      tier: corporateTier(state),
       side: true,
     },
     {
@@ -89,8 +106,8 @@ export function careerOf(state: GameState): Career {
     },
     {
       title: "Plattform-Investor",
-      requirement: `Eine Plattform mit mindestens zwei Zukäufen aufbauen und mit Gewinn verkaufen (ab ${PLATFORM_REPUTATION} Ruf, mit Family Office)`,
-      done: platformBuilt(state),
+      requirement: `Eine Plattform aufbauen (ab ${PLATFORM_REPUTATION} Ruf, mit Family Office) und mit Gewinn verkaufen, oder mit mindestens ${PLATFORM_VALUE_ADDONS} Zukäufen auf das ${PLATFORM_VALUE_MULTIPLE}-Fache deines Eigenkapitals bringen`,
+      done: platformInvestor(state),
     },
     {
       title: "Stifter/in",

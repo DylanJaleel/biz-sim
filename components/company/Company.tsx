@@ -23,6 +23,8 @@ import { LEANING_LABEL, PACE_LABEL, PHASE_LABEL } from "./labels";
 import { Sparkline } from "./Sparkline";
 import { VenturePane } from "./VenturePane";
 import { ventureEligible } from "@/lib/game/venture";
+import { corporatesView } from "@/lib/game/corporates";
+import { CorporateSeat } from "./CorporateSeat";
 
 const JUDGMENT_LABEL = {
   strong: "stark",
@@ -110,6 +112,7 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
         {corporate && (
           <p className="notice">Du sitzt im Aufsichtsrat: keine Anteile, feste Vergütung, eine Sitzung pro Quartal. Du kontrollierst den Vorstand, du führst nicht selbst.</p>
         )}
+        {corporate && active && <CorporateSeat view={corporatesView(state)} id={s.id} revision={revision} month={state.month} />}
       </header>
 
       <CompanyTabs panes={panes}>

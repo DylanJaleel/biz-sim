@@ -1,0 +1,81 @@
+/* ---------------------------------------------------------------------------
+   Konzernmandat (components/company/CorporateSeat.tsx), Prüfung mit dem CFO
+   (components/dd/*) und der große Verhandlungstisch.
+   --------------------------------------------------------------------------- */
+
+.corp-seat {
+  display: grid;
+  gap: 14px;
+  margin-top: 14px;
+}
+.corp-seat__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.corp-seat__term {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  height: 30px;
+  align-items: center;
+  padding: 0 12px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  overflow: hidden;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+.corp-seat__term i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--accent-soft);
+  border-right: 2px solid var(--accent);
+}
+.corp-seat__term span {
+  position: relative;
+}
+.corp-seat__facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+.corp-seat__facts > div {
+  display: grid;
+  gap: 2px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--surface-2);
+}
+.corp-seat__facts dt {
+  font-size: 12px;
+  color: var(--muted);
+}
+.corp-seat__facts dd {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 650;
+}
+.corp-seat__facts dd.pos {
+  color: var(--agree);
+}
+.corp-seat__facts dd.neg {
+  color: var(--disagree);
+}
+.corp-seat__facts small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.corp-seat__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.corp-seat__chair {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
