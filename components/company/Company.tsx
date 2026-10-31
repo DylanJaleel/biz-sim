@@ -8,7 +8,7 @@ import { familyValueView } from "@/lib/game/family";
 import { COVENANT } from "@/lib/game/mna-config";
 import { FamilyValue } from "./FamilyValue";
 import { ActionButton } from "@/components/game/ActionButton";
-import { eur, pct, runwayText } from "@/components/game/format";
+import { annualGrowth, eur, pct, runwayText } from "@/components/game/format";
 import { INTEREST_LABEL, PERSONALITY_LABEL, peopleOf } from "@/components/boardroom/people";
 import { VOTE_LABEL } from "@/components/boardroom/derive";
 import { CapTableBar } from "@/components/shares/CapTableBar";
@@ -114,7 +114,7 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
           <div>
             <small>Umsatz/Monat</small>
             <b>{eur(m.revenue)}</b>
-            <span>{pct(m.growth)} Wachstum</span>
+            <span>{m.valuedOn === "ebitda" ? `${pct(annualGrowth(m.growth))} Wachstum im Jahr` : `${pct(m.growth)} Wachstum`}</span>
           </div>
           <div>
             <small>Cashflow/Monat</small>
@@ -246,7 +246,7 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
                               <span role="columnheader">Option</span>
                               <span role="columnheader">Kasse danach</span>
                               <span role="columnheader">Runway</span>
-                              <span role="columnheader">{corporate ? "Wert von 1 % der Firma in 12 Monaten" : "Wert deines Anteils in 12 Monaten"}</span>
+                              <span role="columnheader">{view.basis.short}</span>
                             </div>
                             {item.outcomes.map((o) => (
                               <div role="row" key={o.vote} className={`cfo-table__row cfo-table__row--${o.vote}`}>
@@ -256,11 +256,12 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
                                 <span role="cell">{eur(o.cashAfter)}</span>
                                 <span role="cell">{runwayText(o.runwayAfter)}</span>
                                 <span role="cell">
-                                  {eur(o.outlook.value)}
+                                  {eur(o.outlook.value * view.basis.scale)}
                                   {o.outlook.chance !== undefined && (
                                     <small>
                                       {" "}
-                                      · {Math.round(o.outlook.chance * 100)} % Chance: {eur(o.outlook.good ?? 0)}, sonst {eur(o.outlook.bad ?? 0)}
+                                      · {Math.round(o.outlook.chance * 100)} % Chance: {eur((o.outlook.good ?? 0) * view.basis.scale)}, sonst{" "}
+                                      {eur((o.outlook.bad ?? 0) * view.basis.scale)}
                                     </small>
                                   )}
                                 </span>
@@ -274,11 +275,12 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
                                 <span role="cell">{eur(o.cashAfter)}</span>
                                 <span role="cell">{runwayText(o.runwayAfter)}</span>
                                 <span role="cell">
-                                  {eur(o.outlook.value)}
+                                  {eur(o.outlook.value * view.basis.scale)}
                                   {o.outlook.chance !== undefined && (
                                     <small>
                                       {" "}
-                                      · {Math.round(o.outlook.chance * 100)} % Chance: {eur(o.outlook.good ?? 0)}, sonst {eur(o.outlook.bad ?? 0)}
+                                      · {Math.round(o.outlook.chance * 100)} % Chance: {eur((o.outlook.good ?? 0) * view.basis.scale)}, sonst{" "}
+                                      {eur((o.outlook.bad ?? 0) * view.basis.scale)}
                                     </small>
                                   )}
                                 </span>
@@ -488,7 +490,7 @@ export async function Company({ params }: { params: Promise<{ id: string }> }) {
                           ) : (
                             <>
                               {p.outcome && <span className={`tag tag--${p.outcome}`}>{p.outcomeLabel}</span>}
-                              {p.judgment && <span className={`tag tag--judgment-${p.judgment}`}>Urteil {JUDGMENT_LABEL[p.judgment]}</span>}
+                              {p.judgment && <span className={`tag tag--judgment-${p.judgment}`}>Urteil {p.close ? "knapp" : JUDGMENT_LABEL[p.judgment]}</span>}
                               {p.delegated && <span className="tag">Operating Partner</span>}
                             </>
                           )}

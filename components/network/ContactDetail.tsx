@@ -116,7 +116,7 @@ export function ContactDetail({ contact, view, revision }: { contact: ContactCar
             )}
             {contact.hint && (
               <p className="muted small">
-                Vor einer Beiratssitzung gibt {first} einen Tipp zu {contact.hint.join(" und ")}. Das kostet Wärme, keinen Tag.
+                Vor einer Beiratssitzung gibt {first} einen Tipp zu Auflagen. Gebiet: {contact.hint.join(" sowie ")}. Das kostet Wärme, keinen Tag.
               </p>
             )}
           </section>

@@ -1,5 +1,5 @@
-import { CONDITION_DELAY, FAIR_GAP, JUDGMENT_STAKES, PROJECTION_MONTHS, STRONG_GAP } from "./config";
-import { applyDelta, project } from "./sim";
+import { CLOSE_GAP, CONDITION_DELAY, DEAD_VALUATION, FAIR_GAP, JUDGMENT_STAKES, PROJECTION_MONTHS, ROUND_MIN, ROUND_MONTHS, STRONG_GAP } from "./config";
+import { applyDelta, monthlyCashFlow, stepMonth, valuation } from "./sim";
 import type { ResolvedOutcome, Template } from "./templates";
 import type { Delta, Judgment, Startup, Vote } from "./types";
 
@@ -23,9 +23,35 @@ function branchValue(s: Startup, branch: Branch): number {
   if (exitLater) return (start.stake / 100) * (exitLater.delta.exit ?? 0) + playerCash;
   for (const x of branch.scheduled) playerCash += x.delta.playerCash ?? 0;
   // Half the weight on a weaker market: plans that only work when everything goes right lose value.
-  const base = project(start, PROJECTION_MONTHS, branch.scheduled).value;
-  const weak = project(start, PROJECTION_MONTHS, [...branch.scheduled, { due: 1, delta: WEAK_MARKET }]).value;
+  const base = financedValue(start, PROJECTION_MONTHS, branch.scheduled);
+  const weak = financedValue(start, PROJECTION_MONTHS, [...branch.scheduled, { due: 1, delta: WEAK_MARKET }]);
   return 0.5 * base + 0.5 * weak + playerCash;
+}
+
+/**
+ * Value of the player's position after `months`, as the CFO plans it: a
+ * startup whose cash runs out raises a round at its value of the day (as the
+ * game does), which dilutes the stake. Without this every plan of a company
+ * with less than a year of cash would end in insolvency and be worth 0 €, so
+ * all options looked the same. Only a company too weak for any investor dies.
+ */
+function financedValue(s: Startup, months: number, scheduled: { due: number; delta: Delta }[]): number {
+  let current: Startup = { ...s, status: "active" };
+  const mature = s.corporate === true || s.metrics.valuedOn === "ebitda";
+  for (let i = 1; i <= months; i++) {
+    for (const item of scheduled) if (item.due === i) current = applyDelta(current, item.delta);
+    const flow = monthlyCashFlow(current.metrics);
+    if (!mature && flow < 0 && current.metrics.cash + flow < 0) {
+      const value = valuation(current.metrics);
+      if (value >= DEAD_VALUATION) {
+        const amount = Math.max(ROUND_MIN, -flow * ROUND_MONTHS) - Math.min(0, current.metrics.cash);
+        current = applyDelta(current, { cash: amount, dilution: amount / (value + amount) });
+      }
+    }
+    current = stepMonth(current).startup;
+    if (current.status === "dead") return 0;
+  }
+  return (current.stake / 100) * valuation(current.metrics);
 }
 
 const WEAK_MARKET: Delta = { growth: -0.025, axes: { market: -8 } };
@@ -38,9 +64,20 @@ export interface OutcomeOutlook {
   bad?: number;
 }
 
-/** A supervisory board member holds no shares but judges by the value of the whole company. */
+/**
+ * A supervisory board member (or a seat held only through the fund) has no
+ * shares of their own but judges by the value of the whole company: values
+ * are planned for 1 % of it. Pages show them as the company value (`positionBasis`).
+ */
 export function judgedStartup(input: Startup): Startup {
-  return input.corporate && input.stake === 0 ? { ...input, stake: 1 } : input;
+  return input.stake <= 0 ? { ...input, stake: 1 } : input;
+}
+
+/** What the planned values of a company mean on screen: the player's stake, or (without shares) the whole company. */
+export function positionBasis(s: Pick<Startup, "stake">): { scale: number; label: string; short: string } {
+  return s.stake <= 0
+    ? { scale: 100, label: "Erwarteter Firmenwert (Eigenkapital) in 12 Monaten", short: "Firmenwert in 12 Monaten" }
+    : { scale: 1, label: "Erwarteter Wert deines Anteils in 12 Monaten", short: "Wert deines Anteils in 12 Monaten" };
 }
 
 /** Planned value of one resolved outcome: certain effects as given, risky ones as the probability-weighted mix. */
@@ -121,4 +158,16 @@ export function judgmentWeight(values: Record<string, number>, floor?: number): 
   const bottom = floor ?? Math.min(...all);
   const relative = (top - bottom) / Math.max(1, Math.abs(top));
   return Math.min(1, Math.max(0, (relative - JUDGMENT_STAKES.min) / (JUDGMENT_STAKES.full - JUDGMENT_STAKES.min)));
+}
+
+/**
+ * A close call: the chosen option lies only a little below the best one, in
+ * share of the best value or in euros. Such a choice is no mistake; it gets a
+ * neutral note and barely moves reputation and trust.
+ */
+export function isClose(values: Record<string, number>, choice: string): boolean {
+  const best = bestOf(values);
+  if (choice === best || values[choice] === undefined) return false;
+  const top = values[best]!;
+  return top - values[choice]! <= Math.max(CLOSE_GAP.relative * Math.abs(top), CLOSE_GAP.absolute);
 }

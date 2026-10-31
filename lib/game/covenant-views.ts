@@ -1,8 +1,8 @@
 import { CONDITION_DELAY, OPEX_PER_HIRE } from "./config";
 import { templateOf } from "./content";
-import { COVENANTS, covenantOutlook, covenantSignals, pretalkHint, RISK_QUESTION, riskAnswer } from "./covenants";
+import { COVENANTS, covenantOutlook, covenantSignals, optionValues, pretalkHint, RISK_QUESTION, riskAnswer, THEMES, themeOf } from "./covenants";
 import { covenantsOf, startupOf } from "./engine";
-import type { OutcomeOutlook } from "./judge";
+import { positionBasis, type OutcomeOutlook } from "./judge";
 import { runwayMonths } from "./sim";
 import { fill } from "./templates";
 import type { BoardItem, CovenantId, GameState, MeetingDecision, Startup } from "./types";
@@ -25,6 +25,8 @@ export interface CovenantPlanView extends CovenantOptionView {
 }
 
 export interface CovenantPrepView {
+  /** The topic area of the item; its three conditions belong to it. */
+  theme: string;
   options: CovenantOptionView[];
   /** The question about the risk; answered once asked. */
   risk: { id: string; q: string; a?: string };
@@ -70,6 +72,7 @@ export function covenantPrep(state: GameState, item: BoardItem): CovenantPrepVie
     });
   }
   return {
+    theme: THEMES[themeOf(item.templateId)].label,
     options: setup.options.map((id) => optionView(id, s)),
     risk: { id: RISK_QUESTION.id, q: RISK_QUESTION.q, ...(asked ? { a: riskAnswer(setup, s) } : {}) },
     signals: covenantSignals(s),
@@ -116,7 +119,7 @@ export function covenantReview(state: GameState, item: BoardItem, d: MeetingDeci
     ...(chosen && chosen !== d.fit ? { missWhy: fill(COVENANTS[chosen].missWhy, s) } : {}),
     ...(d.applied ? { appliedName: d.applied === "standard" ? "die Auflage des Gremiums" : COVENANTS[d.applied].name } : {}),
     options,
-    slight: (d.weight ?? 1) < 0.25,
+    slight: (d.weight ?? 1) < 0.25 && !d.close,
   };
 }
 
@@ -151,4 +154,45 @@ export function followUpsOf(state: GameState, startupId?: string): FollowUpView[
         },
       ];
     });
+}
+
+export interface RecommendationView {
+  /** "cfo": the CFO's numbers name the best option; "risk": the risk question names the fitting condition. */
+  source: "cfo" | "risk";
+  option: string;
+  label: string;
+  /** Planned value of the recommended option (company value when the player holds no shares). */
+  value?: number;
+  runnerUp?: { label: string; value: number };
+  /** What the value means. */
+  basis?: string;
+}
+
+/**
+ * What the player's own preparation found, for the meeting room: only after a
+ * CFO talk (or the risk question), never more than the preparation showed.
+ */
+export function meetingRecommendation(state: GameState, item: BoardItem): RecommendationView | undefined {
+  if (item.status !== "open") return undefined;
+  const s = startupOf(state, item.startupId);
+  if (s.status !== "active") return undefined;
+  const setup = covenantsOf(state, item);
+  const t = templateOf(item.templateId);
+  const labelOf = (key: string) =>
+    key === "go" ? `Ja: ${fill(t.outcomes.go.label, s)}` : key === "no" ? `Nein: ${fill(t.outcomes.no.label, s)}` : `Auflage „${COVENANTS[key as CovenantId].name}“`;
+  if (item.cfo) {
+    const values = optionValues(covenantOutlook(t, s, setup));
+    const [best, second] = Object.entries(values).sort((a, b) => b[1] - a[1]);
+    const basis = positionBasis(s);
+    return {
+      source: "cfo",
+      option: best![0],
+      label: labelOf(best![0]),
+      value: best![1] * basis.scale,
+      ...(second ? { runnerUp: { label: labelOf(second[0]), value: second[1] * basis.scale } } : {}),
+      basis: basis.short,
+    };
+  }
+  if (item.asked.includes(RISK_QUESTION.id)) return { source: "risk", option: setup.fit, label: labelOf(setup.fit) };
+  return undefined;
 }

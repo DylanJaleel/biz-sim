@@ -1,7 +1,7 @@
 import { familyIntroDelta, familyNeed } from "./family";
 import { sellers } from "./captable";
 import { monthLabel, monthName, MONTH_NAMES, RING_REPUTATION, WARMTH_INTRO_MIN, WARMTH_MEET, WARMTH_MEET_FIRST } from "./config";
-import { COVENANTS } from "./covenants";
+import { COVENANTS, RISK_LABEL } from "./covenants";
 import { covenantsOf, daysLeft } from "./engine";
 import { mnaRead } from "./mna-core";
 import {
@@ -29,7 +29,7 @@ import { HINT_WARMTH_COST, HINT_WARMTH_MIN, RIVAL_WARMTH, SPECIALIST_WARMTH_COST
 import { EVENTS, calendarMonth, eventCost, eventDef, type EventDef } from "./network-events";
 import { FAVORS, cooldownLeft, favorText, guestsOf, helpBlocker, hintBlocker, specialistBlocker } from "./network-life";
 import { runwayMonths } from "./sim";
-import type { CareerKind, Favor, GameState, NetEvent, Rival, Startup } from "./types";
+import type { CareerKind, CovenantId, Favor, GameState, NetEvent, Rival, Startup } from "./types";
 
 // Was die Netzwerkseite und die anderen Seiten vom Netzwerk zeigen: Karten
 // der Kontakte, offene Bitten, Einladungen, die Karte "wer kennt wen" und
@@ -379,7 +379,7 @@ export function contactCard(state: GameState, def: ContactDef): ContactCard {
     kind: def.kind,
     help: def.help,
     ...(def.spec ? { specialist: { kind: def.spec, text: def.specText ?? def.help } } : {}),
-    ...(def.hint ? { hint: def.hint.map((h) => COVENANTS[h].name) } : {}),
+    ...(def.hint ? { hint: def.hint.map((h) => RISK_LABEL[COVENANTS[h].risk]) } : {}),
     cooldown,
     canIntro: def.kind !== "specialist" && !introBlocker,
     ...(introBlocker ? { introBlocker } : {}),
@@ -554,8 +554,10 @@ export function hintText(state: GameState, contactId: string, itemId: string): s
   const def = contactDef(contactId);
   if (!item || !def.hint) return "";
   const setup = covenantsOf(state, item);
-  if (def.hint.includes(setup.fit)) return `„Ich würde auf ${COVENANTS[setup.fit].name} bestehen. Mir macht vor allem ${COVENANTS[setup.fit].guards} Sorgen.“`;
-  const out = def.hint.filter((h) => setup.options.includes(h));
+  // Contacts know kinds of risk; the conditions on the table guard against one kind each.
+  const knows = (id: CovenantId) => def.hint!.some((h) => COVENANTS[h].risk === COVENANTS[id].risk);
+  if (knows(setup.fit)) return `„Ich würde auf ${COVENANTS[setup.fit].name} bestehen. Mir macht vor allem ${COVENANTS[setup.fit].guards} Sorgen.“`;
+  const out = setup.options.filter(knows);
   if (out.length > 0) return `„${out.map((h) => COVENANTS[h].name).join(" und ")} würde ich hier nicht verlangen. Das eigentliche Risiko liegt woanders.“`;
   return "„Ehrlich gesagt: Keine der Auflagen auf dem Tisch ist mein Gebiet. Frag lieber jemanden, der die Firma kennt.“";
 }
@@ -564,12 +566,20 @@ export function hintsFor(state: GameState, itemId: string): HintView {
   const item = state.items.find((i) => i.id === itemId);
   const tip = item?.tip ? { name: personOf(state, contactRead(state, item.tip)).name, text: hintText(state, item.tip, itemId), ring: contactDef(item.tip).ring } : undefined;
   // Only people who know at least one of the conditions on the table; ready ones first.
-  const onTable = item ? covenantsOf(state, item).options : [];
-  const options = CONTACTS.filter((d) => d.hint && d.hint.some((h) => onTable.includes(h)) && ringOpen(state, d.ring) && contactRead(state, d.id).met)
+  const onTable = item ? covenantsOf(state, item).options.map((id) => COVENANTS[id].risk) : [];
+  const options = CONTACTS.filter((d) => d.hint && d.hint.some((h) => onTable.includes(COVENANTS[h].risk)) && ringOpen(state, d.ring) && contactRead(state, d.id).met)
     .map((d) => {
       const c = contactRead(state, d.id);
       const p = personOf(state, c);
-      return { id: d.id, name: p.name, role: p.role, ring: d.ring, knows: d.hint!.map((h) => COVENANTS[h].name), warmth: c.warmth, blocker: hintBlocker(state, d.id, itemId) };
+      return {
+        id: d.id,
+        name: p.name,
+        role: p.role,
+        ring: d.ring,
+        knows: d.hint!.map((h) => RISK_LABEL[COVENANTS[h].risk]),
+        warmth: c.warmth,
+        blocker: hintBlocker(state, d.id, itemId),
+      };
     })
     .sort((a, b) => Number(a.blocker !== null) - Number(b.blocker !== null) || b.warmth - a.warmth);
   return { itemId, ...(tip ? { tip } : {}), options, cost: HINT_WARMTH_COST, min: HINT_WARMTH_MIN };

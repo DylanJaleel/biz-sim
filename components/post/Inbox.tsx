@@ -5,7 +5,7 @@ import { useState } from "react";
 import { ACTION_DAYS, BUYOUT_REPUTATION } from "@/lib/game/config";
 import type { GameState, Mail, StartupStatus } from "@/lib/game/types";
 import { ActionButton } from "@/components/game/ActionButton";
-import { eur, pct, runwayText } from "@/components/game/format";
+import { annualGrowth, eur, pct, runwayText } from "@/components/game/format";
 import { usePlay } from "@/components/game/usePlay";
 import type { EventCard, FavorCard } from "@/lib/game/network-views";
 import { EventButtons, EventFacts, GuestStack } from "@/components/network/EventParts";
@@ -209,8 +209,8 @@ function Deal({ deal, revision, cash, ddDays }: { deal: DealView; revision: numb
           <b>{eur(deal.revenue)}</b>
         </span>
         <span>
-          <small>Wachstum</small>
-          <b>{pct(deal.growth)}</b>
+          <small>{deal.buyout ? "Wachstum im Jahr" : "Wachstum/Monat"}</small>
+          <b>{pct(deal.buyout ? annualGrowth(deal.growth) : deal.growth)}</b>
         </span>
         <span>
           <small>Cashflow/Monat</small>

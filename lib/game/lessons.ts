@@ -362,7 +362,7 @@ export const LESSONS: Lesson[] = [
     rule: "Eine gute Auflage trifft das eigentliche Risiko. Eine Auflage, die nichts absichert, kostet nur Zeit und Vertrauen.",
     example: "Ein Kredit über 500.000 € mit der Auflage: Die Kasse darf nie unter drei Monatskosten fallen. Fällt sie darunter, muss die Firma der Bank einen Sparplan vorlegen.",
     inGame:
-      "Wer im Beirat „Auflagen“ wählt, sagt auch welche. Von drei Auflagen passt eine. Welche, verrät die Rückfrage zum Risiko, der CFO oder ein Vorgespräch. Eine Auflage wirkt einen Monat später und nur ganz, wenn du sie im Folgetermin nachprüfst.",
+      "Wer im Beirat „Auflagen“ wählt, sagt auch welche. Jedes Themenfeld (Finanzierung, Team, Produkt, Ausschüttung, Zukauf, Vertrieb, Führung, Krise) hat drei eigene Auflagen, eine davon passt. Welche, verrät die Rückfrage zum Risiko, der CFO oder ein Vorgespräch. Eine Auflage wirkt einen Monat später und nur ganz, wenn du sie im Folgetermin nachprüfst.",
   },
   {
     id: "stage_gate",
@@ -371,7 +371,8 @@ export const LESSONS: Lesson[] = [
       "Geld kommt nicht auf einmal, sondern in Tranchen. Die nächste Tranche gibt es erst, wenn ein vorher vereinbarter Meilenstein erreicht ist, etwa ein Umsatzziel oder ein fertiges Produkt. So begrenzt der Geldgeber seinen Schaden, wenn ein Vorhaben scheitert.",
     rule: "Lohnt sich bei großem Einsatz und unsicherem Ausgang. Bei einem sicheren Vorhaben kostet es nur Tempo.",
     example: "Statt 300.000 € für ein neues Produkt: 100.000 € jetzt, der Rest nach 50 zahlenden Testkunden. Scheitert der Test, sind 200.000 € gerettet.",
-    inGame: "Die Auflage „Meilenstein zuerst“ passt zu großen Wetten mit offenem Ausgang, etwa einem zweiten Produkt oder einem Zukauf.",
+    inGame:
+      "Auflagen mit Stufen („Freigabe nach Meilenstein“, „Auszahlung in Tranchen“, „Übernahme in Stufen“) passen zu großen Wetten mit offenem Ausgang, etwa einem zweiten Produkt oder einem Zukauf.",
   },
   {
     id: "zustimmungsvorbehalt",
@@ -380,7 +381,7 @@ export const LESSONS: Lesson[] = [
       "Bestimmte Geschäfte darf die Geschäftsführung nur mit Zustimmung des Beirats oder Aufsichtsrats abschließen, etwa große Einstellungen, Kredite oder Verträge über einer Wertgrenze. Das steht in der Satzung oder Geschäftsordnung.",
     rule: "Ein Vetorecht schützt, wo Vertrauen oder Erfahrung fehlen. Wo die Führung es im Griff hat, wirkt es wie Misstrauen und bremst.",
     example: "Einstellungen über 80.000 € Jahresgehalt und alle Verträge über 50.000 € brauchen die Zustimmung des Beirats.",
-    inGame: "Die Auflage „Vetorecht des Beirats“ passt, wenn das Vertrauen in die Steuerung angeschlagen ist oder der Plan schnell Personal aufbaut.",
+    inGame: "Der „Zustimmungskatalog“ und der „Stellenplan mit Freigabe“ passen, wenn das Vertrauen in die Steuerung angeschlagen ist oder der Plan schnell Personal aufbaut.",
   },
   {
     id: "pilotprojekt",
@@ -390,7 +391,8 @@ export const LESSONS: Lesson[] = [
     rule: "Ein Pilot lohnt sich, wenn die Nachfrage die offene Frage ist. Ist sie belegt, verschenkt er nur Zeit.",
     example:
       "Ein Lieferdienst startet erst in Köln-Ehrenfeld. Nach drei Monaten zeigt sich: Nur ein Drittel der Kunden bestellt ein zweites Mal. Der große Start wird verschoben und das Angebot verbessert.",
-    inGame: "Die Auflage „Pilot zuerst“ passt zu Expansionen, neuen Preisen und neuen Angeboten, besonders bei schwacher Marktstellung.",
+    inGame:
+      "Auflagen wie „Erst ein Testmarkt“, „Erst mit einem Teil der Kunden“ oder „Testphase mit Zielen“ passen zu Expansionen, neuen Preisen und neuen Angeboten, besonders bei schwacher Marktstellung.",
   },
   {
     id: "budgetdeckel",
@@ -398,7 +400,61 @@ export const LESSONS: Lesson[] = [
     summary: "Ein Vorhaben bekommt eine feste Obergrenze für Ausgaben (Cap). Was darüber hinausgeht, muss neu genehmigt werden. Das schützt die Kasse, wenn Kosten davonlaufen.",
     rule: "Der Deckel passt, wenn das Geld knapp ist. Ist genug da, bremst er nur.",
     example: "Die Werbekampagne darf höchstens 40.000 € kosten statt der geplanten 60.000 €. Bringen die ersten 40.000 € genug Kunden, wird nachgelegt.",
-    inGame: "Die Auflage „Budgetdeckel“ passt bei kurzer Reichweite und teuren Plänen.",
+    inGame: "Auflagen mit Deckel („Fester Projektdeckel“, „Krisenbudget mit Deckel“, „Kreditrahmen mit Deckel“) passen bei kurzer Reichweite und teuren Plänen.",
+  },
+  {
+    id: "kreditrahmen",
+    title: "Kreditrahmen (Kreditlinie)",
+    summary:
+      "Statt eines festen Darlehens, das auf einmal ausgezahlt wird, bekommt die Firma einen Rahmen, aus dem sie bei Bedarf Geld abruft. Zinsen fallen nur auf den genutzten Teil an. Ein Deckel begrenzt, wie viel pro Monat abgerufen werden darf.",
+    rule: "Ein gedeckelter Rahmen passt, wenn das Geld knapp ist und die Kosten sonst mitwachsen würden.",
+    example: "Die Bank sagt 200.000 € zu, abrufbar höchstens 30.000 € im Monat. Die Firma zahlt Zinsen nur auf das, was sie wirklich braucht.",
+    inGame: "Die Auflage „Kreditrahmen mit Deckel“ gehört zum Themenfeld Finanzierung und passt bei kurzer Reichweite.",
+  },
+  {
+    id: "mindestkasse",
+    title: "Mindestkasse (Liquiditätsreserve)",
+    summary:
+      "Eine Firma hält immer einen Puffer an Geld, der nicht verteilt und nicht investiert wird. Er fängt schwache Monate, späte Zahlungen und Überraschungen ab. Ausgeschüttet wird nur, was darüber liegt.",
+    rule: "Faustregel: drei bis sechs Monatskosten als Reserve, mehr bei schwankendem Geschäft.",
+    example: "Monatskosten 80.000 €, Mindestkasse 480.000 €. Liegen 700.000 € auf dem Konto, dürfen höchstens 220.000 € ausgeschüttet werden.",
+    inGame: "Die Auflage „Mindestkasse halten“ gehört zum Themenfeld Ausschüttung und passt, wenn die Reichweite nach der Ausschüttung zu kurz würde.",
+  },
+  {
+    id: "garantien",
+    title: "Garantien im Kaufvertrag",
+    summary:
+      "Beim Kauf einer Firma sichert der Verkäufer im Vertrag zu, dass bestimmte Angaben stimmen, etwa Umsatz, Schulden oder laufende Verträge (Representations & Warranties). Stellt sich eine Angabe als falsch heraus, muss er den Schaden ersetzen.",
+    rule: "Je weniger man vor der Unterschrift prüfen kann, desto wichtiger sind Garantien.",
+    example: "Der Verkäufer garantiert ein EBITDA von 1,2 Mio. €. Es waren nur 1,0 Mio. €: Er zahlt einen Teil des Kaufpreises zurück.",
+    inGame: "Die Auflage „Garantien im Kaufvertrag“ gehört zum Themenfeld Zukauf und passt, wenn die Zahlen unsicher sind.",
+  },
+  {
+    id: "margenuntergrenze",
+    title: "Margen-Untergrenze",
+    summary:
+      "Eine Firma legt fest, unter welcher Marge sie keine Aufträge annimmt. So verhindert sie, dass der Vertrieb Umsatz mit Rabatten kauft, der am Ende kein Geld verdient.",
+    rule: "Rohmarge = (Preis − direkte Kosten) ÷ Preis. Liegt sie unter dem, was die Fixkosten brauchen, kostet jeder Auftrag Geld.",
+    example: "Mindestmarge 35 %. Ein Großkunde will 30 % Rabatt, die Marge fiele auf 20 %: Der Auftrag geht zurück ins Gremium.",
+    inGame: "Die Auflage „Margen-Untergrenze“ gehört zum Themenfeld Preis und Vertrieb und passt, wenn die Zahlen schwach sind.",
+  },
+  {
+    id: "reporting",
+    title: "Reporting-Pflicht",
+    summary:
+      "Die Geschäftsführung legt dem Gremium regelmäßig feste Kennzahlen vor: Umsatz, Kasse, Marge, Abweichungen vom Plan. Wer früh sieht, dass eine Zahl kippt, kann gegensteuern, bevor es teuer wird.",
+    rule: "Wenige Kennzahlen, jeden Monat, immer gleich gerechnet. Ein Bericht, den keiner liest, ist nur Aufwand.",
+    example: "Jeden Monat eine Seite: Umsatz gegen Plan, Kasse, Reichweite, größter Kunde. Fällt die Reichweite unter sechs Monate, gibt es eine Sondersitzung.",
+    inGame: "Auflagen wie „Monatsbericht an das Gremium“, „Krisenstab mit Wochenbericht“ und „Erst nach dem Quartalsabschluss“ passen, wenn die Finanzsteuerung schwach ist.",
+  },
+  {
+    id: "stellenplan",
+    title: "Stellenplan",
+    summary:
+      "Ein Stellenplan legt fest, wie viele Stellen eine Firma hat und was sie kosten dürfen. Neue Stellen, Gehaltssprünge oder Beteiligungen außerhalb des Plans brauchen eine Freigabe.",
+    rule: "Personal ist die schwerste Kosten-Entscheidung: leicht zugesagt, schwer zurückgenommen.",
+    example: "Der Plan sieht 24 Stellen vor. Für zwei zusätzliche Vertriebler braucht die Geschäftsführung die Zustimmung des Beirats.",
+    inGame: "Die Auflage „Stellenplan mit Freigabe“ gehört zum Themenfeld Team und passt, wenn das Vertrauen in die Steuerung angeschlagen ist.",
   },
   {
     id: "ebitda_multiple",
@@ -705,6 +761,12 @@ export const CURRICULUM = [
   "pilotprojekt",
   "stage_gate",
   "zustimmungsvorbehalt",
+  "stellenplan",
+  "reporting",
+  "kreditrahmen",
+  "mindestkasse",
+  "margenuntergrenze",
+  "garantien",
   "down_round",
   "secondary",
   "netzwerk",

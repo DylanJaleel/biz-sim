@@ -28,7 +28,37 @@ const EXIT_CHOICES: readonly ExitChoice[] = ["accept", "negotiate", "reject"];
 const ROLES: readonly TeamRole[] = ["operating"];
 const GV_VOTES: readonly GvVote[] = ["go", "no"];
 const ASSET_IDS: readonly AssetId[] = ["tagesgeld", "anleihen", "dividenden", "tech"];
-const COVENANT_IDS: readonly CovenantId[] = ["budget", "stagegate", "pilot", "second", "kpi", "veto"];
+const COVENANT_IDS: readonly CovenantId[] = [
+  ...(["budget", "stagegate", "pilot", "second", "kpi", "veto"] as const),
+  ...([
+    "kreditdeckel",
+    "tranchen",
+    "geldgeberkennzahl",
+    "stellenplan",
+    "testphase",
+    "vertretung",
+    "testmarkt",
+    "meilenstein",
+    "projektdeckel",
+    "mindestkasse",
+    "haelfte",
+    "quartal",
+  ] as const),
+  ...([
+    "stufen",
+    "garantien",
+    "schluesselkunden",
+    "testkunden",
+    "zweiterweg",
+    "margenboden",
+    "zustimmungskatalog",
+    "zielstufen",
+    "monatsbericht",
+    "krisenbudget",
+    "ersatzquelle",
+    "krisenstab",
+  ] as const),
+];
 
 const MANDATE_MOVES: readonly MandateMove[] = ["accept", "decline", "comps", "launch", "accept_bid", "final", "negotiate", "teaser", "round"];
 const MANDATE_LEVERS: readonly MandateLever[] = ["bnf", "exclusive", "earnout", "batna"];
