@@ -372,6 +372,8 @@ export interface Round {
   stakeAfter?: number;
   /** A round of the venture growth path: index of the stage it leads to (see venture.ts). */
   venture?: number;
+  /** Negotiable conditions of a growth round (see rounds.ts). */
+  terms?: RoundTermSheet;
 }
 
 /** Someone wants to sell shares to the player. */
@@ -645,6 +647,38 @@ export interface VentureRoundRecord {
   amount: number;
   post: number;
   down?: boolean;
+  /** Insiders bridged the gap to the next try (no new price). */
+  bridge?: boolean;
+}
+
+export type RoundAmbition = "cautious" | "market" | "bold";
+
+/** A round the player prepares on purpose (see rounds.ts): goal, timetable, price idea, investors pitched. */
+export interface RoundPrep {
+  /** Stage the round leads to (index into VENTURE_STAGES), or "ipo" for the listing. */
+  target: number | "ipo";
+  started: number;
+  /** Month the round goes out to investors. */
+  due: number;
+  ambition: RoundAmbition;
+  /** Indexes of the investors pitched (list of the stage, see rounds.ts). */
+  pitched: number[];
+  /** Warm introduction through the VC partner of the network. */
+  intro?: boolean;
+}
+
+/** Conditions of a growth round's term sheet that can be negotiated. */
+export interface RoundTermSheet {
+  /** Liquidation preference of the new money: 1 = money back first, 1.5 = one and a half times. */
+  pref: number;
+  /** The lead wants a seat in the board. */
+  seat: boolean;
+  /** Competing term sheets from investors the player pitched. */
+  rivals: number;
+  /** Levers already pulled (each once). */
+  asked: ("price" | "pref" | "seat")[];
+  /** What happened in the negotiation, newest last. */
+  log?: string[];
 }
 
 export interface VenturePath {
@@ -662,6 +696,8 @@ export interface VenturePath {
   /** The player still held shares when it became one. */
   unicornStake?: number;
   log: VentureRoundRecord[];
+  /** The next round (or the listing) the player prepares. */
+  prep?: RoundPrep;
 }
 
 export type CeoFit = "sales" | "product" | "lead";
@@ -964,6 +1000,7 @@ export interface Duel {
 
 export type FundMove = "launch" | "pitch" | "concede" | "refuse" | "close";
 export type StudioMove = "found" | "tranche" | "fundAsk";
+export type VentureRoundMove = "prepare" | "pitch" | "intro" | "cancel" | "negotiate";
 
 export type ActionKind =
   | "dd"
@@ -1003,6 +1040,7 @@ export type ActionKind =
   | "fund"
   | "lpac"
   | "studio"
+  | "ventureRound"
   | "holdco"
   | "estate"
   | "foundation"
@@ -1047,6 +1085,16 @@ export type GameAction =
   | { type: "raiseFund" }
   | { type: "fund"; move: FundMove; lpId?: string }
   | { type: "lpac"; voteId: string; choice: string }
+  | {
+      type: "ventureRound";
+      startupId: string;
+      move: VentureRoundMove;
+      months?: number;
+      ambition?: RoundAmbition;
+      ipo?: boolean;
+      investor?: number;
+      lever?: "price" | "pref" | "seat";
+    }
   | { type: "studio"; move: StudioMove; ideaId?: string; ceo?: number; keep?: number; startupId?: string; size?: "lean" | "plan" | "big" }
   | {
       type: "mandate";

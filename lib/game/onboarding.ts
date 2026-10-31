@@ -14,7 +14,7 @@ import {
 } from "./config";
 import { MANDATE_REPUTATION, PLATFORM_REPUTATION } from "./mna-config";
 import type { GameState, OnboardingState } from "./types";
-import { FUND_NEXT_INVESTED, STUDIO_EXITS, STUDIO_REPUTATION } from "./venture-config";
+import { FUND_NEXT_INVESTED, IPO_PREP_REPUTATION, LATE_ROUND_REPUTATION, ROUND_PREP_REPUTATION, STUDIO_EXITS, STUDIO_REPUTATION } from "./venture-config";
 
 // Einführung für neue Spieler: wann sie von selbst startet und welche Freischaltungen
 // einen einmaligen Hinweis bekommen. Nur reine Funktionen und Konstanten aus der
@@ -57,6 +57,27 @@ export const UNLOCKS: Unlock[] = [
     reputation: LEAD_REPUTATION,
     title: "Runden anführen",
     text: "Bei Finanzierungsrunden kannst du die Führung übernehmen und nimmst die Hälfte der Runde.",
+    href: "/portfolio",
+  },
+  {
+    id: "rounds",
+    reputation: ROUND_PREP_REPUTATION,
+    title: "Runden vorbereiten",
+    text: "Bei Firmen auf dem Wachstumspfad bereitest du Serie A und B selbst vor: Ziele, Zeitplan, Bewertung, Investoren. Term Sheets verhandelst du vor der Abstimmung.",
+    href: "/portfolio",
+  },
+  {
+    id: "lateRounds",
+    reputation: LATE_ROUND_REPUTATION,
+    title: "Späte Runden",
+    text: "Serie C, D und Pre-IPO: Growth- und Crossover-Fonds sprechen jetzt mit dir. Die Runden sind größer, die Bedingungen härter.",
+    href: "/portfolio",
+  },
+  {
+    id: "ipoPrep",
+    reputation: IPO_PREP_REPUTATION,
+    title: "Börsengang vorbereiten",
+    text: "Ab Serie D bereitest du mit den Banken den Börsengang vor. Danach gilt für deine Aktien eine Sperrfrist (Lock-up).",
     href: "/portfolio",
   },
   {

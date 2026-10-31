@@ -122,6 +122,165 @@ export const PAPER_FADE = 0.97;
 /** Until the exit only this share of the paper gain counts towards net worth, at most PAPER_CAP per company. */
 export const PAPER_CREDIT = 0.3;
 export const PAPER_CAP = 5_000_000;
-/** Companies on the path list only as a unicorn (or once the path is over). */
-export const VENTURE_IPO_STAGE = 5;
+/** Companies on the path list from Serie D on (or once the path is over). */
+export const VENTURE_IPO_STAGE = 4;
 export const GROWTH_INVESTORS = ["Atlas Growth", "Kranich Capital", "Elbtal Growth Partners", "Silberhorn Ventures", "Vierwald Capital", "Brückentor Partners"];
+
+// ---------------------------------------------------------------------------
+// Finanzierungsrunden vorbereiten und verhandeln (siehe rounds.ts)
+// ---------------------------------------------------------------------------
+
+/** From this reputation the player prepares Serie A and B and negotiates term sheets. */
+export const ROUND_PREP_REPUTATION = 45;
+/** Serie C, D and the Pre-IPO round: growth and crossover funds only talk to known names. */
+export const LATE_ROUND_REPUTATION = 60;
+/** Preparing the listing with the banks. */
+export const IPO_PREP_REPUTATION = 72;
+/** Up to this stage (Serie A) the player may lead a growth round; later the growth funds lead. */
+export const VENTURE_LEAD_MAX_STAGE = 1;
+
+export type GoalId = "revenue" | "growth" | "product" | "customers" | "margin" | "market" | "management" | "burn" | "finance" | "board";
+
+export interface StageGoals {
+  /** What investors of this round want to see, in two words. */
+  theme: string;
+  text: string;
+  /** Targets: revenue per month in €, growth and margins as shares, axes 0..100, burn as cash flow ÷ revenue, customers as largest share. */
+  goals: [GoalId, number][];
+}
+
+/**
+ * Milestones per round (index = stage the round leads to; the last entry is
+ * the listing). Derived from the company model: SCALE_REVENUE 150.000 € per
+ * month, growth that drags with every doubling above it, and the entry to the
+ * path at 6 Mio. € value (about 100.000 € revenue per month at 4 % growth).
+ */
+export const STAGE_GOALS: StageGoals[] = [
+  {
+    theme: "Erste Zugkraft",
+    text: "Umsatz und Wachstum zeigen, dass Kunden das Produkt wollen.",
+    goals: [
+      ["revenue", 60_000],
+      ["growth", 0.04],
+      ["board", 0.7],
+    ],
+  },
+  {
+    theme: "Product-Market-Fit",
+    text: "Kunden bleiben und empfehlen weiter, der Umsatz hängt nicht an einem Großkunden.",
+    goals: [
+      ["revenue", 100_000],
+      ["growth", 0.04],
+      ["product", 65],
+      ["customers", 0.3],
+      ["board", 0.7],
+    ],
+  },
+  {
+    theme: "Wiederholbarer Vertrieb",
+    text: "Neue Kunden kommen planbar, jeder Kunde verdient genug Rohertrag (Unit Economics).",
+    goals: [
+      ["revenue", 200_000],
+      ["growth", 0.035],
+      ["margin", 0.55],
+      ["market", 65],
+      ["board", 0.7],
+    ],
+  },
+  {
+    theme: "Skalierung",
+    text: "Die Firma wächst über Länder und Produkte, die Marge hält, die Führung trägt die Größe.",
+    goals: [
+      ["revenue", 380_000],
+      ["growth", 0.024],
+      ["margin", 0.6],
+      ["management", 65],
+      ["board", 0.7],
+    ],
+  },
+  {
+    theme: "Weg zur Profitabilität",
+    text: "Der Verlust schrumpft im Verhältnis zum Umsatz, die Zahlen sind prüfbar wie bei einer AG.",
+    goals: [
+      ["revenue", 600_000],
+      ["growth", 0.018],
+      ["burn", -0.2],
+      ["finance", 65],
+      ["board", 0.7],
+    ],
+  },
+  {
+    theme: "Größe und Gewinn",
+    text: "Fast profitabel, groß genug für die Börse: Crossover-Fonds kaufen vor dem Börsengang.",
+    goals: [
+      ["revenue", 900_000],
+      ["growth", 0.014],
+      ["burn", -0.05],
+      ["management", 70],
+      ["board", 0.7],
+    ],
+  },
+  {
+    theme: "Börsenreife",
+    text: "Prüfbare Zahlen, eine Geschichte für Fondsmanager und ein Gewinn in Sichtweite.",
+    goals: [
+      ["revenue", 700_000],
+      ["growth", 0.012],
+      ["burn", -0.1],
+      ["finance", 70],
+      ["board", 0.7],
+    ],
+  },
+];
+export const IPO_GOALS = STAGE_GOALS.length - 1;
+
+/** Timetable choices in months; a round goes out at the earliest this long after the last one. */
+export const PREP_MONTHS = [3, 6, 9] as const;
+export const PREP_MIN_GAP = 6;
+export const PREP_DAYS = 1;
+export const PITCH_DAYS = 1;
+export const NEGOTIATE_DAYS = 1;
+export const PITCH_MAX = 3;
+/** Chance bonus per pitched investor and for a warm introduction; warmth the introduction costs. */
+export const PITCH_BONUS = 0.03;
+export const INTRO_BONUS = 0.06;
+export const INTRO_WARMTH = 15;
+export const INTRO_WARMTH_MIN = 40;
+/** With a prepared round the chance may climb this high. */
+export const PREP_CHANCE_MAX = 0.72;
+
+export const AMBITION: Record<"cautious" | "market" | "bold", { label: string; text: string; price: number; chance: number; pref: number }> = {
+  cautious: { label: "Vorsichtig", text: "Etwas unter Markt: mehr Investoren sagen zu.", price: 0.9, chance: 0.08, pref: 1 },
+  market: { label: "Marktpreis", text: "Was vergleichbare Firmen bekommen.", price: 1, chance: 0, pref: 1 },
+  bold: { label: "Ambitioniert", text: "Hoher Preis: weniger Zusagen, der Lead verlangt meist 1,5× Präferenz.", price: 1.2, chance: -0.08, pref: 1.5 },
+};
+
+/** A round that misses but comes close: insiders bridge with this many months of burn, the next try follows soon. */
+export const BRIDGE_FULFIL = 0.75;
+export const BRIDGE_MONTHS = 6;
+
+/** Negotiation of a term sheet: base chance per lever plus this much per competing term sheet. */
+export const NEGOTIATE_CHANCE = { price: 0.3, pref: 0.4, seat: 0.35, rival: 0.2, max: 0.85 } as const;
+export const NEGOTIATE_PRICE_STEP = 0.1;
+/** Giving up the 1,5× preference costs a little price. */
+export const PREF_TRADE = 0.05;
+/** Without the lead's board seat the price falls a little. */
+export const SEAT_TRADE = 0.03;
+
+/** Who leads which round: venture funds early, growth funds in the middle, crossover funds before the listing. */
+export const ROUND_INVESTORS: { kind: "vc" | "growth" | "crossover"; label: string; names: string[] }[] = [
+  { kind: "vc", label: "Venture-Fonds", names: ["Isar Capital", "Hafenwerk Ventures", "Elbe Growth", "Westpark Partners"] },
+  { kind: "growth", label: "Growth-Fonds", names: GROWTH_INVESTORS },
+  {
+    kind: "crossover",
+    label: "Crossover-Investoren",
+    names: ["Meridian Crossover", "Nordkap Public Equity", "Helvetia Global Growth", "Atlantik Asset Management", "Rheingold Tech Opportunities"],
+  },
+];
+/** Index into ROUND_INVESTORS for the round that leads to a stage. */
+export function investorGroup(stage: number | "ipo"): number {
+  if (stage === "ipo" || stage >= 4) return 2;
+  return stage >= 2 ? 1 : 0;
+}
+/** Board partners of the leads who take a seat. */
+export const LEAD_PARTNERS = ["Dr. Carola Wendt", "Maximilian Sauer", "Ayşe Korkmaz", "Henrik Lund", "Sophie Albers", "Jakob Reiter"];

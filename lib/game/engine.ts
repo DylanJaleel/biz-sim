@@ -145,7 +145,8 @@ import { acquire, makePlatform, planAddons, platformMonth, recordSale, startSale
 import { fundFollowOn, fundId, fundProceeds, fundsFees, fundsMonth, fundsOf, fundDistribute, investingFund, playFund, playLpac } from "./funds";
 import { fixedDays, playStudio, studioMonth } from "./studio";
 import { companyValue, creditedValue, saleValue, ventureMonth, ventureRoundClosed, ventureRoundFailed } from "./venture";
-import { VENTURE_IPO_STAGE } from "./venture-config";
+import { VENTURE_IPO_STAGE, VENTURE_LEAD_MAX_STAGE } from "./venture-config";
+import { playVentureRound } from "./round-prep";
 import { assignOp, delegateFor, fireOp, hireOp, migrateTeam, teamCarry, teamDealFlow, teamMonth } from "./team";
 import { dragAlong, foundHoldco, guaranteeClaim, guaranteeText } from "./holdco";
 import { estateEquity, officeRent } from "./estate";
@@ -521,6 +522,10 @@ function playAction(current: GameState, action: GameAction): { state: GameState;
       playStudio(ctxOf(state), action);
       return { state, result: { kind: "none" } };
     }
+    case "ventureRound": {
+      playVentureRound(ctxOf(state), action);
+      return { state, result: { kind: "none" } };
+    }
     case "dd": {
       const s = startupOf(state, action.startupId);
       if (s.status !== "offered" || !s.offer) throw new GameRuleError("Dieses Angebot liegt nicht mehr vor.");
@@ -674,7 +679,7 @@ function playAction(current: GameState, action: GameAction): { state: GameState;
       if (!round || round.status !== "open") throw new GameRuleError("Über diese Runde wurde schon entschieden.");
       const s = startupOf(state, round.startupId);
       if (s.status !== "active") throw new GameRuleError("Die Firma ist nicht mehr aktiv.");
-      if (round.venture !== undefined && (action.take === "lead" || action.take === "syndicate"))
+      if (round.venture !== undefined && (action.take === "syndicate" || (action.take === "lead" && round.venture > VENTURE_LEAD_MAX_STAGE)))
         throw new GameRuleError("Eine Wachstumsrunde führt der Wachstumsinvestor. Du kannst anteilig mitziehen.");
       if (action.take === "lead" && state.reputation < LEAD_REPUTATION) {
         throw new GameRuleError(`Eine Runde anführen kannst du ab ${LEAD_REPUTATION} Ruf.`);
@@ -1270,7 +1275,7 @@ const FUNDING_TEMPLATES = ["bridge", "seed_round"];
 function settleRound(state: GameState, round: Round, take: RoundTake, vote: GvVote | "abstain", notes: string[]): void {
   let s = startupOf(state, round.startupId);
   // Growth rounds are led by the growth investor: the player can only follow pro rata.
-  if (round.venture !== undefined && (take === "lead" || take === "syndicate"))
+  if (round.venture !== undefined && (take === "syndicate" || (take === "lead" && round.venture > VENTURE_LEAD_MAX_STAGE)))
     throw new GameRuleError("Eine Wachstumsrunde führt der Wachstumsinvestor. Du kannst anteilig mitziehen.");
   const { ballots, approved } = shareholderVote(round, s, vote);
   round.ballots = ballots;

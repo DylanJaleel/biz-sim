@@ -166,11 +166,13 @@ export function applyRound(s: Startup, r: Round, invested: number, syndicate = 0
   const capTable = s.capTable.map((h) => ({ ...h, pct: h.pct * keep }));
   const leadMoney = r.amount - invested - syndicate;
   const leadPct = (leadMoney / post) * 100;
+  // A negotiated preference above 1× lets the lead take more than its money back first.
+  const leadPref = leadMoney * (r.terms?.pref ?? 1);
   const existing = capTable.find((h) => h.id === r.leadId);
   if (existing) {
     existing.pct += leadPct;
-    existing.pref = (existing.pref ?? 0) + leadMoney;
-  } else if (leadPct > 0.005) capTable.push({ id: r.leadId, name: r.lead, kind: "investor", pct: leadPct, pref: leadMoney });
+    existing.pref = (existing.pref ?? 0) + leadPref;
+  } else if (leadPct > 0.005) capTable.push({ id: r.leadId, name: r.lead, kind: "investor", pct: leadPct, pref: leadPref });
   if (syndicate > 0) {
     const syn = capTable.find((h) => h.kind === "syndicate");
     if (syn) {

@@ -610,6 +610,58 @@ export const LESSONS: Lesson[] = [
     inGame: "Etwa eine von 25 Partien erlebt einen Unicorn. Es gibt einen goldenen Tombstone; das Geld kommt erst mit Verkauf oder Börsengang.",
   },
   {
+    id: "meilensteine",
+    title: "Meilensteine einer Runde",
+    summary:
+      "Jede Runde hat ihre eigene Frage. Vor der Serie A: Wollen Kunden das Produkt wirklich (Product-Market-Fit)? Vor der Serie B: Lässt sich der Vertrieb wiederholen, verdient jeder Kunde genug? Vor der Serie C: Trägt die Firma die Größe? Danach zählt der Weg zum Gewinn.",
+    rule: "Erst die Ziele der nächsten Runde erfüllen, dann Investoren ansprechen, nicht umgekehrt",
+    example: "Eine Firma mit 120.000 € Umsatz im Monat, 4 % Wachstum und breiter Kundschaft ist reif für die Serie A. Für die Serie B fehlen ihr noch Umsatz und Marge.",
+    inGame: "Firmenseite, Bereich „Wachstum“: Runde vorbereiten, Fortschritt zu den Zielen, Investoren ansprechen.",
+  },
+  {
+    id: "term_sheet",
+    title: "Term Sheet",
+    summary:
+      "Das Term Sheet ist die Absichtserklärung eines Investors: Betrag, Bewertung und Bedingungen wie Liquidationspräferenz und Sitz im Beirat. Verhandelt wird vor der Unterschrift. Ein zweites Term Sheet ist das beste Argument.",
+    rule: "Bewertung und Bedingungen gehören zusammen: Ein hoher Preis mit harter Präferenz ist oft schlechter als ein fairer Preis mit sauberen Bedingungen",
+    example: "Fonds A bietet 80 Mio. € Bewertung mit 1,5× Präferenz, Fonds B 72 Mio. € mit 1×. Bei einem mittelmäßigen Verkauf bekommen die Gründer mit B mehr.",
+    inGame: "Gesellschafterversammlung einer Wachstumsrunde: Bewertung, Präferenz und Beiratssitz verhandeln, bevor abgestimmt wird.",
+  },
+  {
+    id: "spaete_runden",
+    title: "Serie B, C und D",
+    summary:
+      "Späte Runden sind größer: zweistellige oder dreistellige Millionenbeträge zu hohen Bewertungen. Es führen Growth-Fonds, die Plätze im Beirat und Vorzugsrechte verlangen. Jede Runde verwässert weniger, aber alle bisherigen Gesellschafter.",
+    rule: "Volumen = Bewertung nach dem Geld × Anteil der neuen Investoren",
+    example: "Serie B: 12,6 Mio. € bei 70 Mio. € Bewertung, die neuen Investoren bekommen 18 %. Wer 8 % hielt, hat danach 6,6 %.",
+    inGame: "Ab der Serie C reden Growth-Fonds erst mit dir, wenn dein Ruf stimmt. Die Runde kommt aber auch ohne dich, wenn die Zahlen passen.",
+  },
+  {
+    id: "bridge",
+    title: "Bridge (Brückenfinanzierung)",
+    summary:
+      "Fehlt für die nächste Runde nur wenig, geben die bisherigen Investoren oft eine Bridge: meist ein Wandeldarlehen, das bei der nächsten Runde in Anteile umgewandelt wird. Es kauft Zeit, löst aber kein Problem.",
+    example: "Für die Serie B fehlen noch 20 % Umsatz. Die Bestandsinvestoren geben 1,2 Mio. € für sechs Monate. Wächst die Firma bis dahin nicht, droht eine Down Round.",
+    inGame: "Erreicht eine Firma drei Viertel der Ziele, kommt statt der Runde eine Bridge, einmal pro Stufe.",
+  },
+  {
+    id: "crossover",
+    title: "Crossover-Investoren",
+    summary:
+      "Crossover-Fonds kaufen sonst Aktien an der Börse und steigen kurz vor dem Börsengang in private Firmen ein. Sie bringen viel Geld und Glaubwürdigkeit bei anderen Fondsmanagern, wollen aber einen klaren Weg an die Börse.",
+    example: "Ein Crossover-Fonds führt die Serie D mit 60 Mio. € und zeichnet beim Börsengang später noch einmal Aktien.",
+    inGame: "Die Serie D und die Pre-IPO-Runde führen Crossover-Investoren. Ab der Serie D kann die Firma an die Börse.",
+  },
+  {
+    id: "lockup",
+    title: "Lock-up (Sperrfrist)",
+    summary:
+      "Nach einem Börsengang dürfen die bisherigen Gesellschafter ihre Aktien eine Zeit lang nicht verkaufen, meist sechs bis zwölf Monate. So fällt der Kurs nicht gleich, weil alle auf einmal verkaufen wollen.",
+    rule: "Erlös aus gesperrten Aktien = Anteil × Kurs am Ende der Sperrfrist",
+    example: "Du hältst Aktien für 4 Mio. €. Die Hälfte ist zwölf Monate gesperrt. Fällt der Markt um 20 %, sind diese 2 Mio. € danach nur noch 1,6 Mio. € wert.",
+    inGame: "Beim Börsengang kommt die Hälfte deines Erlöses sofort, die andere Hälfte folgt nach der Sperrfrist und schwankt bis dahin mit dem Markt.",
+  },
+  {
     id: "operating_partner",
     title: "Operating Partner",
     summary:
@@ -869,6 +921,12 @@ export const CURRICULUM = [
   "venture_studio",
   "venture_path",
   "unicorn",
+  "meilensteine",
+  "term_sheet",
+  "spaete_runden",
+  "bridge",
+  "crossover",
+  "lockup",
   "operating_partner",
   "zwischenholding",
   "passung",

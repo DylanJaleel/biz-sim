@@ -1,3 +1,4 @@
+import { VENTURE_LEAD_MAX_STAGE } from "./venture-config";
 import { playerAmount, postMoney, stakeAfter, syndicateAmount, waterfall } from "./captable";
 import { leadOf, teamCarry, teamView, type TeamView } from "./team";
 import { dragAlong } from "./holdco";
@@ -492,7 +493,7 @@ export function roundView(state: GameState, roundId: string): RoundView | null {
     const amount = playerAmount(round, stake, take);
     const after = stakeAfter(round, stake, take);
     let reason: string | undefined;
-    if ((take === "lead" || take === "syndicate") && round.venture !== undefined) reason = "Wachstumsinvestor führt";
+    if (round.venture !== undefined && (take === "syndicate" || (take === "lead" && round.venture > VENTURE_LEAD_MAX_STAGE))) reason = "Wachstumsinvestor führt";
     else if (take === "lead" && state.reputation < LEAD_REPUTATION) reason = `Ab ${LEAD_REPUTATION} Ruf`;
     else if (take === "syndicate" && syndicateBlocker(state)) reason = state.reputation < SYNDICATE_REPUTATION ? `Ab ${SYNDICATE_REPUTATION} Ruf` : "Angel-Club zu kühl";
     else if (amount > state.cash) reason = "Zu wenig Kapital";
