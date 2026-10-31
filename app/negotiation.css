@@ -432,7 +432,8 @@
   .nd__pain b {
     font-size: 14px;
   }
-  .nd__pain span {
+  .nd__pain span,
+  .nd__pen {
     display: none;
   }
 }
