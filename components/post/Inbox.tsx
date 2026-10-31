@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { ACTION_DAYS, BUYOUT_REPUTATION } from "@/lib/game/config";
-import type { GameState, Mail, StartupStatus } from "@/lib/game/types";
+import type { Mail, StartupStatus } from "@/lib/game/types";
 import { ActionButton } from "@/components/game/ActionButton";
 import { annualGrowth, eur, pct, runwayText } from "@/components/game/format";
 import { usePlay } from "@/components/game/usePlay";
@@ -58,7 +58,7 @@ export function Inbox({
   revision,
   cash,
   ddDays,
-  corporateSeat,
+  corporate,
   network,
 }: {
   mails: MailView[];
@@ -67,7 +67,8 @@ export function Inbox({
   revision: number;
   cash: number;
   ddDays: number;
-  corporateSeat: GameState["corporateSeat"];
+  /** Open Konzern offer, active seats (id → name) and whether the maximum is reached. */
+  corporate: { offer?: string; seats: Record<string, string>; full: boolean };
   network?: { favors: Record<string, FavorCard>; events: Record<string, EventCard> };
 }) {
   const [selected, setSelected] = useState(initial);
@@ -119,26 +120,32 @@ export function Inbox({
             </Link>
           )}
           {mail.action === "corporate" &&
-            (corporateSeat === "offered" ? (
-              <div className="deal__actions">
-                <ActionButton action={{ type: "joinCorporate", accept: true }} revision={revision} days={ACTION_DAYS.joinCorporate} variant="primary">
-                  Mandat annehmen
-                </ActionButton>
-                <ActionButton action={{ type: "joinCorporate", accept: false }} revision={revision} variant="ghost">
-                  Absagen
-                </ActionButton>
-              </div>
-            ) : (
-              <p className="notice">
-                {corporateSeat === "joined" ? (
-                  <>
-                    Du sitzt im Aufsichtsrat. <Link href="/firma/nordhafen">Zur Nordhafen AG</Link>
-                  </>
-                ) : (
-                  "Du hast abgesagt."
-                )}
-              </p>
-            ))}
+            (() => {
+              const id = mail.corporateOfferId ?? "nordhafen";
+              if (corporate.offer === id)
+                return (
+                  <div className="deal__actions">
+                    {corporate.full && <p className="notice">Du hast schon die Höchstzahl an Mandaten. Gib erst eines ab (Rücktritt auf der Seite des Konzerns).</p>}
+                    <ActionButton action={{ type: "joinCorporate", accept: true }} revision={revision} days={ACTION_DAYS.joinCorporate} variant="primary" disabled={corporate.full}>
+                      Mandat annehmen
+                    </ActionButton>
+                    <ActionButton action={{ type: "joinCorporate", accept: false }} revision={revision} variant="ghost">
+                      Absagen
+                    </ActionButton>
+                  </div>
+                );
+              return (
+                <p className="notice">
+                  {corporate.seats[id] ? (
+                    <>
+                      Du sitzt im Aufsichtsrat. <Link href={`/firma/${id}`}>Zur {corporate.seats[id]}</Link>
+                    </>
+                  ) : (
+                    "Die Anfrage ist beantwortet oder verfallen."
+                  )}
+                </p>
+              );
+            })()}
           {mail.action === "favor" && mail.favorId && <FavorAnswer favor={network?.favors[mail.favorId]} revision={revision} />}
           {mail.action === "event" && mail.eventId && <EventAnswer event={network?.events[mail.eventId]} revision={revision} />}
           {mail.roundId && (
@@ -166,7 +173,7 @@ export function Inbox({
   );
 }
 
-function Deal({ deal, revision, cash, ddDays }: { deal: DealView; revision: number; cash: number; ddDays: number }) {
+function Deal({ deal, revision, cash }: { deal: DealView; revision: number; cash: number; ddDays: number }) {
   if (deal.status !== "offered") {
     const text: Record<StartupStatus, string> = {
       offered: "",
@@ -254,9 +261,9 @@ function Deal({ deal, revision, cash, ddDays }: { deal: DealView; revision: numb
 
       <div className="deal__actions">
         {!deal.ddDone && !deal.structured && (
-          <ActionButton action={{ type: "dd", startupId: deal.id }} revision={revision} days={ddDays}>
-            Prüfen
-          </ActionButton>
+          <Link href={`/pruefung/${deal.id}`} className="btn">
+            Due Diligence mit der CFO
+          </Link>
         )}
         {deal.structured ? (
           <Link href={`/uebernahme/${deal.id}`} className="btn btn--primary">

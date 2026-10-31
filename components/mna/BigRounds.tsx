@@ -36,6 +36,7 @@ export function BigRounds(props: BigRoundsProps) {
     <div className="rounds">
       {chosen && (
         <NegotiationDesk
+          scene
           name={chosen.buyer}
           role={chosen.kind === "strategic" ? "Stratege" : "Finanzinvestor"}
           look="exec"

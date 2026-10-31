@@ -75,6 +75,13 @@ export async function PlatformPage({ params }: { params: Promise<{ id: string }>
           <span>
             {v.stake.toLocaleString("de-DE", { maximumFractionDigits: 1 })} % · {x(v.moic)} deines Geldes
           </span>
+          {p && (
+            <span className={v.investorGoal.done ? "pos" : "muted"}>
+              {v.investorGoal.done
+                ? "Plattform-Investor erreicht"
+                : `Plattform-Investor: ${p.addons.length}/${v.investorGoal.addons} Zukäufe, ${x(v.moic)} von ${x(v.investorGoal.multiple)}`}
+            </span>
+          )}
         </div>
       </section>
 

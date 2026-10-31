@@ -2,20 +2,8 @@ import { daysLeft } from "./engine";
 import { leagueRank, leagueTable, LEAGUE_TOP, monthsPlayed, yearOf, type LeagueRow } from "./league";
 import { BIG_DAYS, BIG_ROUNDS, bidValue, bigFee, bigPower, bigRoundsFor, bigTableMood, LEVER_TEXT } from "./mandate-big";
 import { mnaRead } from "./mna-core";
-import {
-  CONCEPT_COST,
-  CONCEPT_VALUE,
-  DUEL_DAYS,
-  DUEL_RAISE,
-  DUEL_ROUNDS,
-  duelRecord,
-  duelScores,
-  RIVAL_KIND_LABEL,
-  RIVAL_REPUTATION,
-  rivalDef,
-  rivalsIn,
-  rivalsOf,
-} from "./rivals";
+import { duelOwnerMood } from "./negotiation";
+import { CONCEPT_COST, CONCEPT_VALUE, DUEL_DAYS, DUEL_RAISE, duelRounds, duelRecord, duelScores, RIVAL_KIND_LABEL, RIVAL_REPUTATION, rivalDef, rivalsIn, rivalsOf } from "./rivals";
 import type { GameState, MandateLever, TeaserFact } from "./types";
 
 // Was die Seiten von Rangliste, Rivalen, Bietgefecht und großen Mandaten
@@ -113,6 +101,8 @@ export interface DuelView {
   raise: { small: number; big: number };
   round: number;
   rounds: number;
+  /** The owner's mood overall: pleased when the best offer beats his asking price, whoever made it. */
+  mood: number;
   status: "open" | "won" | "lost" | "left";
   log: string[];
   days: typeof DUEL_DAYS;
@@ -139,7 +129,8 @@ export function duelView(state: GameState, targetId: string): DuelView | null {
     conceptCost: d.you * CONCEPT_COST,
     raise: { small: d.you + ask * DUEL_RAISE.small, big: d.you + ask * DUEL_RAISE.big },
     round: d.round,
-    rounds: DUEL_ROUNDS,
+    rounds: duelRounds(d, ask),
+    mood: duelOwnerMood(score.you, score.rival, ask),
     status: d.status,
     log: d.log,
     days: DUEL_DAYS,

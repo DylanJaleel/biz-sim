@@ -159,6 +159,8 @@ export function profileOf(m: TeamMember): OpProfile {
 
 export function opTypeOf(s: Startup): OpType {
   if (s.platform) return "plattform";
+  // A Konzern seat needs what a Mittelstand mandate needs: governance, numbers, people.
+  if (s.corporate) return "mittelstand";
   return s.metrics.valuedOn === "ebitda" ? "mittelstand" : "startup";
 }
 
@@ -258,6 +260,7 @@ export function effectsOf(m: TeamMember, s: Startup): string[] {
   const fit = fitOf(m, s);
   const out = [`spart ${OP.days[fit].toLocaleString("de-DE")} Tage im Monat`, `entscheidet Vorlagen zu ${Math.round(OP.skill[fit] * 100)} % richtig`];
   if (s.lbo && OP.handover[fit] < 1) out.push(`Übergaberisiko −${Math.round((1 - OP.handover[fit]) * 100)} %`);
+  if (s.corporate) out.push("sitzt für dich im Aufsichtsrat, die Vergütung teilt ihr euch zur Hälfte");
   if (s.platform) {
     out.push(`+${Math.round(OP.addonChance[fit] * 100)} % Chance auf Zukaufkandidaten`);
     if (fit !== "weak") out.push("prüft die Passung vorab, Zukauf einen Tag schneller, eine Integration mehr");
@@ -324,7 +327,7 @@ export function assignOp(ctx: Ctx, memberId: string, startupId: string | null, f
   }
   const s = state.startups.find((x) => x.id === startupId);
   if (!s || s.status !== "active") ctx.fail("Das ist keine aktive Beteiligung.");
-  if (s!.corporate) ctx.fail("Im Konzern sitzt du selbst im Aufsichtsrat.");
+  if (s!.corporate) ctx.lesson("aufsichtsrat");
   if (currentMandates(member!).some((x) => x.id === s!.id)) return;
   if (currentMandates(member!).length >= profileOf(member!).capacity) ctx.fail(`${member!.name} betreut schon ${profileOf(member!).capacity} Firmen. Nimm erst eine ab.`);
   for (const other of state.team) {
@@ -449,6 +452,8 @@ export interface TeamCompany {
   id: string;
   name: string;
   type: OpType;
+  /** A Konzern seat (the partner sits on the supervisory board for you). */
+  corporate?: boolean;
   lead?: string;
   /** Fit per partner id. */
   fit: Record<string, FitLevel>;
@@ -507,11 +512,12 @@ function card(state: GameState, p: OpProfile, m?: TeamMember): OpCard {
 export function teamView(state: GameState): TeamView {
   const team = state.team ?? [];
   const companies = state.startups
-    .filter((s) => s.status === "active" && !s.corporate)
+    .filter((s) => s.status === "active")
     .map((s) => ({
       id: s.id,
       name: s.name,
       type: opTypeOf(s),
+      corporate: Boolean(s.corporate),
       lead: leadOf(state, s)?.member.name,
       fit: Object.fromEntries(team.map((m) => [m.id, fitOf(m, s)])),
     }));

@@ -6,6 +6,7 @@ import { BUYOUT_LOAN_SHARE, BUYOUT_REPUTATION, FUND_MATCH, FUND_MAX_DEAL } from 
 import { definitionIn } from "@/lib/game/engine";
 import { Inbox, type DealView, type MailView } from "./Inbox";
 import { postNetwork } from "@/lib/game/network-views";
+import { activeSeats, CORP, corporatesRead } from "@/lib/game/corporates";
 
 export async function Post({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const params = await searchParams;
@@ -59,7 +60,11 @@ export async function Post({ searchParams }: { searchParams: Promise<Record<stri
         revision={revision}
         cash={state.cash}
         ddDays={officeOf(state).ddDays}
-        corporateSeat={state.corporateSeat}
+        corporate={{
+          offer: corporatesRead(state).offer?.id,
+          seats: Object.fromEntries(activeSeats(state).map((x) => [x.id, state.startups.find((s) => s.id === x.id)?.name ?? x.id])),
+          full: activeSeats(state).length >= CORP.maxSeats,
+        }}
         network={postNetwork(state)}
       />
     </div>

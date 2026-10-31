@@ -49,6 +49,44 @@ const percent = (factor: number) => `${Math.round(factor * 100)} %`;
 /** Neueste zuerst. */
 export const RELEASES: Release[] = [
   {
+    id: "2026-11-02-pruefung",
+    date: "2026-11-02",
+    title: "Prüfung mit der CFO, Übernahme am Tisch, neue Konzerne",
+    items: [
+      {
+        title: "Due Diligence mit der CFO",
+        text: "Mit Marie Lenz gehst du die neun Schritte einer Prüfung durch und holst für jeden die richtigen Leute an den Tisch. Befunde senken den Preis, Übersehenes kommt später als Krise zurück, eine lückenlose Prüfung verrät die Schmerzgrenze.",
+        href: "/post",
+        where: "Post › Startup-Angebot oder Übernahme › Due Diligence mit der CFO",
+        isNew: true,
+      },
+      {
+        title: "Übernahme am Verhandlungstisch",
+        text: "Der Inhaber sitzt dir gegenüber und antwortet in Runden mit Gegenangeboten zu Preis, Verkäuferdarlehen, Earn-out und Zusagen. Gute Laune bringt eine Runde mehr, jede Runde kostet einen Tag. Bietgefecht und Großmandat haben denselben großen Tisch.",
+        href: "/nachfolge",
+        where: "Menü › Unternehmen › Nachfolge & Übernahmen › Übernahme",
+        unlock: reputationLock(BUYOUT_REPUTATION),
+        isNew: true,
+      },
+      {
+        title: "Mehrere Konzerne, Amtszeit und Vorsitz",
+        text: "Mit wachsendem Ruf fragen bis zu sieben Konzerne an, höchstens drei Mandate gleichzeitig. Nach drei bis fünf Jahren entscheidet die Hauptversammlung über die Wiederwahl, später winkt der Vorsitz. Ein Operating Partner kann ein Mandat für dich übernehmen.",
+        href: "/post",
+        where: "Post › Anfrage: Mandat im Aufsichtsrat",
+        unlock: reputationLock(CORPORATE_REPUTATION),
+        isNew: true,
+      },
+      {
+        title: "Plattform-Investor früher erreichbar",
+        text: `Plattformen gibt es ab Ruf ${unlockOf("platform")}. Die Stufe erreichst du mit einem Verkauf mit Gewinn oder wenn die Plattform mit zwei Zukäufen das Doppelte deines Eigenkapitals wert ist.`,
+        href: "/holding",
+        where: "Menü › Unternehmen › Holding",
+        unlock: reputationLock(unlockOf("platform")),
+        isNew: false,
+      },
+    ],
+  },
+  {
     id: "2026-11-01-tisch",
     date: "2026-11-01",
     title: "Der Verhandlungstisch",

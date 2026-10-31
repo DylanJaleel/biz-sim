@@ -20,6 +20,7 @@ import {
   FUND_OFFICE_MONTHS,
   FUND_REPUTATION,
   WARMTH_INTRO_MIN,
+  monthLabel,
   monthName,
 } from "./config";
 import { careerOf } from "./career";
@@ -40,6 +41,8 @@ import { THEMES, themeOf } from "./covenants";
 import { positionBasis } from "./judge";
 import { annualEbitda } from "./ebitda";
 import { PLATFORM_MIN_EBITDA, PLATFORM_REPUTATION } from "./mna-config";
+import { CORPORATE_ID, corporateDef } from "./corporate";
+import { activeSeats, corporatesRead } from "./corporates";
 import { platformOf } from "./platform";
 import { mnaTasks } from "./mna-views";
 import { CONTACTS, personOf, RING_LABEL, ringOpen, type ContactDef, type Ring } from "./network";
@@ -214,9 +217,17 @@ export function deskView(state: GameState, lessonsTotal: number): DeskView {
       tone: "urgent",
     });
   }
-  if (state.corporateSeat === "offered") {
-    const m = state.mails.find((x) => x.action === "corporate");
-    tasks.push({ text: "Die Nordhafen AG bietet dir einen Sitz im Aufsichtsrat an.", href: m ? `/post?mail=${m.id}` : "/post", tone: "normal" });
+  const corpOffer = corporatesRead(state).offer;
+  if (corpOffer) {
+    const m = state.mails.find((x) => x.action === "corporate" && (x.corporateOfferId ?? CORPORATE_ID) === corpOffer.id);
+    tasks.push({ text: `Die ${corporateDef(corpOffer.id).name} bietet dir einen Sitz im Aufsichtsrat an.`, href: m ? `/post?mail=${m.id}` : "/post", tone: "normal" });
+  }
+  for (const seat of activeSeats(state).filter((x) => x.termEnd - state.month <= 3 && x.termEnd >= state.month)) {
+    tasks.push({
+      text: `${corporateDef(seat.id).name}: Die Hauptversammlung mit deiner Wiederwahl ist Ende ${monthLabel(seat.termEnd)}.`,
+      href: `/firma/${seat.id}`,
+      tone: "normal",
+    });
   }
   tasks.push(...mnaTasks(state));
   for (const o of state.shareOffers.filter((x) => x.status === "open")) {
@@ -711,12 +722,12 @@ export function nextStepView(state: GameState): NextStepView | null {
       const record = state.ledRounds > 0 || state.startups.some((s) => s.stake > 50) || state.exits.some((e) => e.status === "accepted");
       return {
         title: next.title,
-        text: "Die Nordhafen AG fragt an, sobald du genug Ruf und Erfolge hast. Die Anfrage kommt per Post.",
+        text: "Ein Konzern fragt an, sobald du genug Ruf und Erfolge hast. Die Anfrage kommt per Post.",
         requirements: [
           { label: `${CORPORATE_REPUTATION} Ruf (du: ${state.reputation})`, done: state.reputation >= CORPORATE_REPUTATION },
           { label: "Eine Runde angeführt, eine Mehrheit oder ein Verkauf", done: record },
         ],
-        link: state.corporateSeat === "offered" ? { href: "/post", label: "Anfrage beantworten" } : undefined,
+        link: corporatesRead(state).offer ? { href: "/post", label: "Anfrage beantworten" } : undefined,
       };
     }
     case "Family Office": {

@@ -305,7 +305,8 @@ export const LESSONS: Lesson[] = [
       "Der Aufsichtsrat bestellt und kontrolliert den Vorstand einer Aktiengesellschaft. In großen deutschen Firmen sitzen dort auch Vertreter der Belegschaft. Er führt nicht selbst, aber er entscheidet über große Investitionen, Zukäufe und die Vergütung des Vorstands.",
     rule: "Der Vorstand führt, der Aufsichtsrat kontrolliert.",
     example: "Der Vorstand will ein Werk verlagern. Der Aufsichtsrat wägt Marge gegen Streikrisiko ab und stimmt mit Auflagen zu.",
-    inGame: "Mit hohem Ruf bietet dir die Nordhafen AG ein Mandat an: feste Vergütung, eine Sitzung pro Quartal, keine Anteile.",
+    inGame:
+      "Mit hohem Ruf bietet dir die Nordhafen AG ein Mandat an: feste Vergütung, eine Sitzung pro Quartal, keine Anteile. Mit mehr Ruf fragen weitere Konzerne, höchstens drei Mandate gleichzeitig.",
   },
   {
     id: "kapitalallokation",
@@ -851,6 +852,46 @@ export const LESSONS: Lesson[] = [
     example: "Ein Fonds bietet 8,6 Mio. €, du 8,0 Mio. € und sicherst den Standort fünf Jahre. Dem Inhaber ist das 0,9 Mio. € wert: Du bekommst den Zuschlag.",
     inGame: "Ab Ruf 50 bieten drei Rivalen um Familienbetriebe mit. Du erhöhst, legst ein Nachfolge-Konzept vor oder steigst aus, höchstens drei Runden.",
   },
+  {
+    id: "wiederwahl",
+    title: "Amtszeit und Wiederwahl im Aufsichtsrat",
+    summary:
+      "Aufsichtsräte werden von der Hauptversammlung für eine feste Amtszeit gewählt, meist bis zu fünf Jahre. Danach entscheiden die Aktionäre, ob sie weitermachen dürfen. Wer gute Entscheidungen trifft, Sitzungen nicht schwänzt und mit dem Gremium auskommt, wird meist wiedergewählt.",
+    rule: "Mehr als eine Handvoll Mandate gleichzeitig gilt als zu viel: Wer überall sitzt, hat nirgends genug Zeit (Overboarding).",
+    example: "Nach vier Jahren steht die Hauptversammlung an. Der Umsatz ist gewachsen, die Vorlagen waren gut entschieden: 85 % der Stimmen für die Wiederwahl.",
+    inGame:
+      "Jedes Konzernmandat läuft drei bis fünf Jahre. Auf der Konzernseite siehst du die Hauptversammlung und deine Aussicht auf die Wiederwahl. Rücktritt ist jederzeit möglich.",
+  },
+  {
+    id: "aufsichtsratsvorsitz",
+    title: "Vorsitz im Aufsichtsrat",
+    summary:
+      "Die oder der Vorsitzende leitet die Sitzungen, spricht für den Aufsichtsrat mit dem Vorstand und hat bei Stimmengleichheit oft eine zweite Stimme. Dafür gibt es deutlich mehr Vergütung und mehr Verantwortung.",
+    rule: "Der Vorsitz ist das Gegenüber des Vorstandschefs: Vertrauen ja, Nähe nein.",
+    example: "Ein Konzern zahlt einfachen Mitgliedern 60.000 € im Jahr, dem Vorsitz 105.000 €. Bei einer knappen Abstimmung gibt seine Stimme den Ausschlag.",
+    inGame: "Bei einer Wiederwahl ab Ruf 82 und gutem Vertrauen im Gremium wählt der Aufsichtsrat dich zum Vorsitz: 1,75-fache Vergütung, deine Stimme zählt 1,5-fach.",
+  },
+  {
+    id: "dd_ablauf",
+    title: "Ablauf einer Due Diligence",
+    summary:
+      "Eine Due Diligence (DD) ist die gründliche Prüfung vor einem Kauf oder Einstieg. Sie folgt fast immer denselben Schritten: Vertraulichkeitsvereinbarung, Datenraum und Fragenliste, Finanzen, Steuern, Recht, Markt, Technik, dann der Bericht und der Vertrag beim Notar. Für jeden Schritt braucht es die richtigen Fachleute.",
+    rule: "Jeder rote Punkt im Bericht hat drei Auswege: Preis senken, eine Garantie verlangen oder eine Bedingung vor dem Abschluss.",
+    example: "Der Wirtschaftsprüfer findet 140.000 € Einmalumsatz. Statt 8,0 Mio. € bietest du 7,2 Mio. € und verlangst, dass die Code-Rechte vor dem Abschluss übertragen werden.",
+    inGame:
+      "Bei Startup-Angeboten und Übernahmen gehst du die Prüfung mit deiner CFO Marie Lenz durch. Wer fehlt, übersieht etwas, das nach dem Kauf teuer wird. Eine gründliche Prüfung verrät auch die Schmerzgrenze des Verkäufers.",
+  },
+  {
+    id: "verhandlung_uebernahme",
+    title: "Kaufpreisverhandlung und Schmerzgrenze",
+    summary:
+      "Bei einer Übernahme verhandeln Käufer und Inhaber nicht nur den Preis, sondern auch, wann und wie er gezahlt wird: sofort in bar, als Verkäuferdarlehen (der Inhaber leiht dir einen Teil) oder als Earn-out (ein Teil fließt nur, wenn die Firma ihre Ziele erreicht). Jeder Verkäufer hat eine Schmerzgrenze, unter der er nie verkauft.",
+    rule: "Bargeld heute ist dem Verkäufer mehr wert als ein Versprechen für morgen. Wer mehr Earn-out will, muss beim Preis drauflegen. Zusagen wie eine Standortgarantie kosten wenig und sind dem Inhaber viel wert.",
+    example:
+      "Der Inhaber fordert 29,4 Mio. €. Du bietest 27,1 Mio. € mit 10 % Verkäuferdarlehen und Standortgarantie, er kontert mit 28,4 Mio. €. Ihr einigt euch bei 27,9 Mio. €.",
+    inGame:
+      "Am Verhandlungstisch legst du in Runden Angebote hin. Jede Runde kostet einen Tag. Gute Laune bringt eine Runde mehr, ein zu tiefes Angebot verärgert den Inhaber, bis er aufsteht.",
+  },
 ];
 
 /** Order in which "Weiterbildung" unlocks cards. */
@@ -946,6 +987,10 @@ export const CURRICULUM = [
   "batna",
   "league_table",
   "bietgefecht",
+  "wiederwahl",
+  "aufsichtsratsvorsitz",
+  "dd_ablauf",
+  "verhandlung_uebernahme",
 ];
 
 export function lessonOf(id: string): Lesson {

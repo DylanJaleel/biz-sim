@@ -40,6 +40,8 @@ export const NEGOTIATE_GAIN = 0.15;
 export const NEGOTIATE_CHANCE = 0.55;
 export const CORPORATE_REPUTATION = 70;
 export const CORPORATE_FEE = 4_000;
+/** Weight of your vote as chair of a Konzern's supervisory board (corporates.ts). */
+export const CHAIR_WEIGHT = 1.5;
 export const NEWS_FROM_MONTH = 3;
 // Phase 4: family office, team, buyouts, fund, IPO
 export const FAMILY_OFFICE_REPUTATION = 75;

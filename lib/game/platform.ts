@@ -21,6 +21,8 @@ import {
   PLATFORM_REPUTATION,
   PLATFORM_SALE,
   PLATFORM_SALE_DAYS,
+  PLATFORM_VALUE_ADDONS,
+  PLATFORM_VALUE_MULTIPLE,
   SYNERGY_SHARE,
   TRANSACTION_COST,
   VENDOR_MONTHS,
@@ -28,7 +30,7 @@ import {
 } from "./mna-config";
 import { between, eur, generateFindings, mio, mnaOf, pickOf, roundTo, times, type Ctx } from "./mna-core";
 import { INTERIM, KARTELL } from "./network-config";
-import { applyDelta } from "./sim";
+import { applyDelta, valuation } from "./sim";
 import { addonVeto, FIT_EFFECT, fitAtClose, fitSynergy, holdoutDiscount } from "./holdco";
 import { integrationBonus, integrationCapacity, platformPrep } from "./team";
 import type { AddonTarget, ExitOffer, Finding, GameState, IntegrationKind, Integration, ProcessKind, Startup } from "./types";
@@ -435,6 +437,20 @@ export function platformMonth(ctx: Ctx, month: number, notes: string[], lines: M
   if (p.sale && p.sale.due <= month) s = saleOffer(ctx, s, p.sale.process, p.sale.buyers);
   ctx.replace(s);
   lines.set(s.id, texts);
+  if (m.record.platformDoubled === undefined && platformDoubled(s)) {
+    m.record.platformDoubled = month;
+    notes.push(`${s.name} ist jetzt mehr als doppelt so viel wert wie dein Eigenkapital: Du bist Plattform-Investor.`);
+  }
+}
+
+/** Value of your stake in a platform with at least two add-ons ÷ the equity you put in, at least the career threshold. */
+export function platformValueMultiple(s: Startup): number {
+  if (!s.platform || !s.lbo) return 0;
+  return ((s.stake / 100) * valuation(s.metrics)) / Math.max(1, s.lbo.equity);
+}
+
+export function platformDoubled(s: Startup): boolean {
+  return s.status === "active" && (s.platform?.addons.length ?? 0) >= PLATFORM_VALUE_ADDONS && platformValueMultiple(s) >= PLATFORM_VALUE_MULTIPLE;
 }
 
 // ---------------------------------------------------------------------------

@@ -25,6 +25,8 @@ import {
   PLATFORM_DAYS,
   PLATFORM_SALE,
   PLATFORM_SALE_DAYS,
+  PLATFORM_VALUE_ADDONS,
+  PLATFORM_VALUE_MULTIPLE,
   SEARCH_MAX_MONTHS,
   SEARCH_QUIET_MONTHS,
   SEARCH_START_DAYS,
@@ -559,6 +561,8 @@ export interface PlatformView {
   dividendMax: number;
   entryMultiple: number;
   moic: number;
+  /** Career goal Plattform-Investor without a sale: add-ons and value multiple needed, reached already. */
+  investorGoal: { addons: number; multiple: number; done: boolean };
   integrations: (Integration & { left: number })[];
   capacity: number;
   targets: { id: string; name: string; ebitda: number; ev: number; multiple: number; expires: number; dd: number; status: string; fit?: AddonFitLevel }[];
@@ -608,6 +612,7 @@ export function platformView(state: GameState, id: string): PlatformView | null 
     dividendMax: DIVIDEND_MAX_LEVERAGE,
     entryMultiple: lbo.entryEv / Math.max(1, lbo.entryEbitda),
     moic: myValue / Math.max(1, lbo.equity),
+    investorGoal: { addons: PLATFORM_VALUE_ADDONS, multiple: PLATFORM_VALUE_MULTIPLE, done: mnaRead(state).record.platformDoubled !== undefined },
     integrations: (s.platform?.integrations ?? []).map((i) => ({ ...i, left: Math.max(0, i.due - state.month + 1) })),
     capacity: integrationCapacity(state, s),
     targets: mnaRead(state)

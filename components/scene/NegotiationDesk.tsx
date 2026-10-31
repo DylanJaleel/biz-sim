@@ -34,8 +34,14 @@ export interface NegotiationDeskProps {
   /** Papiere auf dem Tisch. */
   offer?: DeskPaper;
   counter?: DeskPaper;
+  /** Großer, realistischer Szenenausschnitt über die volle Breite (Übernahme, Bietgefecht, Großmandat). */
+  scene?: boolean;
+  /** Kleine Zeile unter der Sprechblase, z. B. „Gegenangebot aus Runde 1“. */
+  bubbleNote?: string;
   /** Schmerzgrenze der Gegenseite; null oder fehlend: verdeckt. */
   painThreshold?: number | null;
+  /** Schmerzgrenze als Spanne (z. B. aus einer halben Prüfung), wenn der genaue Wert verdeckt ist. */
+  painText?: string;
   painLabel?: string;
   /** Hinweis, wie man die Schmerzgrenze erfährt, solange sie verdeckt ist. */
   painHint?: string;
@@ -134,10 +140,10 @@ export function NegotiationDesk(props: NegotiationDeskProps) {
   const { name, role, look = "senior", relieved = false, gone = false, played, rounds, bonusRound = false, bubble, offer, counter, painThreshold, formatPain = eur } = props;
   const mood = moodValue(props.mood);
   const key = moodKey(mood, relieved);
-  const known = typeof painThreshold === "number" && Number.isFinite(painThreshold);
+  const known = (typeof painThreshold === "number" && Number.isFinite(painThreshold)) || Boolean(props.painText);
   const current = Math.min(played + 1, rounds);
   return (
-    <section className={`nd${gone ? " is-gone" : ""}`} data-mood={key} aria-label={`Verhandlungstisch mit ${name}`}>
+    <section className={`nd${props.scene ? " nd--scene" : ""}${gone ? " is-gone" : ""}`} data-mood={key} aria-label={`Verhandlungstisch mit ${name}`}>
       <div className="nd__bg" aria-hidden="true" />
       <div className="nd__top">
         <div className="nd__who">
@@ -155,7 +161,12 @@ export function NegotiationDesk(props: NegotiationDeskProps) {
             </span>
           </div>
         </div>
-        {bubble && <p className="nd__bubble">{bubble}</p>}
+        {bubble && (
+          <p className="nd__bubble">
+            {bubble}
+            {props.bubbleNote && <small className="nd__bubblenote">{props.bubbleNote}</small>}
+          </p>
+        )}
         <p className="nd__rounds" aria-label={`Runde ${current} von ${rounds}`}>
           <span className="nd__roundlabel">
             Runde {current} von {rounds}
@@ -174,7 +185,7 @@ export function NegotiationDesk(props: NegotiationDeskProps) {
         <div className={`nd__pain${known ? " is-known" : ""}`}>
           <small>{props.painLabel ?? "Schmerzgrenze"}</small>
           {known ? (
-            <b>{formatPain(painThreshold as number)}</b>
+            <b>{typeof painThreshold === "number" && Number.isFinite(painThreshold) ? formatPain(painThreshold) : props.painText}</b>
           ) : (
             <>
               <b className="nd__veil" aria-label="verdeckt">

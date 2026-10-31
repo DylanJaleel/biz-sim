@@ -8,11 +8,13 @@ import type { CovenantId, GameState, Metrics, Vote } from "../lib/game/types";
 
 type Policy = "lapse" | "go" | "no" | "conditions" | "best";
 
-/** A game with the Nordhafen seat taken in the first month. */
+/** A game with the Nordhafen seat taken in the first month; the term runs past the test so only the books count. */
 function withSeat(seed: number): GameState {
   const state: GameState = { ...newGame(seed), reputation: CORPORATE_REPUTATION, ledRounds: 1 };
   closeMonth(state);
-  return applyAction(state, { type: "joinCorporate", accept: true }).state;
+  const next = applyAction(state, { type: "joinCorporate", accept: true }).state;
+  for (const seat of next.corporates!.seats) seat.termEnd = 999;
+  return next;
 }
 
 /** Plays `months` months; the player decides every Konzern item as the policy says (or lets the board decide). */

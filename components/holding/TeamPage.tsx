@@ -137,7 +137,7 @@ export async function TeamPage() {
               {v.team.map((c) => {
                 const options = v.companies
                   .filter((x) => !c.mandates.some((m) => m.id === x.id))
-                  .map((x) => ({ id: x.id, name: x.name, fit: x.fit[c.id!] ?? "weak", lead: x.lead }))
+                  .map((x) => ({ id: x.id, name: x.corporate ? `${x.name} (Aufsichtsrat)` : x.name, fit: x.fit[c.id!] ?? "weak", lead: x.lead }))
                   .sort((a, b) => ["good", "mid", "weak"].indexOf(a.fit) - ["good", "mid", "weak"].indexOf(b.fit));
                 return (
                   <li key={c.id} className="op-card">

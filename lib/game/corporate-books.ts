@@ -1,5 +1,5 @@
 import { COST_FLEX } from "./mna-config";
-import type { Metrics, Startup } from "./types";
+import type { CorporateBase, Metrics, Startup } from "./types";
 
 // Die Bücher des Konzerns im Aufsichtsratsmandat. Ein Konzern ist kein
 // Startup: Er wächst wie ein reifer Betrieb mit dem Markt, seine Kosten
@@ -40,7 +40,7 @@ export const CORPORATE_BOOKS = {
 } as const;
 
 /** Strength as in familyGrowth: product, market and edge, plus management. */
-function strength(m: Pick<Metrics, "axes">): number {
+export function strength(m: Pick<Metrics, "axes">): number {
   return ((m.axes.product + m.axes.market + m.axes.edge) / 300) * 0.7 + (m.axes.management / 100) * 0.3;
 }
 
@@ -48,16 +48,19 @@ function strength(m: Pick<Metrics, "axes">): number {
 const START_STRENGTH = strength({ axes: { management: 70, product: 35, market: 30, edge: 25, finance: 75 } });
 
 /** Growth the Konzern drifts towards: the market's trend, a little more with better products and management, less with bad morale. */
-export function corporateGrowth(m: Pick<Metrics, "axes" | "morale">): number {
+export function corporateGrowth(m: Pick<Metrics, "axes" | "morale">, base?: CorporateBase): number {
   const [low, high] = CORPORATE_BOOKS.growthRange;
-  const g = CORPORATE_BOOKS.trend + CORPORATE_BOOKS.growthSlope * (strength(m) - START_STRENGTH) + (0.001 * (m.morale - 60)) / 20;
+  const g = CORPORATE_BOOKS.trend + CORPORATE_BOOKS.growthSlope * (strength(m) - (base?.strength ?? START_STRENGTH)) + (0.001 * (m.morale - 60)) / 20;
   return Math.min(high, Math.max(low, g));
 }
 
 /** EBITDA margin the Konzern settles around: better products and management lift it a little, for good. */
-export function corporateTargetMargin(m: Pick<Metrics, "axes">): number {
-  const [low, high] = CORPORATE_BOOKS.targetRange;
-  return Math.min(high, Math.max(low, CORPORATE_BOOKS.margin + CORPORATE_BOOKS.strengthMargin * (strength(m) - START_STRENGTH)));
+export function corporateTargetMargin(m: Pick<Metrics, "axes">, base?: CorporateBase): number {
+  const margin = base?.margin ?? CORPORATE_BOOKS.margin;
+  // The same room as the Nordhafen AG: two points below, one above the trade's usual margin.
+  const low = base ? margin - (CORPORATE_BOOKS.margin - CORPORATE_BOOKS.targetRange[0]) : CORPORATE_BOOKS.targetRange[0];
+  const high = base ? margin + (CORPORATE_BOOKS.targetRange[1] - CORPORATE_BOOKS.margin) : CORPORATE_BOOKS.targetRange[1];
+  return Math.min(high, Math.max(low, margin + CORPORATE_BOOKS.strengthMargin * (strength(m) - (base?.strength ?? START_STRENGTH))));
 }
 
 export function ebitdaMargin(m: Pick<Metrics, "revenue" | "grossMargin" | "opex">): number {
@@ -70,12 +73,12 @@ export function ebitdaMargin(m: Pick<Metrics, "revenue" | "grossMargin" | "opex"
  * the band around the target margin the management (or the competition)
  * closes part of the gap.
  */
-export function corporateCosts(m: Metrics, revenue: number): { grossMargin: number; opex: number } {
-  const grossMargin = m.grossMargin + CORPORATE_BOOKS.grossMarginDrift * (CORPORATE_BOOKS.grossMargin - m.grossMargin);
+export function corporateCosts(m: Metrics, revenue: number, base?: CorporateBase): { grossMargin: number; opex: number } {
+  const grossMargin = m.grossMargin + CORPORATE_BOOKS.grossMarginDrift * ((base?.grossMargin ?? CORPORATE_BOOKS.grossMargin) - m.grossMargin);
   let opex = m.opex * (1 + COST_FLEX * (revenue / Math.max(1, m.revenue) - 1));
   if (revenue <= 0) return { grossMargin, opex: Math.max(0, opex) };
   const margin = (revenue * grossMargin - opex) / revenue;
-  const target = corporateTargetMargin(m);
+  const target = corporateTargetMargin(m, base);
   const speed = CORPORATE_BOOKS.adapt.base + (CORPORATE_BOOKS.adapt.management * m.axes.management) / 100;
   const low = target - CORPORATE_BOOKS.band;
   const high = target + CORPORATE_BOOKS.band;

@@ -12,7 +12,7 @@ import {
   START_REPUTATION,
   SYNDICATE_REPUTATION,
 } from "./config";
-import { MANDATE_REPUTATION, PLATFORM_REPUTATION } from "./mna-config";
+import { MANDATE_REPUTATION, PLATFORM_REPUTATION, PLATFORM_VALUE_ADDONS, PLATFORM_VALUE_MULTIPLE } from "./mna-config";
 import type { GameState, OnboardingState } from "./types";
 import { FUND_NEXT_INVESTED, IPO_PREP_REPUTATION, LATE_ROUND_REPUTATION, ROUND_PREP_REPUTATION, STUDIO_EXITS, STUDIO_REPUTATION } from "./venture-config";
 
@@ -112,7 +112,7 @@ export const UNLOCKS: Unlock[] = [
     id: "platform",
     reputation: PLATFORM_REPUTATION,
     title: "Plattform-Investor",
-    text: "Mit Family Office kannst du Firmen zu einer Plattform bündeln und mit Zukäufen ausbauen.",
+    text: `Mit Family Office machst du eine gekaufte Firma zur Plattform und baust sie mit Zukäufen aus. Plattform-Investor bist du nach einem Verkauf mit Gewinn oder wenn die Plattform mit ${PLATFORM_VALUE_ADDONS} Zukäufen das ${PLATFORM_VALUE_MULTIPLE}-Fache deines Eigenkapitals wert ist.`,
     href: "/nachfolge",
   },
   {

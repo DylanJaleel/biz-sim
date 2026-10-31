@@ -176,13 +176,13 @@ export function stepMonth(s: Startup, random: () => number = () => 0.5): StepRes
   const noise = (random() - 0.5) * 2 * REVENUE_NOISE * (mature ? FAMILY_NOISE : 1);
   // Big companies are tankers: pushes above their potential fade faster.
   const pull = mature ? GROWTH_PULL : Math.min(0.6, GROWTH_PULL * (1 + (scaleDrag(m) / SCALE_DRAG) * SCALE_PULL));
-  const drift = m.growth + ((corporate ? corporateGrowth(m) : family ? familyGrowth(m) : potentialGrowth(m)) - m.growth) * pull;
+  const drift = m.growth + ((corporate ? corporateGrowth(m, s.corporateBase) : family ? familyGrowth(m) : potentialGrowth(m)) - m.growth) * pull;
   const growth = mature ? Math.min(EBITDA_GROWTH_CAP, Math.max(EBITDA_GROWTH_FLOOR, drift)) : drift;
   const revenue = Math.max(0, m.revenue * (1 + growth + noise));
   const interest = corporate ? corporateInterest(m.debt) : monthlyInterest(m);
   // The Konzern repays its credit line from surplus cash, not on a startup loan schedule.
   const repayment = corporate ? 0 : m.debt * DEBT_REPAYMENT_RATE;
-  const { grossMargin, opex } = corporate ? corporateCosts(m, revenue) : m;
+  const { grossMargin, opex } = corporate ? corporateCosts(m, revenue, s.corporateBase) : m;
   const flow = m.cash + revenue * grossMargin - opex - interest - repayment;
   const credit = corporate ? corporateCredit(flow, m.debt) : { cash: flow, debt: m.debt - repayment, drawn: 0 };
   const cash = credit.cash;

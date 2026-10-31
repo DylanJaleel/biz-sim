@@ -1,4 +1,4 @@
-import { CORPORATE_FEE } from "./config";
+import { corporateFee } from "./corporates";
 import { initialsOf, leadOf, profileOf } from "./team";
 import { annualEbitda } from "./ebitda";
 import { netLeverage } from "./lbo";
@@ -255,7 +255,7 @@ export function cockpitRow(state: GameState, s: Startup): CockpitRow {
     actions: need.actions,
     openItems: need.openItems,
     needs: need.points + (a.light === "red" ? NEEDS.red : a.light === "yellow" ? NEEDS.yellow : 0),
-    fee: s.corporate ? CORPORATE_FEE : undefined,
+    fee: s.corporate ? corporateFee(state, s).mine : undefined,
     lead: leadCell(state, s),
   };
 }

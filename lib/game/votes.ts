@@ -39,6 +39,15 @@ export function playerShares(vote: Vote): Shares {
   return { ...emptyShares(), [vote]: SHARES_PER_MEMBER };
 }
 
+export function scaleShares(shares: Shares, factor: number): Shares {
+  return {
+    go: Math.round(shares.go * factor),
+    conditions: Math.round(shares.conditions * factor),
+    no: Math.round(shares.no * factor),
+    abstain: Math.round(shares.abstain * factor),
+  };
+}
+
 export interface Ballot {
   member: SpeakerId;
   vote: Vote;
