@@ -1,6 +1,9 @@
 import type { GameState, Startup } from "@/lib/game/types";
 import { monthLabel } from "@/lib/game/config";
 import { ventureView } from "@/lib/game/venture";
+import { daysLeft } from "@/lib/game/engine";
+import { roundPrepView } from "@/lib/game/round-prep";
+import { RoundPrep } from "./RoundPrep";
 import { PAPER_CAP, PAPER_CREDIT } from "@/lib/game/venture-config";
 import { eur, pct } from "@/components/game/format";
 
@@ -11,9 +14,11 @@ import { eur, pct } from "@/components/game/format";
 const big = (v: number) =>
   v >= 1_000_000_000 ? `${(v / 1_000_000_000).toLocaleString("de-DE", { maximumFractionDigits: 2 })} Mrd. €` : `${Math.round(v / 1_000_000).toLocaleString("de-DE")} Mio. €`;
 
-export function VenturePane({ state, s }: { state: GameState; s: Startup }) {
+export function VenturePane({ state, s, revision }: { state: GameState; s: Startup; revision: number }) {
   const v = ventureView(state, s);
   if (!v.eligible) return null;
+  const prep = s.status === "active" && s.stake > 0 ? roundPrepView(state, s, daysLeft(state)) : null;
+  const listed = state.exits.some((e) => e.startupId === s.id && e.ipo && e.status === "accepted");
   const onPath = s.venture !== undefined;
   const unicorn = v.unicorn !== undefined;
   return (
@@ -34,7 +39,11 @@ export function VenturePane({ state, s }: { state: GameState; s: Startup }) {
           mit Verkauf oder Börsengang.
         </p>
       )}
-      <ol className="ladder" aria-label="Stufen bis zum Unicorn">
+      <ol className="ladder ladder--full" aria-label="Stufen von Pre-Seed bis zum Börsengang">
+        <li className={`ladder__step${!onPath ? " is-current" : " is-reached"}`}>
+          <b>Pre-Seed</b>
+          <small>Angels, kleine Runden</small>
+        </li>
         {v.stages.map((st, i) => (
           <li key={st.label} className={`ladder__step${st.reached ? " is-reached" : ""}${st.current ? " is-current" : ""}${i === v.stages.length - 1 ? " ladder__step--top" : ""}`}>
             <b>{st.label}</b>
@@ -42,6 +51,10 @@ export function VenturePane({ state, s }: { state: GameState; s: Startup }) {
             {st.month !== undefined && st.reached && <small className="muted">{monthLabel(st.month)}</small>}
           </li>
         ))}
+        <li className={`ladder__step ladder__step--ipo${listed ? " is-reached is-current" : ""}`}>
+          <b>Börsengang</b>
+          <small>ab {v.stages[4]?.label ?? "Serie D"}</small>
+        </li>
       </ol>
       {!onPath && (
         <p className="muted">
@@ -73,46 +86,53 @@ export function VenturePane({ state, s }: { state: GameState; s: Startup }) {
           Bis zum Verkauf oder Börsengang zählt vom Papiergewinn nur {Math.round(PAPER_CREDIT * 100)} %, höchstens {big(PAPER_CAP)}. Erst der Erlös zählt voll.
         </p>
       )}
-      {!unicorn && v.ended === undefined && (
-        <>
-          <h3 className="venture__sub">Was die Investoren sehen wollen</h3>
-          <ul className="venture__checks">
-            {v.checks.map((c) => (
-              <li key={c.id}>
-                <span>
-                  <b>{c.label}</b>{" "}
-                  <small className="muted">
-                    {c.value} · Ziel {c.target}
-                  </small>
-                </span>
-                <span className="meter" aria-hidden="true">
-                  <i style={{ width: `${Math.round(c.score * 100)}%` }} />
-                </span>
-              </li>
-            ))}
-          </ul>
-          {onPath && (
-            <p className="small">
-              Chance auf die nächste Runde: <b>{Math.round(v.chance * 100)} %</b>
-              {v.next !== undefined ? `, nächster Versuch ab ${monthLabel(v.next)}` : ""}. Bis zum Unicorn mit diesen Werten:{" "}
-              <b>{(v.odds * 100).toLocaleString("de-DE", { maximumFractionDigits: 1 })} %</b>.
-            </p>
-          )}
-        </>
+      {prep && prep.target !== null ? (
+        <RoundPrep view={prep} startupId={s.id} revision={revision} month={state.month} />
+      ) : (
+        !unicorn &&
+        v.ended === undefined && (
+          <>
+            <h3 className="venture__sub">Was die Investoren sehen wollen</h3>
+            <ul className="venture__checks">
+              {v.checks.map((c) => (
+                <li key={c.id}>
+                  <span>
+                    <b>{c.label}</b>{" "}
+                    <small className="muted">
+                      {c.value} · Ziel {c.target}
+                    </small>
+                  </span>
+                  <span className="meter" aria-hidden="true">
+                    <i style={{ width: `${Math.round(c.score * 100)}%` }} />
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </>
+        )
+      )}
+      {onPath && !unicorn && v.ended === undefined && !prep?.prep && (
+        <p className="small">
+          Chance auf die nächste Runde ohne Vorbereitung: <b>{Math.round(v.chance * 100)} %</b>
+          {v.next !== undefined ? `, nächster Versuch ab ${monthLabel(v.next)}` : ""}. Bis zum Unicorn mit diesen Werten:{" "}
+          <b>{(v.odds * 100).toLocaleString("de-DE", { maximumFractionDigits: 1 })} %</b>.
+        </p>
       )}
       {v.log.length > 0 && (
         <ul className="list venture__log">
           {v.log.map((l) => (
-            <li key={`${l.month}-${l.stage}-${l.down ? "d" : "u"}`} className="list__row">
+            <li key={`${l.month}-${l.stage}-${l.down ? "d" : l.bridge ? "b" : "u"}`} className="list__row">
               <b>
-                {monthLabel(l.month)} · {l.down ? "Down Round" : v.stages[l.stage]?.label}
+                {monthLabel(l.month)} · {l.down ? "Down Round" : l.bridge ? "Bridge" : v.stages[l.stage]?.label}
               </b>
               <span className="muted">
                 {l.down
                   ? `neue Bewertung ${big(l.post)}`
-                  : l.amount === 0
-                    ? `Seed-Niveau erreicht, bewertet mit ${eur(l.post)}`
-                    : `${big(l.amount)} von ${l.lead}, bewertet mit ${big(l.post)}`}
+                  : l.bridge
+                    ? `${eur(l.amount)} Wandeldarlehen der Bestandsinvestoren`
+                    : l.amount === 0
+                      ? `Seed-Niveau erreicht, bewertet mit ${eur(l.post)}`
+                      : `${big(l.amount)} von ${l.lead}, bewertet mit ${big(l.post)}`}
               </span>
             </li>
           ))}

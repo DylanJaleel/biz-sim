@@ -1,4 +1,5 @@
 import { VENTURE_LEAD_MAX_STAGE } from "./venture-config";
+import { termSheetView, type TermSheetView } from "./round-prep";
 import { playerAmount, postMoney, stakeAfter, syndicateAmount, waterfall } from "./captable";
 import { leadOf, teamCarry, teamView, type TeamView } from "./team";
 import { dragAlong } from "./holdco";
@@ -473,6 +474,8 @@ export interface RoundView {
   cash: number;
   reputation: number;
   daysLeft: number;
+  /** Negotiable conditions of a growth round. */
+  termSheet: TermSheetView | null;
 }
 
 const TAKE_LABEL: Record<RoundTake, string> = {
@@ -512,6 +515,7 @@ export function roundView(state: GameState, roundId: string): RoundView | null {
     cash: state.cash,
     reputation: state.reputation,
     daysLeft: daysLeft(state),
+    termSheet: termSheetView(state, round),
   };
 }
 

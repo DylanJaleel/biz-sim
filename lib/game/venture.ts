@@ -406,6 +406,13 @@ function celebrateUnicorn(ctx: Ctx, s: Startup, post: number, notes: string[]): 
   });
 }
 
+/** Chance that the banks take the company public: the milestones of a listed company, the market mood and the preparation. */
+export function ipoChance(state: GameState, s: Startup, prep?: RoundPrep): number {
+  const base = (0.2 + 0.55 * fulfilment(ventureChecks(state, s, "ipo"))) * VENTURE_MOOD[state.market.regime];
+  const max = prep ? PREP_CHANCE_MAX : VENTURE_CHANCE.max;
+  return Math.max(VENTURE_CHANCE.min, Math.min(max, base + (prep ? prepBonus(prep).total : 0)));
+}
+
 /**
  * The prepared listing: the banks test the story against the milestones of a
  * listed company. Yes: an IPO offer for the shareholders' meeting. No: the
@@ -418,9 +425,8 @@ function ipoTry(ctx: Ctx, s: Startup, path: VenturePath, prep: RoundPrep, notes:
     return;
   }
   const checks = ventureChecks(state, s, "ipo");
-  const f = fulfilment(checks);
   const mood = VENTURE_MOOD[state.market.regime];
-  const chance = Math.max(VENTURE_CHANCE.min, Math.min(PREP_CHANCE_MAX, (0.2 + 0.55 * f) * mood + prepBonus(prep).total));
+  const chance = ipoChance(state, s, prep);
   const r = mnaRandom(state, `venture|ipo|${s.id}|${state.month}`);
   ctx.replace({ ...s, venture: withoutPrep(path) });
   ctx.lesson("lockup");

@@ -3,7 +3,7 @@ import type { Ctx } from "./mna-core";
 import { contactOf, contactRead, personOf } from "./network";
 import { leverOpen, negotiateChance, negotiateTerms, prepBonus, type PrepBonus, type TermLever } from "./rounds";
 import type { GameAction, GameState, Round, RoundAmbition, RoundPrep, RoundTermSheet, Startup } from "./types";
-import { fulfilment, investorsFor, preparedChance, ventureChance, ventureChecks, ventureEligible, type VentureCheck } from "./venture";
+import { fulfilment, investorsFor, ipoChance, preparedChance, ventureChance, ventureChecks, ventureEligible, type VentureCheck } from "./venture";
 import {
   AMBITION,
   INTRO_WARMTH,
@@ -21,9 +21,7 @@ import {
   ROUND_PREP_REPUTATION,
   STAGE_GOALS,
   UNICORN_STAGE,
-  VENTURE_CHANCE,
   VENTURE_IPO_STAGE,
-  VENTURE_MOOD,
   VENTURE_STAGES,
   investorGroup,
 } from "./venture-config";
@@ -152,7 +150,7 @@ export interface RoundPrepView {
   text: string;
   blocker: string | null;
   /** The listing can be prepared (Serie D or unicorn). */
-  ipo: { possible: boolean; blocker: string | null };
+  ipo: { possible: boolean; blocker: string | null; checks: VentureCheck[]; theme: string; text: string; chance: number };
   prep?: RoundPrep & { ambitionLabel: string };
   checks: VentureCheck[];
   fulfilment: number;
@@ -181,9 +179,8 @@ export function roundPrepView(state: GameState, s: Startup, daysLeft: number): R
   const checks = target === null ? [] : ventureChecks(state, s, target);
   const f = fulfilment(checks);
   const bonus = prep ? prepBonus(prep) : ZERO_BONUS;
-  const mood = VENTURE_MOOD[state.market.regime];
-  const base = target === "ipo" ? Math.max(VENTURE_CHANCE.min, Math.min(VENTURE_CHANCE.max, (0.2 + 0.55 * f) * mood)) : ventureChance(state, s);
-  const total = target === "ipo" ? Math.min(0.72, Math.max(VENTURE_CHANCE.min, base + bonus.total)) : preparedChance(state, s, prep);
+  const base = target === "ipo" ? ipoChance(state, s) : ventureChance(state, s);
+  const total = target === "ipo" ? ipoChance(state, s, prep) : preparedChance(state, s, prep);
   const group = ROUND_INVESTORS[investorGroup(target ?? nextStage)]!;
   const contact = contactRead(state, "vcpartner");
   const person = personOf(state, contact);
@@ -193,13 +190,15 @@ export function roundPrepView(state: GameState, s: Startup, daysLeft: number): R
       ? `Zu kühl: ${Math.round(contact.warmth)} von ${INTRO_WARMTH_MIN} Wärme.`
       : null;
   const def = typeof target === "number" ? VENTURE_STAGES[target] : undefined;
+  const ipoChecks = ipoPossible ? ventureChecks(state, s, "ipo") : [];
+  const ipoBase = ipoPossible ? ipoChance(state, s) : 0;
   return {
     target,
     label: target === null ? "–" : roundLabel(target),
     theme: goals.theme,
     text: goals.text,
     blocker: target === "ipo" && !prep ? ipoBlocker : prepBlocker(state, s, false),
-    ipo: { possible: ipoPossible, blocker: ipoBlocker },
+    ipo: { possible: ipoPossible, blocker: ipoBlocker, checks: ipoChecks, theme: STAGE_GOALS[IPO_GOALS]!.theme, text: STAGE_GOALS[IPO_GOALS]!.text, chance: ipoBase },
     ...(prep ? { prep: { ...prep, ambitionLabel: AMBITION[prep.ambition].label } } : {}),
     checks,
     fulfilment: f,
