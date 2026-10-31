@@ -16,7 +16,7 @@ export async function Diligence({ params }: { params: Promise<{ id: string }> })
   const back = v.kind === "deal" ? { href: `/uebernahme/${s.id}`, label: "Zur Übernahme" } : { href: `/post?firma=${s.id}`, label: "Zum Angebot" };
   return (
     <div className="page page--wide ddc-page">
-      <DiligenceTable key={`${v.findings.length}-${v.done}`} v={v} revision={revision} back={back} />
+      <DiligenceTable v={v} revision={revision} back={back} />
     </div>
   );
 }

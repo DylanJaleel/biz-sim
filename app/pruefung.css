@@ -491,17 +491,13 @@ button.ddc-who:hover {
   color: #ffb0ab;
   font-size: 13px;
 }
+/* Neu Erscheinendes blendet nur ein (ohne Verschiebung: Kinder mit transform unter backdrop-filter werden sonst verwaschen gezeichnet). */
 .ddc-pop {
-  animation: ddc-pop 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: ddc-pop 0.35s ease-out;
 }
 @keyframes ddc-pop {
   from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
+    opacity: 0.2;
   }
 }
 @media (prefers-reduced-motion: reduce) {

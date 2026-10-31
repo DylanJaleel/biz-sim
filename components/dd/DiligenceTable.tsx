@@ -16,7 +16,7 @@ const k = (n: number) => (n >= 1000 ? `${Math.round(n / 1000)} T€` : n > 0 ? e
 export function DiligenceTable({ v, revision, back }: { v: DiligenceView; revision: number; back: { href: string; label: string } }) {
   const [picked, setPicked] = useState<ExpertId[]>([]);
   // Feedback of the step just played stays until "Nächster Schritt".
-  const [seen, setSeen] = useState(v.done ? v.findings.length : v.findings.length - 1);
+  const [seen, setSeen] = useState(v.findings.length);
   const { play, pending, error } = usePlay(revision);
   const showLast = v.last && seen < v.findings.length;
   const toggle = (id: ExpertId) => setPicked((xs) => (xs.includes(id) ? xs.filter((x) => x !== id) : [...xs, id]));
