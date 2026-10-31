@@ -1,4 +1,4 @@
-import { BUYOUT_REPUTATION, CORPORATE_REPUTATION, FAMILY_OFFICE_REPUTATION, REPUTATION_GAIN_STEPS } from "./game/config";
+import { BUYOUT_REPUTATION, CORPORATE_REPUTATION, FAMILY_OFFICE_REPUTATION, FUND_REPUTATION, REPUTATION_GAIN_STEPS } from "./game/config";
 import { ESTATE_WORTH, KINDS } from "./game/estate";
 import { netWorth } from "./game/engine";
 import { FOUNDATION } from "./game/legacy";
@@ -6,9 +6,10 @@ import { BIG_MANDATE_REPUTATION } from "./game/mandate-big";
 import { shouldAutoStartTour, UNLOCKS } from "./game/onboarding";
 import { RIVAL_REPUTATION } from "./game/rivals";
 import type { GameState, WhatsNewState } from "./game/types";
+import { FUND_NEXT_INVESTED, STUDIO_EXITS, STUDIO_REPUTATION } from "./game/venture-config";
 
 // „Das ist neu“: Was bei jedem Update dazugekommen ist. Neues Release IMMER OBEN eintragen
-// (neueste zuerst, die id ist das Datum und muss sich als Text sortieren lassen: JJJJ-MM-TT).
+// (neueste zuerst, die id ist das Datum und muss sich als Text sortieren lassen: JJJJ-MM-TT, optional mit Zusatz wie 2026-10-31-fonds).
 // Das Popup zeigt bestehenden Spielern beim ersten Öffnen alles, was sie noch nicht gesehen
 // haben (höchstens die letzten drei Releases); neue Spiele sehen es nicht. Die Seite /neu zeigt
 // die ganze Geschichte. Gespeichert wird nur die zuletzt gesehene id (state.whatsNew.seen).
@@ -47,6 +48,39 @@ const percent = (factor: number) => `${Math.round(factor * 100)} %`;
 
 /** Neueste zuerst. */
 export const RELEASES: Release[] = [
+  {
+    id: "2026-10-31-fonds",
+    date: "2026-10-31",
+    title: "Fonds II und III, Venture Studio, Unicorn",
+    items: [
+      {
+        title: "Fonds II und III mit Investoren",
+        text: `Ist dein Fonds zu ${Math.round(FUND_NEXT_INVESTED * 100)} % investiert, gehst du auf Roadshow: Investoren prüfen DPI und TVPI. Carry fließt über den Wasserfall des ganzen Fonds, der Investorenbeirat (LPAC) entscheidet Konflikte, Fristen und Gebühren.`,
+        href: "/fonds",
+        where: "Menü › Investieren › Fonds",
+        unlock: (state) => (state.fund ? null : `ab Ruf ${FUND_REPUTATION} mit eigenem Fonds`),
+        isNew: true,
+      },
+      {
+        title: "Venture Studio",
+        text: "Gründe eigene Firmen: Idee wählen, CEO holen, Geld in Tranchen an Meilensteinen freigeben. Bis zu zwei gleichzeitig, jede kostet Tage im Monat.",
+        href: "/studio",
+        where: "Menü › Investieren › Venture Studio",
+        unlock: (state) =>
+          state.reputation >= STUDIO_REPUTATION && state.exits.filter((e) => e.status === "accepted").length >= STUDIO_EXITS
+            ? null
+            : `ab Ruf ${STUDIO_REPUTATION} und ${STUDIO_EXITS} Verkäufen`,
+        isNew: true,
+      },
+      {
+        title: "Wachstum bis zum Unicorn",
+        text: "Schnelle Firmen können Wachstumsrunden bis zur Milliarde holen. Der Papierwert zählt bis zum Verkauf nur zum Teil ins Vermögen; die Firmenseite zeigt beides unter „Wachstum“.",
+        href: "/portfolio",
+        where: "Menü › Investieren › Portfolio",
+        isNew: true,
+      },
+    ],
+  },
   {
     id: "2026-10-30",
     date: "2026-10-30",
