@@ -32,6 +32,9 @@ export async function AccountContent() {
         <p className="muted small">Wo du was findest und wann was freigeschaltet wird. Du kannst sie jederzeit noch einmal ansehen.</p>
         <Link href="/einfuehrung" className="btn btn--sm">
           Einführung ansehen
+        </Link>{" "}
+        <Link href="/neu" className="btn btn--sm btn--ghost">
+          Neuigkeiten ansehen
         </Link>
       </section>
 
