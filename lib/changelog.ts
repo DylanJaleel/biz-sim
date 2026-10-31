@@ -58,7 +58,7 @@ export const RELEASES: Release[] = [
         text: "Bei Großmandaten und im Bietgefecht sitzt du an deinem Schreibtisch, ohne Monitor. Gegenüber sitzt die Gegenseite als gezeichnete Figur, auf dem Tisch liegen Angebot und Gegenangebot.",
         href: "/nachfolge",
         where: "Menü › Unternehmen › Nachfolge & Übernahmen",
-                isNew: true,
+        isNew: true,
       },
       {
         title: "Mimik zeigt die Stimmung",
